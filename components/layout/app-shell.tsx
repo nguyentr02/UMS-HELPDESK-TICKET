@@ -1,0 +1,42 @@
+'use client';
+
+import { useState, type ReactNode } from 'react';
+import { Menu } from 'lucide-react';
+import { Sidebar, SidebarContent } from './sidebar';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+
+/**
+ * App frame — responsive (memory: ship mobile + desktop):
+ * - `md:` and up: a fixed sidebar rail.
+ * - below `md:`: the sidebar collapses into a hamburger → left drawer (Sheet).
+ */
+export function AppShell({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top bar (hidden on md+) */}
+        <header className="flex items-center gap-2 border-b p-3 md:hidden">
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Mở menu điều hướng">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SheetTitle className="sr-only">Điều hướng</SheetTitle>
+              <SidebarContent onNavigate={() => setOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          <span className="font-medium">M31 Helpdesk</span>
+        </header>
+
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </div>
+  );
+}

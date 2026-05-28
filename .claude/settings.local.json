@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install clsx tailwind-merge class-variance-authority tailwindcss-animate \"@radix-ui/react-slot\" lucide-react)",
+      "PowerShell(npm run typecheck)",
+      "PowerShell(npm test)",
+      "PowerShell(npx playwright install chromium)",
+      "PowerShell(npx playwright test)",
+      "PowerShell(npm run lint)"
+    ]
+  }
+}
