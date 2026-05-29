@@ -78,7 +78,7 @@ describe('Accessibility sweep (Phase 7 — 0 violations)', () => {
   it('TicketList has no a11y violations', async () => {
     ticketList([ticket()]);
     const { container } = renderWithProviders(<TicketList />, { role: 'SV' });
-    await screen.findByText('Wifi chậm khu B');
+    await screen.findByRole('table');
     await expectNoViolations(container);
   });
 

@@ -1,11 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { setRole } from './helpers';
 
 // S2-I1 — log in as each role group (via the mock role switcher) and assert the
 // visible sidebar nav matches the RBAC grid (role-permission-matrix.md §4).
-
-async function setRole(page: Page, role: string) {
-  await page.getByLabel('Đổi vai trò (mock)').selectOption(role);
-}
 
 test.describe('S2-I1: role-scoped navigation', () => {
   test('SV (requester) sees only the requester section', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
@@ -35,48 +36,95 @@ function sampleTicket(over: Partial<Ticket> = {}): Ticket {
   };
 }
 
+/** Stub GET /tickets and capture each request's URL (to assert filter params). */
+function captureTickets(items: Ticket[] = []) {
+  const urls: string[] = [];
+  server.use(
+    http.get(`${base}/tickets`, ({ request }) => {
+      urls.push(request.url);
+      return HttpResponse.json(
+        { data: { items, page: { page: 1, pageSize: 20, total: items.length } }, error: null, requestId: 'r' },
+      );
+    }),
+  );
+  return urls;
+}
+const lastParams = (urls: string[]) => new URL(urls[urls.length - 1]).searchParams;
+
 describe('TicketList', () => {
   it('renders rows with external status labels', async () => {
-    server.use(
-      http.get(`${base}/tickets`, () =>
-        HttpResponse.json({
-          data: {
-            items: [
-              sampleTicket(),
-              sampleTicket({
-                id: 'tk-2',
-                code: 'HD-2026-000002',
-                title: 'Wifi chậm',
-                severity: 'Low',
-                internalStatus: 'Pending',
-                externalStatus: 'Requested',
-              }),
-            ],
-            page: { page: 1, pageSize: 20, total: 2 },
-          },
-          error: null,
-          requestId: 'r',
-        }),
-      ),
-    );
+    captureTickets([
+      sampleTicket(),
+      sampleTicket({
+        id: 'tk-2',
+        code: 'HD-2026-000002',
+        title: 'Wifi chậm',
+        severity: 'Low',
+        internalStatus: 'Pending',
+        externalStatus: 'Requested',
+      }),
+    ]);
     renderWithProviders(<TicketList />, { role: 'SV' });
-    expect(await screen.findByText('Mất điện')).toBeInTheDocument();
-    expect(screen.getByText('Wifi chậm')).toBeInTheDocument();
-    expect(screen.getByText('Đang xử lý')).toBeInTheDocument();
-    expect(screen.getByText('Đã tiếp nhận')).toBeInTheDocument();
+    // Dual layout (table + mobile cards) + status filter chips share label text → scope to the table.
+    const table = await screen.findByRole('table');
+    expect(within(table).getByText('Mất điện')).toBeInTheDocument();
+    expect(within(table).getByText('Wifi chậm')).toBeInTheDocument();
+    expect(within(table).getByText('Đang xử lý')).toBeInTheDocument();
+    expect(within(table).getByText('Đã tiếp nhận')).toBeInTheDocument();
   });
 
-  it('shows an empty state when there are no tickets', async () => {
-    server.use(
-      http.get(`${base}/tickets`, () =>
-        HttpResponse.json({
-          data: { items: [], page: { page: 1, pageSize: 20, total: 0 } },
-          error: null,
-          requestId: 'r',
-        }),
-      ),
-    );
+  it('shows an empty state when nothing matches', async () => {
+    captureTickets([]);
     renderWithProviders(<TicketList />, { role: 'SV' });
-    expect(await screen.findByText('Chưa có yêu cầu nào')).toBeInTheDocument();
+    expect(await screen.findByText('Không có yêu cầu nào khớp')).toBeInTheDocument();
+  });
+
+  describe('filter engine', () => {
+    it('maps an external status chip to the internal statuses the API expects', async () => {
+      const urls = captureTickets([]);
+      const user = userEvent.setup();
+      renderWithProviders(<TicketList />, { role: 'SV' });
+      await screen.findByText('Không có yêu cầu nào khớp');
+
+      await user.click(screen.getByRole('button', { name: 'Đang xử lý' }));
+      await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress'));
+
+      // "Đã tiếp nhận" spans three internal states.
+      await user.click(screen.getByRole('button', { name: 'Đã tiếp nhận' }));
+      await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress,Pending,Assigned,Redirected'));
+    });
+
+    it('sends the selected severity', async () => {
+      const urls = captureTickets([]);
+      const user = userEvent.setup();
+      renderWithProviders(<TicketList />, { role: 'SV' });
+      await screen.findByText('Không có yêu cầu nào khớp');
+
+      await user.click(screen.getByRole('button', { name: 'High' }));
+      await waitFor(() => expect(lastParams(urls).get('severity')).toBe('High'));
+    });
+
+    it('sends the search query', async () => {
+      const urls = captureTickets([]);
+      const user = userEvent.setup();
+      renderWithProviders(<TicketList />, { role: 'SV' });
+      await screen.findByText('Không có yêu cầu nào khớp');
+
+      await user.type(screen.getByLabelText('Tìm theo tiêu đề hoặc mô tả'), 'wifi');
+      await waitFor(() => expect(lastParams(urls).get('q')).toBe('wifi'));
+    });
+
+    it('clears all active filters', async () => {
+      const urls = captureTickets([]);
+      const user = userEvent.setup();
+      renderWithProviders(<TicketList />, { role: 'SV' });
+      await screen.findByText('Không có yêu cầu nào khớp');
+
+      await user.click(screen.getByRole('button', { name: 'Đang xử lý' }));
+      await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress'));
+
+      await user.click(screen.getByRole('button', { name: 'Xóa lọc' }));
+      await waitFor(() => expect(lastParams(urls).get('status')).toBeNull());
+    });
   });
 });

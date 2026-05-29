@@ -26,6 +26,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const NO_CATEGORY = '__none__'; // Radix Select forbids empty-string item values.
 
 type FieldName = 'title' | 'description' | 'severity' | 'categoryId';
 
@@ -93,7 +102,7 @@ export function TicketForm() {
             <FormItem>
               <FormLabel>Tiêu đề</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input placeholder="VD: Không đăng nhập được vào UMS" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,20 +115,24 @@ export function TicketForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Danh mục (tuỳ chọn)</FormLabel>
-              <FormControl>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  {...field}
-                  value={field.value ?? ''}
-                >
-                  <option value="">— Chọn danh mục —</option>
+              <Select
+                value={field.value ? field.value : NO_CATEGORY}
+                onValueChange={(v) => field.onChange(v === NO_CATEGORY ? '' : v)}
+              >
+                <FormControl>
+                  <SelectTrigger aria-label="Danh mục">
+                    <SelectValue placeholder="— Chọn danh mục —" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={NO_CATEGORY}>— Không chọn —</SelectItem>
                   {categories?.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={c.id}>
                       {c.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-              </FormControl>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -175,7 +188,11 @@ export function TicketForm() {
             <FormItem>
               <FormLabel>Mô tả</FormLabel>
               <FormControl>
-                <Textarea rows={4} {...field} />
+                <Textarea
+                  rows={4}
+                  placeholder="Mô tả chi tiết vấn đề, kèm bước tái hiện nếu có…"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

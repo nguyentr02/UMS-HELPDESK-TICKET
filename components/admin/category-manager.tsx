@@ -15,9 +15,16 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const SELECT_CLASS =
-  'rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+const ROOT = '__root__'; // Radix Select forbids empty-string item values.
 
 function CategoryRow({
   cat,
@@ -108,12 +115,17 @@ export function CategoryManager() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
-      <form onSubmit={onAdd} className="flex h-fit flex-col gap-3 rounded-lg border border-border p-4">
-        <h2 className="text-base font-medium">Thêm danh mục</h2>
+      <Card className="h-fit">
+        <CardHeader>
+          <CardTitle className="text-base">Thêm danh mục</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onAdd} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cat-name">Tên danh mục</Label>
           <Input
             id="cat-name"
+            placeholder="VD: Thiết bị mạng"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-invalid={!!nameError}
@@ -126,24 +138,26 @@ export function CategoryManager() {
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cat-parent">Danh mục cha (tuỳ chọn)</Label>
-          <select
-            id="cat-parent"
-            value={parentId}
-            onChange={(e) => setParentId(e.target.value)}
-            className={SELECT_CLASS}
-          >
-            <option value="">— Không có (cấp gốc) —</option>
-            {roots.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select value={parentId || ROOT} onValueChange={(v) => setParentId(v === ROOT ? '' : v)}>
+            <SelectTrigger id="cat-parent" aria-label="Danh mục cha">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ROOT}>— Không có (cấp gốc) —</SelectItem>
+              {roots.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Button type="submit" disabled={createCat.isPending}>
-          {createCat.isPending ? 'Đang lưu…' : 'Thêm danh mục'}
-        </Button>
-      </form>
+            <Button type="submit" disabled={createCat.isPending}>
+              {createCat.isPending ? 'Đang lưu…' : 'Thêm danh mục'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <DataState
         isLoading={isLoading}

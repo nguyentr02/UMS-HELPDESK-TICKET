@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTickets } from '@/lib/queries/tickets';
+import { useCategories } from '@/lib/queries/catalog';
 import { useRole } from '@/lib/auth/session';
 import { canViewDeptQueue } from '@/lib/auth/rbac';
-import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
-import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
-import type { Severity, TicketStatus } from '@/lib/types/domain';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
 import { Pagination } from '@/components/ui/pagination';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AccessDenied } from '@/components/ui/access-denied';
@@ -23,81 +20,45 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  QueueFilters,
+  DEFAULT_QUEUE_FILTERS,
+  type QueueFiltersState,
+} from '@/components/tickets/queue-filters';
 
 const PAGE_SIZE = 20;
-const SELECT_CLASS =
-  'rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
-type StatusFilter = 'all' | 'open' | TicketStatus;
 
 /**
  * Dept Staff queue (S6) — the tickets routed to the staff's own department.
- * Scoping is server-derived (the mock filters `routedDepartmentId = caller.dept`),
- * so this only chooses the status/severity filters. Defaults to open (non-Closed).
+ * Scoping is server-derived (the mock filters `routedDepartmentId = caller.dept`);
+ * this just chooses the search / status / severity / category / sort filters.
  */
 export function StaffQueue() {
   const role = useRole();
+  const [filters, setFilters] = useState<QueueFiltersState>(DEFAULT_QUEUE_FILTERS);
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [severities, setSeverities] = useState<Severity[]>([]);
+  const { data: categories } = useCategories();
 
-  const status =
-    statusFilter === 'all' ? undefined : statusFilter === 'open' ? 'open' : [statusFilter];
   const { data, isLoading, isError } = useTickets({
-    status,
-    severity: severities.length ? severities : undefined,
+    q: filters.q.trim() || undefined,
+    status: filters.statuses.length ? filters.statuses : undefined,
+    severity: filters.severities.length ? filters.severities : undefined,
+    categoryId: filters.categoryId || undefined,
     page,
     pageSize: PAGE_SIZE,
-    sort: '-createdAt',
+    sort: filters.sort,
   });
 
-  const toggleSeverity = (s: Severity) => {
+  const onFilters = (next: QueueFiltersState) => {
+    setFilters(next);
     setPage(1);
-    setSeverities((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
   };
 
   if (!canViewDeptQueue(role)) return <AccessDenied />;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Trạng thái</span>
-          <select
-            aria-label="Lọc theo trạng thái"
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as StatusFilter);
-              setPage(1);
-            }}
-            className={SELECT_CLASS}
-          >
-            <option value="all">Tất cả</option>
-            <option value="open">Chưa đóng</option>
-            {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {INTERNAL_STATUS_VI[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <fieldset className="flex flex-col gap-1 text-sm">
-          <legend className="font-medium">Mức độ</legend>
-          <div className="flex flex-wrap gap-3 pt-1">
-            {SEVERITIES_BY_PRIORITY.map((s) => (
-              <label key={s} className="flex items-center gap-1.5">
-                <Checkbox
-                  checked={severities.includes(s)}
-                  onCheckedChange={() => toggleSeverity(s)}
-                  aria-label={SEVERITY_META[s].label}
-                />
-                <span aria-hidden>{SEVERITY_META[s].emoji}</span>
-                {SEVERITY_META[s].label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      </div>
+      <QueueFilters value={filters} onChange={onFilters} categories={categories ?? []} />
 
       <DataState
         isLoading={isLoading}

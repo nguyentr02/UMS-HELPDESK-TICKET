@@ -1,14 +1,14 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Paperclip, X } from 'lucide-react';
 import {
   ALLOWED_DOC_TYPES,
   ALLOWED_IMAGE_TYPES,
   MAX_FILES,
   attachmentError,
 } from '@/lib/validation/schemas';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const ACCEPT = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES].join(',');
@@ -20,7 +20,11 @@ export interface FileUploadProps {
   error?: string;
 }
 
-/** Multi-file picker mirroring the server's type/size/count rules for UX. */
+/**
+ * Multi-file picker mirroring the server's type/size/count rules. shadcn has no file
+ * input, so this follows the shadcn pattern: a hidden native `<input>` driven by a
+ * `Button`, with selected files shown as removable `Badge`s.
+ */
 export function FileUpload({ files, onChange, error }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -55,15 +59,24 @@ export function FileUpload({ files, onChange, error }: FileUploadProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <Input
+      <input
         ref={inputRef}
         type="file"
         multiple
         accept={ACCEPT}
         aria-label="Đính kèm tệp"
         onChange={(e) => addFiles(e.target.files)}
-        className="cursor-pointer"
+        className="sr-only"
       />
+      <Button
+        type="button"
+        variant="outline"
+        className="w-fit"
+        onClick={() => inputRef.current?.click()}
+      >
+        <Paperclip className="mr-2 h-4 w-4" aria-hidden />
+        Chọn tệp…
+      </Button>
       <p className="text-xs text-muted-foreground">
         Ảnh hoặc tài liệu, tối đa {MAX_FILES} tệp · 10MB mỗi tệp.
       </p>

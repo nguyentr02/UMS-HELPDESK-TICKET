@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Combobox } from '@/components/ui/combobox';
 
 /** S4 — Forward to a phòng ban; the category's default routing rule pre-selects it. */
 export function ForwardDialog({ ticket }: { ticket: Ticket }) {
@@ -79,9 +79,10 @@ export function ForwardDialog({ ticket }: { ticket: Ticket }) {
           <DialogTitle>Chuyển đến phòng ban</DialogTitle>
           <DialogDescription>Chọn phòng ban tiếp nhận xử lý yêu cầu.</DialogDescription>
         </DialogHeader>
-        <SearchableSelect
+        <Combobox
           label="Phòng ban"
           searchLabel="Tìm phòng ban"
+          placeholder="Chọn phòng ban…"
           options={(departments ?? []).map((d) => ({ value: d.id, label: d.name }))}
           value={departmentId}
           onChange={(v) => {

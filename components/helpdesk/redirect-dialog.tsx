@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Combobox } from '@/components/ui/combobox';
 
 /** S5 — Redirect to another phòng ban with a reason; logged to history (from→to). */
 export function RedirectDialog({ ticket }: { ticket: Ticket }) {
@@ -71,9 +71,10 @@ export function RedirectDialog({ ticket }: { ticket: Ticket }) {
           <DialogDescription>Định tuyến lại yêu cầu sang phòng ban khác kèm lý do.</DialogDescription>
         </DialogHeader>
         <div>
-          <SearchableSelect
+          <Combobox
             label="Phòng ban mới"
             searchLabel="Tìm phòng ban"
+            placeholder="Chọn phòng ban…"
             options={(departments ?? []).map((d) => ({ value: d.id, label: d.name }))}
             value={departmentId}
             onChange={(v) => {
@@ -92,6 +93,7 @@ export function RedirectDialog({ ticket }: { ticket: Ticket }) {
           <Textarea
             id="redirect-reason"
             rows={3}
+            placeholder="Lý do chuyển hướng sang phòng ban khác…"
             value={reason}
             onChange={(e) => {
               setReason(e.target.value);

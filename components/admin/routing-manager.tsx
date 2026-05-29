@@ -20,6 +20,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -28,9 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-const SELECT_CLASS =
-  'rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
 /** S8 — Admin routing rules: category → department, with a default flag (drives Forward preselect). */
 export function RoutingManager() {
@@ -91,39 +96,41 @@ export function RoutingManager() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
-      <form onSubmit={onAdd} className="flex h-fit flex-col gap-3 rounded-lg border border-border p-4">
-        <h2 className="text-base font-medium">Thêm quy tắc</h2>
+      <Card className="h-fit">
+        <CardHeader>
+          <CardTitle className="text-base">Thêm quy tắc</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onAdd} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="rr-category">Danh mục</Label>
-          <select
-            id="rr-category"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className={SELECT_CLASS}
-          >
-            <option value="">— Chọn danh mục —</option>
-            {cats.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger id="rr-category" aria-label="Danh mục">
+              <SelectValue placeholder="— Chọn danh mục —" />
+            </SelectTrigger>
+            <SelectContent>
+              {cats.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="rr-department">Phòng ban</Label>
-          <select
-            id="rr-department"
-            value={departmentId}
-            onChange={(e) => setDepartmentId(e.target.value)}
-            className={SELECT_CLASS}
-          >
-            <option value="">— Chọn phòng ban —</option>
-            {depts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          <Select value={departmentId} onValueChange={setDepartmentId}>
+            <SelectTrigger id="rr-department" aria-label="Phòng ban">
+              <SelectValue placeholder="— Chọn phòng ban —" />
+            </SelectTrigger>
+            <SelectContent>
+              {depts.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
@@ -138,10 +145,12 @@ export function RoutingManager() {
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={createRule.isPending}>
-          {createRule.isPending ? 'Đang lưu…' : 'Thêm quy tắc'}
-        </Button>
-      </form>
+            <Button type="submit" disabled={createRule.isPending}>
+              {createRule.isPending ? 'Đang lưu…' : 'Thêm quy tắc'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <DataState
         isLoading={rules.isLoading}

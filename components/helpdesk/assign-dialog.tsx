@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Combobox } from '@/components/ui/combobox';
 
 /** S3 — Helpdesk Lead assigns/reassigns the owning agent (no status change). */
 export function AssignDialog({ ticket }: { ticket: Ticket }) {
@@ -65,9 +65,10 @@ export function AssignDialog({ ticket }: { ticket: Ticket }) {
           <DialogTitle>Gán nhân viên Helpdesk</DialogTitle>
           <DialogDescription>Chọn nhân viên Helpdesk phụ trách yêu cầu này.</DialogDescription>
         </DialogHeader>
-        <SearchableSelect
+        <Combobox
           label="Nhân viên Helpdesk"
           searchLabel="Tìm nhân viên"
+          placeholder="Chọn nhân viên…"
           options={(agents ?? []).map((a) => ({ value: a.id, label: a.displayName }))}
           value={agentId}
           onChange={(v) => {

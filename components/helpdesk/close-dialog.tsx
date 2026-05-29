@@ -59,6 +59,7 @@ export function CloseDialog({ ticket }: { ticket: Ticket }) {
           <Textarea
             id="close-note"
             rows={3}
+            placeholder="Tóm tắt cách xử lý (tuỳ chọn)…"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />

@@ -1,17 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { RedirectDialog } from '@/components/helpdesk/redirect-dialog';
-import { CONFLICT_MESSAGE } from '@/lib/api/errors';
 import type { Ticket } from '@/lib/types/domain';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-
-const { toastSuccess, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError }, Toaster: () => null }));
 
 function assignedTicket(): Ticket {
   return {
@@ -34,28 +30,17 @@ function assignedTicket(): Ticket {
   };
 }
 
-async function openDialog(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Chuyển hướng' }));
-  await screen.findByLabelText('Phòng ban mới');
-}
-
+// The department picker is a shadcn Combobox — the select→reason→redirect (and 409) flow runs
+// in Playwright (tests/e2e/helpdesk-actions.spec.ts). jsdom covers the reason validation, which
+// needs no dropdown (the Zod check runs on confirm).
 describe('RedirectDialog (S5)', () => {
-  it('S5-H1: redirecting with a dept + reason sends POST /redirect', async () => {
-    server.use(
-      http.post(`${base}/tickets/tk-1/redirect`, () =>
-        HttpResponse.json({ data: { id: 'tk-1' }, error: null, requestId: 'r' }),
-      ),
-    );
+  it('S5 (visibility): opens with the department picker and reason field', async () => {
     const user = userEvent.setup();
     renderWithProviders(<RedirectDialog ticket={assignedTicket()} />, { role: 'HelpdeskAgent' });
-    await openDialog(user);
-    await waitFor(() =>
-      expect(screen.getByRole('option', { name: 'Phòng Kế toán' })).toBeInTheDocument(),
-    );
-    await user.selectOptions(screen.getByLabelText('Phòng ban mới'), 'dep-kt');
-    await user.type(screen.getByLabelText('Lý do'), 'Thuộc phạm vi phòng Kế toán');
     await user.click(screen.getByRole('button', { name: 'Chuyển hướng' }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Phòng ban mới')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Lý do')).toBeInTheDocument();
   });
 
   it('S5-X1: a too-short reason blocks submit with a validation message', async () => {
@@ -68,32 +53,13 @@ describe('RedirectDialog (S5)', () => {
     );
     const user = userEvent.setup();
     renderWithProviders(<RedirectDialog ticket={assignedTicket()} />, { role: 'HelpdeskAgent' });
-    await openDialog(user);
-    await waitFor(() =>
-      expect(screen.getByRole('option', { name: 'Phòng Kế toán' })).toBeInTheDocument(),
-    );
-    await user.selectOptions(screen.getByLabelText('Phòng ban mới'), 'dep-kt');
-    await user.type(screen.getByLabelText('Lý do'), 'ab');
     await user.click(screen.getByRole('button', { name: 'Chuyển hướng' }));
+    const dialog = await screen.findByRole('dialog');
+
+    await user.type(within(dialog).getByLabelText('Lý do'), 'ab');
+    await user.click(within(dialog).getByRole('button', { name: 'Chuyển hướng' }));
+
     expect(await screen.findByText('Lý do tối thiểu 3 ký tự')).toBeInTheDocument();
     expect(postSpy).not.toHaveBeenCalled();
-  });
-
-  it('S5-X2: a 409 shows the refresh toast', async () => {
-    server.use(
-      http.post(`${base}/tickets/tk-1/redirect`, () =>
-        HttpResponse.json({ data: null, error: { code: 'conflict', message: 'no' }, requestId: 'r' }, { status: 409 }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderWithProviders(<RedirectDialog ticket={assignedTicket()} />, { role: 'HelpdeskAgent' });
-    await openDialog(user);
-    await waitFor(() =>
-      expect(screen.getByRole('option', { name: 'Phòng Kế toán' })).toBeInTheDocument(),
-    );
-    await user.selectOptions(screen.getByLabelText('Phòng ban mới'), 'dep-kt');
-    await user.type(screen.getByLabelText('Lý do'), 'Sai phòng ban');
-    await user.click(screen.getByRole('button', { name: 'Chuyển hướng' }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith(CONFLICT_MESSAGE));
   });
 });

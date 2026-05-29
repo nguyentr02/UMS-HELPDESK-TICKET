@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTickets } from '@/lib/queries/tickets';
+import { useCategories } from '@/lib/queries/catalog';
+import type { ExternalStatus, TicketStatus } from '@/lib/types/domain';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Pagination } from '@/components/ui/pagination';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -17,33 +18,45 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TicketFilters, EMPTY_FILTERS, type RequesterFilters } from './ticket-filters';
 
 const PAGE_SIZE = 20;
 
-/** Requester "My tickets" — external statuses only, with an open-only filter. */
+// Requesters filter by the 3 external statuses; the API speaks the 5 internal ones.
+const EXTERNAL_TO_INTERNAL: Record<ExternalStatus, TicketStatus[]> = {
+  Requested: ['Pending', 'Assigned', 'Redirected'],
+  Processing: ['InProgress'],
+  Finished: ['Closed'],
+};
+
+/** Requester "My tickets" — external statuses + a filter engine (search/status/severity/category/sort). */
 export function TicketList() {
+  const [filters, setFilters] = useState<RequesterFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const [onlyOpen, setOnlyOpen] = useState(false);
+  const { data: categories } = useCategories();
+
+  const status = filters.statuses.length
+    ? filters.statuses.flatMap((s) => EXTERNAL_TO_INTERNAL[s])
+    : undefined;
+
   const { data, isLoading, isError } = useTickets({
-    status: onlyOpen ? 'open' : undefined,
+    q: filters.q.trim() || undefined,
+    status,
+    severity: filters.severities.length ? filters.severities : undefined,
+    categoryId: filters.categoryId || undefined,
     page,
     pageSize: PAGE_SIZE,
-    sort: '-createdAt',
+    sort: filters.sort,
   });
+
+  const onFilters = (next: RequesterFilters) => {
+    setFilters(next);
+    setPage(1);
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox
-          checked={onlyOpen}
-          onCheckedChange={(v) => {
-            setOnlyOpen(v === true);
-            setPage(1);
-          }}
-          aria-label="Chỉ hiển thị chưa hoàn tất"
-        />
-        Chỉ hiển thị chưa hoàn tất
-      </label>
+      <TicketFilters value={filters} onChange={onFilters} categories={categories ?? []} />
 
       <DataState
         isLoading={isLoading}
@@ -51,12 +64,16 @@ export function TicketList() {
         isEmpty={!data || data.items.length === 0}
         error="Không tải được danh sách. Vui lòng thử lại."
         empty={
-          <EmptyState title="Chưa có yêu cầu nào" description="Bạn chưa tạo yêu cầu hỗ trợ nào." />
+          <EmptyState
+            title="Không có yêu cầu nào khớp"
+            description="Thử bỏ bớt bộ lọc hoặc tạo yêu cầu mới."
+          />
         }
       >
         {data ? (
           <>
-            <Table>
+            {/* Desktop: table */}
+            <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Mã</TableHead>
@@ -88,6 +105,28 @@ export function TicketList() {
                 ))}
               </TableBody>
             </Table>
+
+            {/* Mobile: stacked cards */}
+            <ul className="flex flex-col gap-3 md:hidden">
+              {data.items.map((t) => (
+                <li key={t.id}>
+                  <Link
+                    href={`/tickets/${t.id}`}
+                    className="block rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{t.code}</span>
+                      <StatusBadge status={t.externalStatus} />
+                    </div>
+                    <p className="mt-1 font-medium">{t.title}</p>
+                    <div className="mt-2">
+                      <SeverityBadge severity={t.severity} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
             <Pagination
               page={data.page.page}
               pageSize={data.page.pageSize}

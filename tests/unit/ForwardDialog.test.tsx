@@ -1,17 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { ForwardDialog } from '@/components/helpdesk/forward-dialog';
-import { CONFLICT_MESSAGE } from '@/lib/api/errors';
 import type { Category, Ticket } from '@/lib/types/domain';
-
-const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-
-const { toastSuccess, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError }, Toaster: () => null }));
 
 const catIT: Category = { id: 'cat-it', name: 'IT / Hệ thống số', parentId: null, isActive: true };
 const catKhac: Category = { id: 'cat-khac', name: 'Khác', parentId: null, isActive: true };
@@ -37,41 +29,27 @@ function pendingTicket(category: Category | null): Ticket {
   };
 }
 
+// The department picker is a shadcn Combobox — the select→confirm→forward (and 409) flow
+// runs in Playwright (tests/e2e/helpdesk-actions.spec.ts). jsdom covers the preselect logic
+// (which is visible in the closed trigger) + the disabled-confirm gate.
 describe('ForwardDialog (S4)', () => {
-  it('S4-H1: pre-selects the category default dept and forwards', async () => {
-    server.use(
-      http.post(`${base}/tickets/tk-1/forward`, () =>
-        HttpResponse.json({ data: { id: 'tk-1' }, error: null, requestId: 'r' }),
-      ),
-    );
+  it('S4-H1: pre-selects the category default department (seed cat-it → dep-it)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ForwardDialog ticket={pendingTicket(catIT)} />, { role: 'HelpdeskAgent' });
     await user.click(screen.getByRole('button', { name: 'Chuyển phòng ban' }));
-    // seed routing rule cat-it → dep-it (isDefault) pre-selects the department
-    await waitFor(() => expect(screen.getByLabelText('Phòng ban')).toHaveValue('dep-it'));
-    await user.click(screen.getByRole('button', { name: 'Chuyển' }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+
+    const trigger = await screen.findByRole('combobox', { name: 'Phòng ban' });
+    await waitFor(() => expect(trigger).toHaveTextContent('CAIRA / Phòng IT'));
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chuyển' })).toBeEnabled();
   });
 
   it('S4-E1: "Khác" has no routing rule → nothing pre-selected (confirm disabled)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ForwardDialog ticket={pendingTicket(catKhac)} />, { role: 'HelpdeskAgent' });
     await user.click(screen.getByRole('button', { name: 'Chuyển phòng ban' }));
-    expect(await screen.findByLabelText('Phòng ban')).toHaveValue('');
-    expect(screen.getByRole('button', { name: 'Chuyển' })).toBeDisabled();
-  });
 
-  it('S4-X2: a 409 shows the refresh toast', async () => {
-    server.use(
-      http.post(`${base}/tickets/tk-1/forward`, () =>
-        HttpResponse.json({ data: null, error: { code: 'conflict', message: 'no' }, requestId: 'r' }, { status: 409 }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderWithProviders(<ForwardDialog ticket={pendingTicket(catIT)} />, { role: 'HelpdeskAgent' });
-    await user.click(screen.getByRole('button', { name: 'Chuyển phòng ban' }));
-    await waitFor(() => expect(screen.getByLabelText('Phòng ban')).toHaveValue('dep-it'));
-    await user.click(screen.getByRole('button', { name: 'Chuyển' }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith(CONFLICT_MESSAGE));
+    const trigger = await screen.findByRole('combobox', { name: 'Phòng ban' });
+    expect(trigger).toHaveTextContent('Chọn phòng ban…');
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chuyển' })).toBeDisabled();
   });
 });

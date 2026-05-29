@@ -1,17 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/mocks/server';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { AssignDialog } from '@/components/helpdesk/assign-dialog';
-import { CONFLICT_MESSAGE } from '@/lib/api/errors';
 import type { Ticket } from '@/lib/types/domain';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
-const { toastSuccess, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError }, Toaster: () => null }));
+const agents = [
+  { id: 'u-hda', displayName: 'Đỗ Thị Mai' },
+  { id: 'u-hda2', displayName: 'Bùi Thị Lan' },
+];
 
 function pendingTicket(): Ticket {
   return {
@@ -34,62 +35,17 @@ function pendingTicket(): Ticket {
   };
 }
 
-const agents = [
-  { id: 'u-hda', displayName: 'Helpdesk Agent' },
-  { id: 'u-hda2', displayName: 'Phạm Thị Agent' },
-];
-
-async function openAndWaitForAgents(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Gán nhân viên' }));
-  const select = await screen.findByLabelText('Nhân viên Helpdesk');
-  await waitFor(() =>
-    expect(within(select).getByRole('option', { name: 'Helpdesk Agent' })).toBeInTheDocument(),
-  );
-  return select;
-}
-
+// The agent picker is a shadcn Combobox (Radix Popover + cmdk) — its open→filter→pick→assign
+// flow runs in Playwright (tests/e2e/helpdesk-actions.spec.ts). jsdom covers visibility/gating.
 describe('AssignDialog (S3)', () => {
-  it('S3-E1: lists only Helpdesk agents and filters by search', async () => {
+  it('S3 (visibility): a Lead opens the dialog; the picker shows and confirm is disabled until a pick', async () => {
     server.use(http.get(`${base}/agents`, () => HttpResponse.json({ data: agents, error: null, requestId: 'r' })));
     const user = userEvent.setup();
     renderWithProviders(<AssignDialog ticket={pendingTicket()} />, { role: 'HelpdeskLead' });
-    const select = await openAndWaitForAgents(user);
-    expect(within(select).getByRole('option', { name: 'Phạm Thị Agent' })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText('Tìm nhân viên'), 'Phạm');
-    await waitFor(() =>
-      expect(within(select).queryByRole('option', { name: 'Helpdesk Agent' })).not.toBeInTheDocument(),
-    );
-    expect(within(select).getByRole('option', { name: 'Phạm Thị Agent' })).toBeInTheDocument();
-  });
-
-  it('S3-H1: assigning an agent sends POST /assign and toasts success', async () => {
-    server.use(
-      http.get(`${base}/agents`, () => HttpResponse.json({ data: agents, error: null, requestId: 'r' })),
-      http.post(`${base}/tickets/tk-1/assign`, () =>
-        HttpResponse.json({ data: { id: 'tk-1' }, error: null, requestId: 'r' }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderWithProviders(<AssignDialog ticket={pendingTicket()} />, { role: 'HelpdeskLead' });
-    const select = await openAndWaitForAgents(user);
-    await user.selectOptions(select, 'u-hda');
-    await user.click(screen.getByRole('button', { name: 'Gán' }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
-  });
-
-  it('S3-X2: a 409 shows the refresh toast', async () => {
-    server.use(
-      http.get(`${base}/agents`, () => HttpResponse.json({ data: agents, error: null, requestId: 'r' })),
-      http.post(`${base}/tickets/tk-1/assign`, () =>
-        HttpResponse.json({ data: null, error: { code: 'conflict', message: 'no' }, requestId: 'r' }, { status: 409 }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderWithProviders(<AssignDialog ticket={pendingTicket()} />, { role: 'HelpdeskLead' });
-    const select = await openAndWaitForAgents(user);
-    await user.selectOptions(select, 'u-hda');
-    await user.click(screen.getByRole('button', { name: 'Gán' }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith(CONFLICT_MESSAGE));
+    await user.click(screen.getByRole('button', { name: 'Gán nhân viên' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Nhân viên Helpdesk')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Gán' })).toBeDisabled();
   });
 });
