@@ -1,6 +1,15 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Role, UserRef } from '@/lib/types/domain';
 
 export interface SessionUser extends UserRef {
@@ -13,8 +22,8 @@ const MOCK_USERS: Record<Role, SessionUser> = {
   SV: { id: 'u-sv', displayName: 'SV Nguyễn Văn A', role: 'SV', departmentId: null },
   GV: { id: 'u-gv', displayName: 'GV Trần Văn B', role: 'GV', departmentId: null },
   NV: { id: 'u-nv', displayName: 'NV Lê Văn C', role: 'NV', departmentId: null },
-  HelpdeskAgent: { id: 'u-hda', displayName: 'Helpdesk Agent', role: 'HelpdeskAgent', departmentId: 'dep-helpdesk' },
-  HelpdeskLead: { id: 'u-hdl', displayName: 'Helpdesk Lead', role: 'HelpdeskLead', departmentId: 'dep-helpdesk' },
+  HelpdeskAgent: { id: 'u-hda', displayName: 'Đỗ Thị Mai', role: 'HelpdeskAgent', departmentId: 'dep-helpdesk' },
+  HelpdeskLead: { id: 'u-hdl', displayName: 'Vũ Văn Hùng', role: 'HelpdeskLead', departmentId: 'dep-helpdesk' },
   DeptStaff: { id: 'u-staff', displayName: 'CB Phòng CSVC', role: 'DeptStaff', departmentId: 'dep-csvc' },
   Admin: { id: 'u-admin', displayName: 'Quản trị viên', role: 'Admin', departmentId: null },
 };
@@ -44,7 +53,20 @@ export function SessionProvider({
   children: ReactNode;
   initialRole?: Role;
 }) {
-  const [role, setRole] = useState<Role>(initialRole);
+  const queryClient = useQueryClient();
+  const [role, setRoleState] = useState<Role>(initialRole);
+
+  // Switching the mock identity persists it *synchronously* (so the api client's
+  // X-Mock-* headers are correct on the very next fetch) and drops the Query
+  // cache, so another identity's data never leaks across a role switch.
+  const setRole = useCallback(
+    (next: Role) => {
+      persist(MOCK_USERS[next]);
+      setRoleState(next);
+      queryClient.clear();
+    },
+    [queryClient],
+  );
 
   // Restore the last-selected mock role on mount (persists across reloads).
   useEffect(() => {
@@ -55,14 +77,9 @@ export function SessionProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep localStorage in sync so the api client forwards the current identity.
-  useEffect(() => {
-    persist(MOCK_USERS[role]);
-  }, [role]);
-
   const value = useMemo<SessionContextValue>(
     () => ({ user: MOCK_USERS[role], role, setRole }),
-    [role],
+    [role, setRole],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

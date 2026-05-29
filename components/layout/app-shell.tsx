@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Menu } from 'lucide-react';
 import { Sidebar, SidebarContent } from './sidebar';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
@@ -19,11 +20,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile top bar (hidden on md+) */}
-        <header className="flex items-center gap-2 border-b p-3 md:hidden">
+        {/* Top bar — hamburger is mobile-only; the notification bell shows on every breakpoint. */}
+        <header className="flex items-center gap-2 border-b p-3">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Mở menu điều hướng">
+              <Button variant="outline" size="icon" className="md:hidden" aria-label="Mở menu điều hướng">
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
@@ -32,7 +33,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <SidebarContent onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
-          <span className="font-medium">M31 Helpdesk</span>
+          <span className="font-medium md:hidden">M31 Helpdesk</span>
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="min-w-0 flex-1">{children}</main>

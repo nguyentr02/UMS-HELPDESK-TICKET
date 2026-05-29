@@ -50,10 +50,10 @@ export const USERS: Record<string, UserRef> = {
   'u-gv': { id: 'u-gv', displayName: 'GV Trần Văn B' },
   'u-nv': { id: 'u-nv', displayName: 'NV Lê Văn C' },
   'u-staff': { id: 'u-staff', displayName: 'CB Phòng CSVC' },
-  'u-hdl': { id: 'u-hdl', displayName: 'Helpdesk Lead' },
-  'u-hda': { id: 'u-hda', displayName: 'Helpdesk Agent' },
-  'u-hda2': { id: 'u-hda2', displayName: 'Phạm Thị Agent' },
-  'u-hda3': { id: 'u-hda3', displayName: 'Lê Văn Agent' },
+  'u-hdl': { id: 'u-hdl', displayName: 'Vũ Văn Hùng' },
+  'u-hda': { id: 'u-hda', displayName: 'Đỗ Thị Mai' },
+  'u-hda2': { id: 'u-hda2', displayName: 'Bùi Thị Lan' },
+  'u-hda3': { id: 'u-hda3', displayName: 'Hoàng Văn Nam' },
   'u-admin': { id: 'u-admin', displayName: 'Quản trị viên' },
 };
 
@@ -152,6 +152,19 @@ export const tickets: Ticket[] = [
     status: 'Pending',
     requesterId: 'u-gv',
     createdAt: '2026-05-27T06:00:00Z',
+  }),
+  // Assigned to the CSVC department — the Dept Staff (u-staff / dep-csvc) can pick
+  // this up and mark it In Progress (story S6).
+  makeTicket({
+    title: 'Máy chiếu phòng B2.10 không lên hình',
+    description: 'Máy chiếu phòng B2.10 bật nguồn nhưng không hiển thị, cần kiểm tra.',
+    severity: 'Medium',
+    categoryId: 'cat-csvc',
+    status: 'Assigned',
+    requesterId: 'u-gv',
+    assigneeId: 'u-hda',
+    departmentId: 'dep-csvc',
+    createdAt: '2026-05-28T03:00:00Z',
   }),
 ];
 

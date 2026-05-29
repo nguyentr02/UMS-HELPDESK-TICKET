@@ -29,6 +29,19 @@ export interface NavSection {
   items: NavItem[];
 }
 
+/**
+ * Where a ticket opens for the current role — a notification/link target.
+ * Requester → their read-only detail; DeptStaff → the dept detail; Helpdesk &
+ * Admin → the console detail.
+ */
+export function ticketDetailHref(role: Role, ticketId: string): string {
+  if (role === 'DeptStaff') return `/staff/tickets/${ticketId}`;
+  if (role === 'HelpdeskAgent' || role === 'HelpdeskLead' || role === 'Admin') {
+    return `/helpdesk/tickets/${ticketId}`;
+  }
+  return `/tickets/${ticketId}`;
+}
+
 /** Vietnamese role labels for the sidebar badge + user footer. */
 export const ROLE_VI: Record<Role, string> = {
   SV: 'Sinh viên',

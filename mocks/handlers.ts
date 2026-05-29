@@ -54,6 +54,107 @@ export const handlers = [
   http.get(`${base}/agents`, () => ok(agents)),
   http.get(`${base}/routing-rules`, () => ok(routingRules)),
 
+  // ---- Admin: category tree (S8) ----
+  http.post(`${base}/categories`, async ({ request }) => {
+    const { name, parentId } = (await request.json()) as { name?: string; parentId?: string | null };
+    const trimmed = (name ?? '').trim();
+    if (trimmed.length < 2) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục tối thiểu 2 ký tự' });
+    }
+    if (categories.some((c) => c.name.trim().toLowerCase() === trimmed.toLowerCase())) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục đã tồn tại' });
+    }
+    if (parentId && !categories.some((c) => c.id === parentId)) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { parentId: 'Danh mục cha không hợp lệ' });
+    }
+    const cat = { id: nextId('cat'), name: trimmed, parentId: parentId ?? null, isActive: true };
+    categories.push(cat);
+    return ok(cat, { status: 201 });
+  }),
+
+  http.patch(`${base}/categories/:id`, async ({ params, request }) => {
+    const cat = categories.find((c) => c.id === params.id);
+    if (!cat) return fail(404, 'not_found', 'Không tìm thấy danh mục');
+    const { name, isActive } = (await request.json()) as { name?: string; isActive?: boolean };
+    if (name !== undefined) {
+      const trimmed = name.trim();
+      if (trimmed.length < 2) {
+        return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục tối thiểu 2 ký tự' });
+      }
+      if (categories.some((c) => c.id !== cat.id && c.name.trim().toLowerCase() === trimmed.toLowerCase())) {
+        return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục đã tồn tại' });
+      }
+      cat.name = trimmed;
+    }
+    if (isActive !== undefined) cat.isActive = isActive;
+    return ok(cat);
+  }),
+
+  http.delete(`${base}/categories/:id`, ({ params }) => {
+    const idx = categories.findIndex((c) => c.id === params.id);
+    if (idx === -1) return fail(404, 'not_found', 'Không tìm thấy danh mục');
+    if (categories.some((c) => c.parentId === params.id)) {
+      return fail(409, 'conflict', 'Không thể xóa danh mục đang có danh mục con.');
+    }
+    categories.splice(idx, 1);
+    return ok({ id: params.id as string });
+  }),
+
+  // ---- Admin: routing rules (S8) ----
+  http.post(`${base}/routing-rules`, async ({ request }) => {
+    const { categoryId, departmentId, isDefault } = (await request.json()) as {
+      categoryId?: string;
+      departmentId?: string;
+      isDefault?: boolean;
+    };
+    if (!categories.some((c) => c.id === categoryId)) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { categoryId: 'Danh mục không hợp lệ' });
+    }
+    if (!departments.some((d) => d.id === departmentId)) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
+    }
+    if (isDefault) {
+      for (const r of routingRules) if (r.categoryId === categoryId) r.isDefault = false;
+    }
+    const rule = {
+      id: nextId('rr'),
+      categoryId: categoryId as string,
+      departmentId: departmentId as string,
+      isDefault: !!isDefault,
+    };
+    routingRules.push(rule);
+    return ok(rule, { status: 201 });
+  }),
+
+  http.patch(`${base}/routing-rules/:id`, async ({ params, request }) => {
+    const rule = routingRules.find((r) => r.id === params.id);
+    if (!rule) return fail(404, 'not_found', 'Không tìm thấy quy tắc định tuyến');
+    const { departmentId, isDefault } = (await request.json()) as {
+      departmentId?: string;
+      isDefault?: boolean;
+    };
+    if (departmentId !== undefined) {
+      if (!departments.some((d) => d.id === departmentId)) {
+        return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
+      }
+      rule.departmentId = departmentId;
+    }
+    if (isDefault) {
+      for (const r of routingRules) if (r.categoryId === rule.categoryId && r.id !== rule.id) r.isDefault = false;
+      rule.isDefault = true;
+    } else if (isDefault === false) {
+      rule.isDefault = false;
+    }
+    return ok(rule);
+  }),
+
+  http.delete(`${base}/routing-rules/:id`, ({ params }) => {
+    const idx = routingRules.findIndex((r) => r.id === params.id);
+    if (idx === -1) return fail(404, 'not_found', 'Không tìm thấy quy tắc định tuyến');
+    routingRules.splice(idx, 1);
+    return ok({ id: params.id as string });
+  }),
+
   http.get(`${base}/tickets`, ({ request }) => {
     const url = new URL(request.url);
     const c = caller(request);
@@ -62,7 +163,8 @@ export const handlers = [
     // Server-derived scoping (App. A) — never trust a client param.
     if (isRequesterRole(c.role)) items = items.filter((t) => t.requester.id === c.id);
     else if (c.role === 'DeptStaff') items = items.filter((t) => t.routedDepartment?.id === c.deptId);
-    // Helpdesk/Admin (or no role in tests) → all.
+    else if (c.role === 'HelpdeskAgent') items = items.filter((t) => t.helpdeskAssignee?.id === c.id);
+    // Helpdesk Lead / Admin (or no role in tests) → all.
 
     const status = url.searchParams.get('status');
     if (status === 'open') items = items.filter((t) => t.internalStatus !== 'Closed');
@@ -124,6 +226,9 @@ export const handlers = [
     }
     if (c.role === 'DeptStaff' && t.routedDepartment?.id !== c.deptId) {
       return fail(403, 'forbidden', 'Yêu cầu không thuộc phòng ban của bạn');
+    }
+    if (c.role === 'HelpdeskAgent' && t.helpdeskAssignee?.id !== c.id) {
+      return fail(403, 'forbidden', 'Yêu cầu chưa được gán cho bạn');
     }
     return ok(t);
   }),
@@ -284,9 +389,13 @@ export const handlers = [
     return ok(t);
   }),
 
-  http.post(`${base}/tickets/:id/progress`, ({ params }) => {
+  http.post(`${base}/tickets/:id/progress`, ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    const c = caller(request);
+    if (c.role === 'DeptStaff' && t.routedDepartment?.id !== c.deptId) {
+      return fail(403, 'forbidden', 'Yêu cầu không thuộc phòng ban của bạn');
+    }
     if (t.internalStatus !== 'Assigned') {
       return fail(409, 'conflict', 'Chỉ có thể bắt đầu xử lý khi đã giao phòng ban.');
     }
