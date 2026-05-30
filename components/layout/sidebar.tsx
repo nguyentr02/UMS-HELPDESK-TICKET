@@ -111,7 +111,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 /** Desktop sidebar — fixed rail at `md:` and up; hidden on mobile (drawer instead). */
 export function Sidebar() {
   return (
-    <aside className="hidden w-56 shrink-0 md:block">
+    <aside className="hidden w-56 shrink-0 md:sticky md:top-0 md:block md:h-screen">
       <SidebarContent />
     </aside>
   );
