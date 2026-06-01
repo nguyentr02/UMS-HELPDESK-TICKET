@@ -25,11 +25,14 @@ export function RoleSwitcher() {
 
   function handleChange(value: string) {
     const next = value as Role;
+    const target = homeRouteFor(next);
     // Show the overlay *before* state mutates so the old page never gets a
     // render with the new role visible (which flashes "no permission").
-    startNavigation();
+    // Pass `target` so a switch to a role whose home === current path skips
+    // the overlay (otherwise pathname never changes and the overlay hangs).
+    startNavigation(target);
     setRole(next);
-    router.push(homeRouteFor(next));
+    router.push(target);
   }
 
   return (

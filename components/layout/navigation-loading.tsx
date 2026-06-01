@@ -1,15 +1,24 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 
 interface NavigationLoadingValue {
   isNavigating: boolean;
-  /** Mark a route-changing action as in-flight. Cleared when `pathname` next changes. */
-  startNavigation: () => void;
+  /**
+   * Mark a route-changing action as in-flight. Pass the target path so a
+   * navigation to the *current* page (which `router.push` treats as a no-op
+   * and doesn't trigger `usePathname` to change) is skipped instead of
+   * hanging the overlay forever.
+   */
+  startNavigation: (target?: string) => void;
 }
 
 const NavigationLoadingContext = createContext<NavigationLoadingValue | null>(null);
+
+/** Hard ceiling for the overlay — if pathname hasn't moved after this long,
+ *  clear anyway. Covers any future stall mode we haven't thought of. */
+const OVERLAY_MAX_MS = 1500;
 
 /**
  * Covers the gap between a programmatic `router.push()` and the new route
@@ -21,18 +30,44 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
   const [fromPath, setFromPath] = useState<string | null>(null);
+  const safetyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear the overlay as soon as the URL has actually moved.
+  function clearOverlay() {
+    setIsNavigating(false);
+    setFromPath(null);
+    if (safetyTimer.current) {
+      clearTimeout(safetyTimer.current);
+      safetyTimer.current = null;
+    }
+  }
+
+  // Primary clear: pathname actually moved.
   useEffect(() => {
     if (isNavigating && fromPath !== null && pathname !== fromPath) {
-      setIsNavigating(false);
-      setFromPath(null);
+      clearOverlay();
     }
   }, [pathname, isNavigating, fromPath]);
 
-  function startNavigation() {
+  // Cleanup on unmount so we never leak a pending timer.
+  useEffect(() => {
+    return () => {
+      if (safetyTimer.current) clearTimeout(safetyTimer.current);
+    };
+  }, []);
+
+  function startNavigation(target?: string) {
+    // Same-path navigations don't trigger usePathname to change, so the primary
+    // clear-effect would never fire — skip the overlay entirely. This is the
+    // SV→GV→NV case (all three share /tickets/new as their home).
+    if (target && target === pathname) return;
+
     setFromPath(pathname);
     setIsNavigating(true);
+
+    if (safetyTimer.current) clearTimeout(safetyTimer.current);
+    safetyTimer.current = setTimeout(() => {
+      clearOverlay();
+    }, OVERLAY_MAX_MS);
   }
 
   return (
