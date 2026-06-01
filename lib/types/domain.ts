@@ -135,7 +135,7 @@ export interface AnalyticsSummary {
   total: number;
   open: number;
   closed: number;
-  avgHandlingDays: number;
+  avgHandlingDays: number | null;
   bySeverity: Record<Severity, number>;
   byStatus: Record<TicketStatus, number>;
   byDepartment: { departmentId: string; name: string; count: number }[];

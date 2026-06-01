@@ -75,7 +75,10 @@ export function Dashboard() {
         <StatCard label="Tổng yêu cầu" value={data.total} />
         <StatCard label="Đang mở" value={data.open} />
         <StatCard label="Đã đóng" value={data.closed} />
-        <StatCard label="TB xử lý (ngày)" value={data.avgHandlingDays} />
+        <StatCard
+          label="TB xử lý (ngày)"
+          value={data.avgHandlingDays == null ? '—' : data.avgHandlingDays.toFixed(2)}
+        />
       </div>
 
       {data.total === 0 ? (
