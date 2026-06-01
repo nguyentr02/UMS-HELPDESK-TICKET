@@ -103,3 +103,13 @@ export function navSectionsFor(role: Role): NavSection[] {
 
   return sections;
 }
+
+/**
+ * Default landing route for a role — the first item of its first sidebar
+ * section. Used by the role switcher so changing role both updates the
+ * session AND moves the user onto a surface their role can actually use.
+ */
+export function homeRouteFor(role: Role): string {
+  const sections = navSectionsFor(role);
+  return sections[0]?.items[0]?.href ?? '/';
+}

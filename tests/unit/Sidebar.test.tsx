@@ -7,7 +7,12 @@ import { Sidebar } from '@/components/layout/sidebar';
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,
 }));
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  // RoleSwitcher (rendered inside the sidebar) now uses useRouter to navigate
+  // on role change — provide a no-op stub for the sidebar tests.
+  useRouter: () => ({ push: () => {} }),
+}));
 
 describe('Sidebar (S2 — role-scoped nav, per role-permission-matrix.md)', () => {
   it('S2-H1: SV sees only the requester section', () => {

@@ -6,7 +6,15 @@
       "PowerShell(npm test)",
       "PowerShell(npx playwright install chromium)",
       "PowerShell(npx playwright test)",
-      "PowerShell(npm run lint)"
+      "PowerShell(npm run lint)",
+      "Bash(perl -0pi -e 's/expect\\\\\\(await axe\\\\\\(container, AXE_OPTS\\\\\\)\\\\\\)\\\\.toHaveNoViolations\\\\\\(\\\\\\);/await expectNoViolations\\(container\\);/g' tests/unit/a11y.test.tsx)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(npm run *)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force; \"killed PID $_\" } catch {} }; \"port 3000 cleared\")"
     ]
   }
 }

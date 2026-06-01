@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
+import { ChevronDown, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
@@ -21,12 +22,35 @@ const CHIP_CLASS =
   'rounded-full border border-input bg-background px-3 py-1 text-sm font-medium shadow-sm hover:bg-accent hover:text-foreground data-[state=on]:border-red-600 data-[state=on]:bg-red-600 data-[state=on]:text-white';
 
 export function FilterPanel({ label, children }: { label: string; children: ReactNode }) {
+  // Collapsed by default on mobile so the filter panel doesn't eat the whole
+  // viewport. On `md:` and up the toggle is hidden and content always shows.
+  const [openMobile, setOpenMobile] = useState(false);
+  const bodyId = useId();
   return (
     <section
       aria-label={label}
-      className="divide-y divide-border rounded-lg border-2 border-border bg-muted/40 shadow-sm"
+      className="rounded-lg border-2 border-border bg-muted/40 shadow-sm"
     >
-      {children}
+      <button
+        type="button"
+        aria-expanded={openMobile}
+        aria-controls={bodyId}
+        onClick={() => setOpenMobile((v) => !v)}
+        className="flex w-full items-center gap-2 border-b border-border px-3 py-2.5 text-sm font-semibold hover:bg-accent/50 md:hidden"
+      >
+        <Filter className="h-4 w-4" aria-hidden />
+        <span>{label}</span>
+        <ChevronDown
+          aria-hidden
+          className={cn('ml-auto h-4 w-4 transition-transform', openMobile && 'rotate-180')}
+        />
+      </button>
+      <div
+        id={bodyId}
+        className={cn('divide-y divide-border', !openMobile && 'hidden md:block')}
+      >
+        {children}
+      </div>
     </section>
   );
 }

@@ -45,7 +45,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col border-r border-red-100 bg-red-50">
-      <div className="border-b border-red-100 p-4">
+      <div className="flex h-16 items-center border-b border-red-100 px-4">
         <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white">
             <Headset className="h-5 w-5" aria-hidden />
