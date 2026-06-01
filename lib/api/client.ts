@@ -29,10 +29,17 @@ function mockAuthHeaders(): Record<string, string> {
   try {
     const raw = window.localStorage.getItem('m31.mockUser');
     if (!raw) return {};
-    const u = JSON.parse(raw) as { id: string; role: string; departmentId: string | null };
+    const u = JSON.parse(raw) as {
+      id: string;
+      role: string;
+      departmentId: string | null;
+      displayName?: string;
+    };
     return {
       'X-Mock-User-Id': u.id,
       'X-Mock-Role': u.role,
+      // Encoded so non-ASCII Vietnamese names survive HTTP header transport.
+      ...(u.displayName ? { 'X-Mock-Display-Name': encodeURIComponent(u.displayName) } : {}),
       ...(u.departmentId ? { 'X-Mock-Dept-Id': u.departmentId } : {}),
     };
   } catch {
