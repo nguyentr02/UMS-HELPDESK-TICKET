@@ -31,9 +31,17 @@ export const MOCK_IDENTITIES: SessionUser[] = [
   { id: 'u-gv-2', displayName: 'GV Hoàng Văn E', role: 'GV', departmentId: null },
   { id: 'u-nv-1', displayName: 'NV Lê Văn C', role: 'NV', departmentId: null },
   { id: 'u-nv-2', displayName: 'NV Bùi Thị F', role: 'NV', departmentId: null },
+  // First agent id kept as 'u-hda' for back-compat with mocks/tests.
   { id: 'u-hda', displayName: 'Đỗ Thị Mai', role: 'HelpdeskAgent', departmentId: null },
+  { id: 'u-hda-2', displayName: 'Nguyễn Văn Quân', role: 'HelpdeskAgent', departmentId: null },
   { id: 'u-hdl', displayName: 'Vũ Văn Hùng', role: 'HelpdeskLead', departmentId: null },
-  { id: 'u-staff', displayName: 'CB Phòng CSVC', role: 'DeptStaff', departmentId: 'CSVC' },
+  // DeptStaff — one per department so cross-dept routing scenarios work.
+  // `departmentId` is the dept CODE; SessionProvider's boot effect swaps it
+  // for the real Neon cuid via GET /departments. First id kept as 'u-staff'
+  // for back-compat.
+  { id: 'u-staff', displayName: 'Phan Thị Hương (CSVC)', role: 'DeptStaff', departmentId: 'CSVC' },
+  { id: 'u-staff-hcns', displayName: 'Lương Văn Đức (HCNS)', role: 'DeptStaff', departmentId: 'HCNS' },
+  { id: 'u-staff-dt', displayName: 'Trịnh Thị Lan (Đào tạo)', role: 'DeptStaff', departmentId: 'DT-CTSV' },
   { id: 'u-admin', displayName: 'Quản trị viên', role: 'Admin', departmentId: null },
 ];
 
