@@ -15,6 +15,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   TicketAssigned: 'Được giao yêu cầu',
   TicketForwarded: 'Chuyển phòng ban',
   StatusChanged: 'Cập nhật trạng thái',
+  TicketCreated: 'Yêu cầu mới',
+  TicketCommented: 'Bình luận mới',
 };
 
 interface BacklogEntry {
@@ -34,6 +36,10 @@ function messageFor(type: NotificationType, code: string): string {
       return `Yêu cầu ${code} đã được chuyển phòng ban.`;
     case 'StatusChanged':
       return `Yêu cầu ${code} đã cập nhật trạng thái.`;
+    case 'TicketCreated':
+      return `Có yêu cầu mới: ${code}.`;
+    case 'TicketCommented':
+      return `Có bình luận mới trên ${code}.`;
     default:
       return '';
   }
@@ -44,7 +50,12 @@ export function NotificationItem({ item, onNavigate }: { item: Notification; onN
   const role = useRole();
   const markRead = useMarkNotificationRead();
   const unread = !item.readAt;
-  const code = typeof item.payload.code === 'string' ? item.payload.code : '';
+  // BE sends `ticketCode` in the payload; tolerate the legacy `code` key too
+  // so old MSW fixtures and stale rows keep rendering.
+  const code =
+    (typeof item.payload.ticketCode === 'string' && item.payload.ticketCode) ||
+    (typeof item.payload.code === 'string' && item.payload.code) ||
+    '';
   const backlog: BacklogEntry[] = Array.isArray(item.payload.tickets)
     ? (item.payload.tickets as BacklogEntry[])
     : [];

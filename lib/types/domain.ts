@@ -10,7 +10,9 @@ export type NotificationType =
   | 'DailyReminder'
   | 'TicketAssigned'
   | 'TicketForwarded'
-  | 'StatusChanged';
+  | 'StatusChanged'
+  | 'TicketCreated'
+  | 'TicketCommented';
 export type EventType =
   | 'Created'
   | 'AgentAssigned'
