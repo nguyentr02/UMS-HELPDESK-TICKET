@@ -123,8 +123,13 @@ export function NotificationItem({ item, onNavigate }: { item: Notification; onN
       )}
 
       {unread ? (
-        <div>
-          <Button variant="ghost" size="sm" onClick={onMarkRead} disabled={markRead.isPending}>
+        <div className="pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onMarkRead}
+            disabled={markRead.isPending}
+          >
             Đánh dấu đã đọc
           </Button>
         </div>
