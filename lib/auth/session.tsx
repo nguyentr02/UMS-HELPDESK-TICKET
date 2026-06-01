@@ -156,9 +156,8 @@ export function SessionProvider({
         // Re-persist the current session with the now-resolved cuid so the
         // next fetch carries the correct X-Mock-Dept-Id.
         const savedId = window.localStorage.getItem(USER_ID_KEY);
-        const active_user =
-          (savedId && IDENTITY_BY_ID.get(savedId)) ?? initialUser;
-        const resolved = resolveUser(active_user, map);
+        const activeUser = (savedId ? IDENTITY_BY_ID.get(savedId) : undefined) ?? initialUser;
+        const resolved = resolveUser(activeUser, map);
         persist(resolved);
         setUserState(resolved);
         queryClient.invalidateQueries();
