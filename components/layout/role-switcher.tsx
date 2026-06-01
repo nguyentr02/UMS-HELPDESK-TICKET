@@ -1,10 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { MOCK_ROLES, useSession } from '@/lib/auth/session';
+import { MOCK_IDENTITIES, useSession } from '@/lib/auth/session';
 import { homeRouteFor } from '@/lib/auth/nav';
 import { useNavigationLoading } from './navigation-loading';
-import type { Role } from '@/lib/types/domain';
 import {
   Select,
   SelectContent,
@@ -14,36 +13,34 @@ import {
 } from '@/components/ui/select';
 
 /**
- * Dev-only role switcher standing in for SSO. On change, both update the
- * session AND navigate to the new role's home route — otherwise the URL/page
- * keeps showing the previous role's surface.
+ * Dev-only identity switcher standing in for SSO. Options are individual mock
+ * identities (multiple per role for SV/GV/NV so cross-user scenarios can be
+ * exercised). The label format is `{role} · {displayName}` so the e2e helper
+ * that selects by partial role name still works.
  */
 export function RoleSwitcher() {
   const router = useRouter();
-  const { role, setRole } = useSession();
+  const { user, setIdentity } = useSession();
   const { startNavigation } = useNavigationLoading();
 
   function handleChange(value: string) {
-    const next = value as Role;
-    const target = homeRouteFor(next);
-    // Show the overlay *before* state mutates so the old page never gets a
-    // render with the new role visible (which flashes "no permission").
-    // Pass `target` so a switch to a role whose home === current path skips
-    // the overlay (otherwise pathname never changes and the overlay hangs).
+    const next = MOCK_IDENTITIES.find((u) => u.id === value);
+    if (!next) return;
+    const target = homeRouteFor(next.role);
     startNavigation(target);
-    setRole(next);
+    setIdentity(next.id);
     router.push(target);
   }
 
   return (
-    <Select value={role} onValueChange={handleChange}>
+    <Select value={user.id} onValueChange={handleChange}>
       <SelectTrigger aria-label="Đổi vai trò (mock)" className="h-8 text-sm">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {MOCK_ROLES.map((r) => (
-          <SelectItem key={r} value={r}>
-            {r}
+        {MOCK_IDENTITIES.map((u) => (
+          <SelectItem key={u.id} value={u.id}>
+            {u.role} · {u.displayName}
           </SelectItem>
         ))}
       </SelectContent>

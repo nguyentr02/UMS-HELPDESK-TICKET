@@ -19,29 +19,48 @@ export interface SessionUser extends UserRef {
   departmentId: string | null;
 }
 
-// Mock SSO identities. `departmentId` here is the DEPARTMENT CODE (matches
-// the BE seed) for roles that need scoping; null for everyone else. The codes
-// are resolved to real Neon cuids at boot via `/departments` so the BE's
-// dept-scoped query (`routedDepartmentId = caller.departmentId`) actually
-// matches rows.
-const MOCK_USERS: Record<Role, SessionUser> = {
-  SV: { id: 'u-sv', displayName: 'SV Nguyễn Văn A', role: 'SV', departmentId: null },
-  GV: { id: 'u-gv', displayName: 'GV Trần Văn B', role: 'GV', departmentId: null },
-  NV: { id: 'u-nv', displayName: 'NV Lê Văn C', role: 'NV', departmentId: null },
-  HelpdeskAgent: { id: 'u-hda', displayName: 'Đỗ Thị Mai', role: 'HelpdeskAgent', departmentId: null },
-  HelpdeskLead: { id: 'u-hdl', displayName: 'Vũ Văn Hùng', role: 'HelpdeskLead', departmentId: null },
-  DeptStaff: { id: 'u-staff', displayName: 'CB Phòng CSVC', role: 'DeptStaff', departmentId: 'CSVC' },
-  Admin: { id: 'u-admin', displayName: 'Quản trị viên', role: 'Admin', departmentId: null },
-};
+// Flat list of mock SSO identities. `departmentId` is the DEPARTMENT CODE
+// for roles that need scoping (resolved to a real Neon cuid at boot via
+// `/departments`); null for everyone else. Two identities each for SV/GV/NV
+// so the team can simulate cross-user scenarios (e.g. "SV1 creates a ticket,
+// SV2 must not see it").
+export const MOCK_IDENTITIES: SessionUser[] = [
+  { id: 'u-sv-1', displayName: 'SV Nguyễn Văn A', role: 'SV', departmentId: null },
+  { id: 'u-sv-2', displayName: 'SV Phạm Thị D', role: 'SV', departmentId: null },
+  { id: 'u-gv-1', displayName: 'GV Trần Văn B', role: 'GV', departmentId: null },
+  { id: 'u-gv-2', displayName: 'GV Hoàng Văn E', role: 'GV', departmentId: null },
+  { id: 'u-nv-1', displayName: 'NV Lê Văn C', role: 'NV', departmentId: null },
+  { id: 'u-nv-2', displayName: 'NV Bùi Thị F', role: 'NV', departmentId: null },
+  { id: 'u-hda', displayName: 'Đỗ Thị Mai', role: 'HelpdeskAgent', departmentId: null },
+  { id: 'u-hdl', displayName: 'Vũ Văn Hùng', role: 'HelpdeskLead', departmentId: null },
+  { id: 'u-staff', displayName: 'CB Phòng CSVC', role: 'DeptStaff', departmentId: 'CSVC' },
+  { id: 'u-admin', displayName: 'Quản trị viên', role: 'Admin', departmentId: null },
+];
 
-export const MOCK_ROLES = Object.keys(MOCK_USERS) as Role[];
+const IDENTITY_BY_ID = new Map(MOCK_IDENTITIES.map((u) => [u.id, u]));
+
+// Default identity per role — the first one in MOCK_IDENTITIES for that role.
+// Used by setRole() so existing role-based callers (and e2e helpers) keep
+// working unchanged.
+const DEFAULT_BY_ROLE: Record<Role, SessionUser> = MOCK_IDENTITIES.reduce(
+  (acc, u) => {
+    if (!(u.role in acc)) (acc as Record<string, SessionUser>)[u.role] = u;
+    return acc;
+  },
+  {} as Record<Role, SessionUser>,
+);
+
+export const MOCK_ROLES = Object.keys(DEFAULT_BY_ROLE) as Role[];
+
 const ROLE_KEY = 'm31.mockRole';
 const USER_KEY = 'm31.mockUser'; // read by lib/api/client.ts to scope mock responses
+const USER_ID_KEY = 'm31.mockUserId'; // pins the chosen identity across reloads
 const DEPT_MAP_KEY = 'm31.deptCodeMap'; // { CSVC: <cuid>, HCNS: <cuid>, ... }
 
 function persist(user: SessionUser) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(ROLE_KEY, user.role);
+  window.localStorage.setItem(USER_ID_KEY, user.id);
   window.localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
@@ -55,8 +74,6 @@ function loadDeptMap(): Record<string, string> {
 }
 
 function resolveUser(u: SessionUser, deptMap: Record<string, string>): SessionUser {
-  // If `departmentId` looks like a code we know about, swap it for the real
-  // cuid. Anything else (null, already-a-cuid, unknown code) passes through.
   if (u.departmentId && deptMap[u.departmentId]) {
     return { ...u, departmentId: deptMap[u.departmentId] };
   }
@@ -66,7 +83,10 @@ function resolveUser(u: SessionUser, deptMap: Record<string, string>): SessionUs
 interface SessionContextValue {
   user: SessionUser;
   role: Role;
+  /** Switch to the default identity for `role` (the first one in MOCK_IDENTITIES). */
   setRole: (role: Role) => void;
+  /** Switch to a specific identity by its `id`. */
+  setIdentity: (id: string) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -79,27 +99,42 @@ export function SessionProvider({
   initialRole?: Role;
 }) {
   const queryClient = useQueryClient();
-  const [role, setRoleState] = useState<Role>(initialRole);
+  const initialUser = DEFAULT_BY_ROLE[initialRole];
+  const [user, setUserState] = useState<SessionUser>(initialUser);
   const deptMapRef = useRef<Record<string, string>>(loadDeptMap());
 
   // Switching the mock identity persists it *synchronously* (so the api client's
   // X-Mock-* headers are correct on the very next fetch) and drops the Query
-  // cache, so another identity's data never leaks across a role switch.
-  const setRole = useCallback(
-    (next: Role) => {
-      persist(resolveUser(MOCK_USERS[next], deptMapRef.current));
-      setRoleState(next);
+  // cache, so another identity's data never leaks across the switch.
+  const setIdentity = useCallback(
+    (id: string) => {
+      const target = IDENTITY_BY_ID.get(id);
+      if (!target) return;
+      const resolved = resolveUser(target, deptMapRef.current);
+      persist(resolved);
+      setUserState(resolved);
       queryClient.clear();
     },
     [queryClient],
   );
 
-  // Restore the last-selected mock role on mount (persists across reloads).
+  const setRole = useCallback(
+    (next: Role) => setIdentity(DEFAULT_BY_ROLE[next].id),
+    [setIdentity],
+  );
+
+  // Restore the last-selected mock identity on mount (persists across reloads).
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem(ROLE_KEY) as Role | null;
-    if (saved && saved in MOCK_USERS) setRole(saved);
-    else persist(resolveUser(MOCK_USERS[initialRole], deptMapRef.current));
+    const savedId = window.localStorage.getItem(USER_ID_KEY);
+    if (savedId && IDENTITY_BY_ID.has(savedId)) {
+      setIdentity(savedId);
+      return;
+    }
+    // Legacy fallback: m31.mockRole from before identity-level pinning.
+    const savedRole = window.localStorage.getItem(ROLE_KEY) as Role | null;
+    if (savedRole && savedRole in DEFAULT_BY_ROLE) setRole(savedRole);
+    else persist(resolveUser(initialUser, deptMapRef.current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -120,9 +155,12 @@ export function SessionProvider({
         window.localStorage.setItem(DEPT_MAP_KEY, JSON.stringify(map));
         // Re-persist the current session with the now-resolved cuid so the
         // next fetch carries the correct X-Mock-Dept-Id.
-        const saved = window.localStorage.getItem(ROLE_KEY) as Role | null;
-        const activeRole = saved && saved in MOCK_USERS ? saved : initialRole;
-        persist(resolveUser(MOCK_USERS[activeRole], map));
+        const savedId = window.localStorage.getItem(USER_ID_KEY);
+        const active_user =
+          (savedId && IDENTITY_BY_ID.get(savedId)) ?? initialUser;
+        const resolved = resolveUser(active_user, map);
+        persist(resolved);
+        setUserState(resolved);
         queryClient.invalidateQueries();
       } catch {
         /* network/auth hiccup — leave the cached map (if any) in place */
@@ -135,8 +173,8 @@ export function SessionProvider({
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ user: MOCK_USERS[role], role, setRole }),
-    [role, setRole],
+    () => ({ user, role: user.role, setRole, setIdentity }),
+    [user, setRole, setIdentity],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
