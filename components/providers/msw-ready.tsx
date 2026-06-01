@@ -4,22 +4,28 @@ import { useEffect, useState, type ReactNode } from 'react';
 
 const SW_RELOAD_KEY = '__msw_reload_once';
 
+/** `true` only when `NEXT_PUBLIC_USE_MOCKS=true`; any other value (including
+ *  `'false'`, `''`, or missing) routes calls to the real BE. */
+const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === 'true';
+
 /**
- * Starts the MSW browser worker before rendering children so client queries hit
- * the mock backend (this project has no real BE). Gating avoids a flash of error
- * states from requests that fire before the worker registers.
+ * Starts the MSW browser worker before rendering children when
+ * `NEXT_PUBLIC_USE_MOCKS=true`. When mocks are off, this is a transparent
+ * pass-through so `apiFetch` reaches the real backend at `NEXT_PUBLIC_API_BASE_URL`.
  *
- * Two robustness fixes vs. the naive version:
- *  - `onUnhandledRequest: 'warn'` so URLs MSW doesn't know about show up in the
- *    browser console instead of silently falling through to the dev server (404).
- *  - On the FIRST registration the current page isn't yet under SW control, so
+ * Mock-mode robustness fixes (only relevant when USE_MOCKS=true):
+ *  - `onUnhandledRequest: 'warn'` surfaces URLs MSW doesn't know about in the
+ *    console instead of silently falling through to the dev server.
+ *  - On first registration the current page isn't under SW control yet, so
  *    early requests would bypass to the network. Reload once (sessionStorage-
- *    gated to prevent loops) so the SW takes control of the page.
+ *    gated) so the SW takes control.
  */
 export function MswReady({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!USE_MOCKS);
 
   useEffect(() => {
+    if (!USE_MOCKS) return; // real-API mode — nothing to start
+
     let active = true;
     (async () => {
       try {
@@ -36,7 +42,7 @@ export function MswReady({ children }: { children: ReactNode }) {
           if (!window.sessionStorage.getItem(SW_RELOAD_KEY)) {
             window.sessionStorage.setItem(SW_RELOAD_KEY, '1');
             window.location.reload();
-            return; // the page is reloading; don't flip `ready`
+            return;
           }
         } else if (typeof window !== 'undefined') {
           window.sessionStorage.removeItem(SW_RELOAD_KEY);
@@ -44,9 +50,6 @@ export function MswReady({ children }: { children: ReactNode }) {
 
         if (active) setReady(true);
       } catch (err) {
-        // Surface the error instead of swallowing it. Still render children so
-        // a broken mock doesn't blank-screen the app — the warnings will make
-        // it obvious in the console that requests are going to the dev server.
         // eslint-disable-next-line no-console
         console.error(
           '[MSW] worker.start failed — requests will fall through to the dev server',
