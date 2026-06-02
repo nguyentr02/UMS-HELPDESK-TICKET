@@ -7,6 +7,7 @@ import type {
   Ticket,
   TicketComment,
   TicketEvent,
+  TicketStatus,
 } from '@/lib/types/domain';
 
 /**
@@ -55,6 +56,9 @@ export const getTicketHistory = (id: string) =>
 
 export const listTicketComments = (id: string) =>
   apiFetch<TicketComment[]>(`/tickets/${id}/comments`);
+
+export const getTicketStatusCounts = () =>
+  apiFetch<Record<TicketStatus, number>>('/tickets/status-counts');
 
 export async function createTicket(form: FormData): Promise<Ticket> {
   const body = await formDataToJsonBody(form);

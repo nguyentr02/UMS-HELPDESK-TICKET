@@ -217,6 +217,20 @@ export const handlers = [
     return ok({ items: items.slice(start, start + pageSize), page: { page, pageSize, total } });
   }),
 
+  // Must be declared BEFORE `/tickets/:id` so MSW doesn't capture "status-counts".
+  http.get(`${base}/tickets/status-counts`, ({ request }) => {
+    const c = caller(request);
+    let scoped = [...tickets];
+    if (isRequesterRole(c.role)) scoped = scoped.filter((t) => t.requester.id === c.id);
+    else if (c.role === 'DeptStaff')
+      scoped = scoped.filter((t) => t.routedDepartment?.id === c.deptId);
+    else if (c.role === 'HelpdeskAgent')
+      scoped = scoped.filter((t) => t.helpdeskAssignee?.id === c.id);
+    const counts = { Pending: 0, Assigned: 0, InProgress: 0, Redirected: 0, Closed: 0 };
+    for (const t of scoped) counts[t.internalStatus] += 1;
+    return ok(counts);
+  }),
+
   http.get(`${base}/tickets/:id`, ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');

@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { StatusSummaryStrip } from '@/components/tickets/status-summary-strip';
 import {
   QueueFilters,
   DEFAULT_QUEUE_FILTERS,
@@ -60,6 +61,8 @@ export function StaffQueue() {
 
   return (
     <div className="flex flex-col gap-4">
+      <StatusSummaryStrip role={role} />
+
       <div className="flex justify-end">
         <FilterDrawer activeCount={countActiveQueueFilters(filters)}>
           <QueueFilters
