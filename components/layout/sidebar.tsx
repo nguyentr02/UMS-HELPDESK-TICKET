@@ -17,6 +17,7 @@ import {
 import { useSession } from '@/lib/auth/session';
 import { navSectionsFor, ROLE_VI, type NavIcon } from '@/lib/auth/nav';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 import { RoleSwitcher } from './role-switcher';
 
 const ICONS: Record<NavIcon, LucideIcon> = {
@@ -39,9 +40,12 @@ function initials(name: string): string {
 
 /** Sidebar interior — reused by the desktop `<aside>` and the mobile drawer. */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { user, role } = useSession();
+  const { user, role, isReady } = useSession();
   const pathname = usePathname();
-  const sections = navSectionsFor(role);
+  // While the session is still restoring from localStorage the role is the
+  // SSR default (SV), so showing nav items here would flash the wrong sidebar
+  // before the real role lands.
+  const sections = isReady ? navSectionsFor(role) : [];
 
   return (
     <div className="flex h-full flex-col border-r border-red-100 bg-red-50">
@@ -52,12 +56,23 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </span>
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="font-semibold">Helpdesk</span>
-            <span className="truncate text-xs text-muted-foreground">{ROLE_VI[role]}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {isReady ? ROLE_VI[role] : ' '}
+            </span>
           </span>
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav className="flex-1 overflow-y-auto py-2" aria-busy={!isReady}>
+        {!isReady ? (
+          <div className="flex flex-col gap-2 px-4 py-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-7 w-full" />
+            <Skeleton className="h-7 w-full" />
+            <Skeleton className="h-4 w-20 mt-3" />
+            <Skeleton className="h-7 w-full" />
+          </div>
+        ) : null}
         {sections.map((section) => (
           <div key={section.label} className="mb-1">
             <p className="px-4 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -91,18 +106,31 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t border-red-100 p-3">
         <div className="mb-2 flex items-center gap-2">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white"
-            aria-hidden
-          >
-            {initials(user.displayName)}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{user.displayName}</div>
-            <div className="truncate text-xs text-muted-foreground">{ROLE_VI[role]}</div>
+          {isReady ? (
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white"
+              aria-hidden
+            >
+              {initials(user.displayName)}
+            </div>
+          ) : (
+            <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+          )}
+          <div className="min-w-0 flex-1">
+            {isReady ? (
+              <>
+                <div className="truncate text-sm font-medium">{user.displayName}</div>
+                <div className="truncate text-xs text-muted-foreground">{ROLE_VI[role]}</div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            )}
           </div>
         </div>
-        <RoleSwitcher />
+        {isReady ? <RoleSwitcher /> : <Skeleton className="h-9 w-full" />}
       </div>
     </div>
   );
