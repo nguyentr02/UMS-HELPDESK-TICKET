@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { NotificationList } from './notification-list';
@@ -36,9 +37,17 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-medium">Thông báo</span>
-          <Link href="/notifications" className="text-xs text-red-700 hover:underline">
-            Xem tất cả
-          </Link>
+          {/* Wrap in DropdownMenuItem so Radix routes the click correctly — a
+              bare <Link> inside DropdownMenuContent has its click intercepted
+              by the menu's focus-trap and never reaches Next's router. */}
+          <DropdownMenuItem asChild className="m-0 p-0 focus:bg-transparent">
+            <Link
+              href="/notifications"
+              className="rounded text-xs font-medium text-red-700 hover:underline"
+            >
+              Xem tất cả
+            </Link>
+          </DropdownMenuItem>
         </div>
         <div className="max-h-[70vh] overflow-auto p-3">
           <NotificationList limit={6} />
