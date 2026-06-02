@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { useIsRestoring } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth/session';
 import { LoadingSplash } from './loading-splash';
@@ -12,12 +13,16 @@ import { LoadingSplash } from './loading-splash';
  * in one clean frame without flashing default-role chrome or empty-state
  * placeholders.
  *
- * Landing-page first-impression duration is owned by the landing page itself
- * (see app/page.tsx), so the gate no longer enforces a minimum hold.
+ * The landing page (`/`) doesn't depend on session or cache, so the gate
+ * passes through there — otherwise users would see a ~0.5s loading flash
+ * before the landing renders on first visit. The 2s brand moment between
+ * landing → app is owned by the landing page itself (see app/page.tsx).
  */
 export function AppBootGate({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const { isReady } = useSession();
   const isRestoring = useIsRestoring();
+  if (pathname === '/') return <>{children}</>;
   if (isReady && !isRestoring) return <>{children}</>;
   return <LoadingSplash />;
 }
