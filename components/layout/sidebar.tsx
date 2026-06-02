@@ -74,11 +74,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         ) : null}
         {sections.map((section) => (
-          <div key={section.label} className="mb-1">
-            <p className="px-4 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div key={section.label} className="mb-2">
+            <p className="px-4 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wider text-red-800">
               {section.label}
             </p>
-            <ul>
+            <ul className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const Icon = ICONS[item.icon];
                 const active = pathname === item.href;
@@ -89,11 +89,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={onNavigate}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-2.5 border-l-2 border-transparent px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-red-100/70 hover:text-red-900',
-                        active && 'border-red-600 bg-red-100 font-medium text-red-700',
+                        'flex items-center gap-3 border-l-2 border-transparent px-4 py-2.5 text-sm font-medium text-red-900 transition-colors hover:bg-red-100/70 hover:text-red-900',
+                        active && 'border-red-600 bg-red-100 font-semibold text-red-900',
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
                       {item.label}
                     </Link>
                   </li>
