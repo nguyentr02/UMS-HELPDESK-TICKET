@@ -29,7 +29,7 @@ export function AppBootGate({ children }: { children: ReactNode }) {
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
           <Headset className="h-7 w-7" aria-hidden />
         </span>
-        <span className="text-2xl font-semibold tracking-tight">Helpdesk</span>
+        <span className="text-2xl font-semibold tracking-tight">DAU Helpdesk</span>
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
