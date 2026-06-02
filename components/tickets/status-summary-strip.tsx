@@ -1,76 +1,124 @@
 'use client';
 
-import type { Role, TicketStatus } from '@/lib/types/domain';
-import { INTERNAL_STATUS_VI } from '@/lib/status/status';
+import type { ExternalStatus, Role, TicketStatus } from '@/lib/types/domain';
+import { EXTERNAL_STATUS_VI, INTERNAL_STATUS_VI } from '@/lib/status/status';
 import { isRequester } from '@/lib/auth/rbac';
 import { useTicketStatusCounts } from '@/lib/queries/tickets';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-// Card colour per status — solid foreground accent + soft background, same
-// hue family as the InternalStatusBadge so the strip and the table badges
-// stay legibly related.
-const STATUS_STYLE: Record<TicketStatus, { ring: string; text: string; bg: string }> = {
-  Pending: { ring: 'bg-amber-500', text: 'text-amber-900', bg: 'bg-amber-50' },
-  Assigned: { ring: 'bg-sky-500', text: 'text-sky-900', bg: 'bg-sky-50' },
-  InProgress: { ring: 'bg-indigo-500', text: 'text-indigo-900', bg: 'bg-indigo-50' },
-  Redirected: { ring: 'bg-purple-500', text: 'text-purple-900', bg: 'bg-purple-50' },
-  Closed: { ring: 'bg-emerald-500', text: 'text-emerald-900', bg: 'bg-emerald-50' },
+// Card styles mirror the table badges:
+//  - Requester pages use StatusBadge (external) — gray / blue / green.
+//  - Helpdesk / Staff / Admin pages use InternalStatusBadge — gray / amber /
+//    blue / purple / green.
+// Same bg-X-100 / text-X-800 the badges use, with a darker bg-X-500 left bar
+// so the card reads as "the same colour, bigger."
+type Style = { bg: string; text: string; ring: string };
+
+const INT_STYLE: Record<TicketStatus, Style> = {
+  Pending: { bg: 'bg-gray-100', text: 'text-gray-800', ring: 'bg-gray-500' },
+  Assigned: { bg: 'bg-amber-100', text: 'text-amber-800', ring: 'bg-amber-500' },
+  InProgress: { bg: 'bg-blue-100', text: 'text-blue-800', ring: 'bg-blue-500' },
+  Redirected: { bg: 'bg-purple-100', text: 'text-purple-800', ring: 'bg-purple-500' },
+  Closed: { bg: 'bg-green-100', text: 'text-green-800', ring: 'bg-green-500' },
 };
 
-// Which statuses each role sees. Requesters never see "Đã giao phòng ban"
-// (Assigned) — that's an internal routing detail per the role-permission matrix.
-function statusesFor(role: Role): TicketStatus[] {
-  if (isRequester(role)) return ['Pending', 'InProgress', 'Redirected', 'Closed'];
-  return ['Pending', 'Assigned', 'InProgress', 'Redirected', 'Closed'];
+const EXT_STYLE: Record<ExternalStatus, Style> = {
+  Requested: { bg: 'bg-gray-100', text: 'text-gray-800', ring: 'bg-gray-500' },
+  Processing: { bg: 'bg-blue-100', text: 'text-blue-800', ring: 'bg-blue-500' },
+  Finished: { bg: 'bg-green-100', text: 'text-green-800', ring: 'bg-green-500' },
+};
+
+interface Bucket {
+  key: string;
+  label: string;
+  count: number;
+  style: Style;
+}
+
+// Lifecycle-ordered buckets per role. Counts come from /tickets/status-counts
+// (internal 5-state); for requesters we collapse to the 3 external buckets the
+// same way INTERNAL_TO_EXTERNAL does on the badges.
+function bucketsFor(role: Role, c: Record<TicketStatus, number>): Bucket[] {
+  if (isRequester(role)) {
+    const ext: Record<ExternalStatus, number> = {
+      Requested: c.Pending + c.Assigned + c.Redirected,
+      Processing: c.InProgress,
+      Finished: c.Closed,
+    };
+    const order: ExternalStatus[] = ['Requested', 'Processing', 'Finished'];
+    return order.map((s) => ({
+      key: s,
+      label: EXTERNAL_STATUS_VI[s],
+      count: ext[s],
+      style: EXT_STYLE[s],
+    }));
+  }
+
+  // Agent has no close authority on their own and doesn't action Redirected
+  // tickets — show the three buckets they actively work in lifecycle order.
+  const internalOrder: TicketStatus[] =
+    role === 'HelpdeskAgent'
+      ? ['Pending', 'Assigned', 'InProgress']
+      : ['Pending', 'Assigned', 'InProgress', 'Closed'];
+
+  return internalOrder.map((s) => ({
+    key: s,
+    label: INTERNAL_STATUS_VI[s],
+    count: c[s],
+    style: INT_STYLE[s],
+  }));
 }
 
 /**
- * Counter strip above the tickets table. Pulls caller-scoped status counts
- * from `/tickets/status-counts` and renders a colour-coded card per status
- * the caller is allowed to see.
+ * Counter strip above the tickets table. Pulls caller-scoped counts from
+ * /tickets/status-counts and renders one card per status the role should see,
+ * in lifecycle order, colour-matched to the in-table badge for that surface.
  */
 export function StatusSummaryStrip({ role }: { role: Role }) {
   const { data, isLoading, isError } = useTicketStatusCounts();
-  const statuses = statusesFor(role);
 
   if (isError) return null;
 
   if (isLoading || !data) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
-        {statuses.map((s) => (
-          <Skeleton key={s} className="h-20" />
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-20" />
         ))}
       </div>
     );
   }
 
+  const buckets = bucketsFor(role, data);
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {statuses.map((s) => {
-        const style = STATUS_STYLE[s];
-        return (
-          <Card
-            key={s}
-            className={cn(
-              'relative overflow-hidden border-border p-4 shadow-sm transition-shadow hover:shadow',
-              style.bg,
-            )}
-          >
-            <div className={cn('absolute inset-y-0 left-0 w-1', style.ring)} aria-hidden />
-            <div className="flex flex-col gap-1 pl-2">
-              <span className={cn('text-xs font-semibold uppercase tracking-wider', style.text)}>
-                {INTERNAL_STATUS_VI[s]}
-              </span>
-              <span className={cn('text-2xl font-bold tabular-nums', style.text)}>
-                {data[s]}
-              </span>
-            </div>
-          </Card>
-        );
-      })}
+    <div
+      className={cn(
+        'grid gap-3 sm:grid-cols-2',
+        buckets.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
+      )}
+    >
+      {buckets.map((b) => (
+        <Card
+          key={b.key}
+          className={cn(
+            'relative overflow-hidden border-border p-4 shadow-sm transition-shadow hover:shadow',
+            b.style.bg,
+          )}
+        >
+          <div className={cn('absolute inset-y-0 left-0 w-1', b.style.ring)} aria-hidden />
+          <div className="flex flex-col gap-1 pl-2">
+            <span className={cn('text-xs font-semibold uppercase tracking-wider', b.style.text)}>
+              {b.label}
+            </span>
+            <span className={cn('text-2xl font-bold tabular-nums', b.style.text)}>
+              {b.count}
+            </span>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
