@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { useIsRestoring } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -24,7 +27,12 @@ export function DataState({
   empty?: ReactNode;
   children: ReactNode;
 }) {
-  if (isLoading) {
+  // While the persisted cache is being restored, paused queries report
+  // `isLoading: false` with `data: undefined` — which the caller would read
+  // as "empty". Treat restoring as loading so we show the skeleton instead
+  // of a fleeting "no data" flash.
+  const isRestoring = useIsRestoring();
+  if (isLoading || isRestoring) {
     return (
       <div aria-busy="true" className="flex flex-col gap-2">
         {loading ?? (
