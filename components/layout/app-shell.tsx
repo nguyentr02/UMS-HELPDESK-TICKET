@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar — hamburger is mobile-only; the notification bell shows on every breakpoint. */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-3">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-red-200 bg-background px-3 shadow-sm">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="md:hidden" aria-label="Mở menu điều hướng">
