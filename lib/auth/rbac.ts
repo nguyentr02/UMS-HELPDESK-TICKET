@@ -1,4 +1,4 @@
-import type { Role, UserRef } from '@/lib/types/domain';
+import type { Department, Role, TicketStatus, UserRef } from '@/lib/types/domain';
 
 // Capability predicates — a 1:1 implementation of `docs/role-permission-matrix.md`
 // (§Implementation notes). The matrix is the source of truth; keep these verbatim.
@@ -14,8 +14,43 @@ export const canViewOwn = (r: Role): boolean => ['SV', 'GV', 'NV', 'DeptStaff'].
 export const canViewQueue = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead', 'Admin'].includes(r);
 export const canViewDeptQueue = (r: Role): boolean => ['DeptStaff', 'Admin'].includes(r);
-// Comment is allowed for every authenticated role (matrix). `role` kept for a uniform signature.
-export const canComment = (_r: Role): boolean => true;
+/**
+ * Comment authority. Two hard rules layered on top of role:
+ *   1. **Closed tickets cannot be commented on by anyone.**
+ *   2. Each role only on tickets they own / serve:
+ *      - HelpdeskLead / Admin → any (non-closed)
+ *      - HelpdeskAgent        → only the ticket they're assigned to
+ *      - DeptStaff            → only tickets routed to their dept
+ *      - SV / GV / NV         → only their own
+ */
+export function canComment(
+  role: Role,
+  callerId: string,
+  ticket: {
+    internalStatus: TicketStatus;
+    requester: UserRef;
+    helpdeskAssignee: UserRef | null;
+    routedDepartment: Department | null;
+  },
+  callerDeptId?: string | null,
+): boolean {
+  if (ticket.internalStatus === 'Closed') return false;
+  switch (role) {
+    case 'Admin':
+    case 'HelpdeskLead':
+      return true;
+    case 'HelpdeskAgent':
+      return ticket.helpdeskAssignee?.id === callerId;
+    case 'DeptStaff':
+      return !!callerDeptId && ticket.routedDepartment?.id === callerDeptId;
+    case 'SV':
+    case 'GV':
+    case 'NV':
+      return ticket.requester.id === callerId;
+    default:
+      return false;
+  }
+}
 export const canAssign = (r: Role): boolean => r === 'HelpdeskLead';
 export const canForward = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canRedirect = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);

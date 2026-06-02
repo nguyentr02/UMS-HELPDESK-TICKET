@@ -6,6 +6,7 @@ import { useSession } from '@/lib/auth/session';
 import {
   canAssign,
   canCloseTicket,
+  canComment,
   canForward,
   canOverrideSeverity,
   canRedirect,
@@ -24,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Timeline } from '@/components/tickets/timeline';
 import { AttachmentList } from '@/components/tickets/attachment-list';
+import { CommentBox } from '@/components/tickets/comment-box';
 import { AssignDialog } from './assign-dialog';
 import { ForwardDialog } from './forward-dialog';
 import { RedirectDialog } from './redirect-dialog';
@@ -109,6 +111,13 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
             <section className="flex flex-col gap-2">
               <h2 className="text-base font-medium">Tệp đính kèm</h2>
               <AttachmentList attachments={ticket.attachments} />
+            </section>
+          ) : null}
+
+          {canComment(role, user.id, ticket, user.departmentId) ? (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-base font-medium">Bình luận</h2>
+              <CommentBox ticketId={ticket.id} />
             </section>
           ) : null}
         </div>

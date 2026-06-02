@@ -2,8 +2,8 @@
 
 import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import { ApiError } from '@/lib/api/client';
-import { useRole } from '@/lib/auth/session';
-import { canUpdateProgress, canViewDeptQueue } from '@/lib/auth/rbac';
+import { useSession } from '@/lib/auth/session';
+import { canComment, canUpdateProgress, canViewDeptQueue } from '@/lib/auth/rbac';
 import { canProgressFrom } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
@@ -20,7 +20,8 @@ import { ProgressButton } from './progress-button';
  * plus commenting.
  */
 export function StaffTicketDetail({ id }: { id: string }) {
-  const role = useRole();
+  const session = useSession();
+  const role = session.role;
   const { data: ticket, isLoading, error } = useTicket(id);
   const history = useTicketHistory(id);
 
@@ -91,10 +92,12 @@ export function StaffTicketDetail({ id }: { id: string }) {
             </section>
           ) : null}
 
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-medium">Bình luận</h2>
-            <CommentBox ticketId={ticket.id} />
-          </section>
+          {canComment(role, session.user.id, ticket, session.user.departmentId) ? (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-base font-medium">Bình luận</h2>
+              <CommentBox ticketId={ticket.id} />
+            </section>
+          ) : null}
         </div>
 
         <aside>

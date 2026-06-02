@@ -2,6 +2,8 @@
 
 import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import { ApiError } from '@/lib/api/client';
+import { useSession } from '@/lib/auth/session';
+import { canComment } from '@/lib/auth/rbac';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +13,8 @@ import { CommentBox } from './comment-box';
 
 /** Requester ticket detail — external status + timeline (read-only, no reopen). */
 export function TicketDetail({ id }: { id: string }) {
+  const session = useSession();
+  const role = session.role;
   const { data: ticket, isLoading, error } = useTicket(id);
   const history = useTicketHistory(id);
 
@@ -72,10 +76,12 @@ export function TicketDetail({ id }: { id: string }) {
         {history.isLoading ? <Skeleton className="h-16" /> : <Timeline events={history.data ?? []} />}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-base font-medium">Bình luận</h2>
-        <CommentBox ticketId={ticket.id} />
-      </section>
+      {canComment(role, session.user.id, ticket) ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-base font-medium">Bình luận</h2>
+          <CommentBox ticketId={ticket.id} />
+        </section>
+      ) : null}
     </article>
   );
 }

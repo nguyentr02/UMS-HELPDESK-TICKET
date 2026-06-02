@@ -34,8 +34,37 @@ describe('rbac predicates match role-permission-matrix.md', () => {
     }
   }
 
-  it('canComment is true for every role', () => {
-    for (const role of ROLES) expect(rbac.canComment(role)).toBe(true);
+  it('canComment: closed blocks everyone; per-role scoping otherwise', () => {
+    const requester = { id: 'u-sv-1', displayName: 'SV' } as const;
+    const agent = { id: 'u-hda', displayName: 'Agent' } as const;
+    const dept = { id: 'd-csvc', code: 'CSVC', name: 'CSVC' } as const;
+
+    const open = {
+      internalStatus: 'Assigned' as const,
+      requester,
+      helpdeskAssignee: agent,
+      routedDepartment: dept,
+    };
+    const closed = { ...open, internalStatus: 'Closed' as const };
+
+    // Closed → nobody can comment.
+    for (const role of ROLES) expect(rbac.canComment(role, 'anyone', closed)).toBe(false);
+
+    // Lead / Admin → any non-closed.
+    expect(rbac.canComment('HelpdeskLead', 'u-hdl', open)).toBe(true);
+    expect(rbac.canComment('Admin', 'u-admin', open)).toBe(true);
+
+    // Agent → only their assigned ticket.
+    expect(rbac.canComment('HelpdeskAgent', 'u-hda', open)).toBe(true);
+    expect(rbac.canComment('HelpdeskAgent', 'u-hda-2', open)).toBe(false);
+
+    // DeptStaff → only when callerDeptId matches the routed dept.
+    expect(rbac.canComment('DeptStaff', 'u-staff', open, 'd-csvc')).toBe(true);
+    expect(rbac.canComment('DeptStaff', 'u-staff', open, 'd-other')).toBe(false);
+
+    // Requester → only their own ticket.
+    expect(rbac.canComment('SV', 'u-sv-1', open)).toBe(true);
+    expect(rbac.canComment('SV', 'u-sv-2', open)).toBe(false);
   });
 
   it('canCloseTicket: Lead closes any; Agent only when assignee; others never', () => {
