@@ -68,6 +68,7 @@ export function navSectionsFor(role: Role): NavSection[] {
       items: [
         { href: '/tickets/new', label: 'Tạo yêu cầu', icon: 'create' },
         { href: '/tickets', label: 'Yêu cầu của tôi', icon: 'list' },
+        { href: '/notifications', label: 'Thông báo', icon: 'notifications' },
       ],
     });
   }
