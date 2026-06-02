@@ -27,12 +27,12 @@ export function MarkAllReadButton() {
 
   return (
     <Button
-      variant="outline"
+      variant="default"
       size="sm"
       onClick={onClick}
       disabled={markAll.isPending}
       aria-label={`Đánh dấu tất cả ${unread} thông báo đã đọc`}
-      className="gap-1.5"
+      className="gap-1.5 shadow-sm"
     >
       <CheckCheck className="h-4 w-4" aria-hidden />
       Đánh dấu tất cả đã đọc

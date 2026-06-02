@@ -129,6 +129,7 @@ export function NotificationItem({ item, onNavigate }: { item: Notification; onN
             size="sm"
             onClick={onMarkRead}
             disabled={markRead.isPending}
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
             Đánh dấu đã đọc
           </Button>
