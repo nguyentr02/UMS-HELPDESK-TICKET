@@ -17,11 +17,14 @@ import type {
  * by Vercel's 4.5 MB function-body limit.
  */
 async function formDataToJsonBody(form: FormData): Promise<Record<string, unknown>> {
-  const files = form.getAll('attachments').filter((v): v is File => v instanceof File);
+  // The FE forms append files under the key `files` (see ticket-form.tsx).
+  // Accept `attachments` too in case any other form ever switches.
+  const fileVals = [...form.getAll('files'), ...form.getAll('attachments')];
+  const files = fileVals.filter((v): v is File => v instanceof File);
   const attachments = await uploadFilesToBlob(files);
   const body: Record<string, unknown> = { attachments };
   for (const [k, v] of form.entries()) {
-    if (k === 'attachments') continue;
+    if (k === 'files' || k === 'attachments') continue;
     // FormData values are string|File; only stash string fields here.
     if (typeof v === 'string') body[k] = v;
   }
