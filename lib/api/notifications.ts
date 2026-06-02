@@ -8,3 +8,6 @@ export const markNotificationRead = (id: string) =>
 
 export const markAllNotificationsRead = () =>
   apiFetch<{ updated: number }>('/notifications/read-all', { method: 'POST' });
+
+export const clearAllNotifications = () =>
+  apiFetch<{ deleted: number }>('/notifications', { method: 'DELETE' });

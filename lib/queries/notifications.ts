@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  clearAllNotifications,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -25,6 +26,14 @@ export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => markAllNotificationsRead(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: notificationKeys.all }),
+  });
+}
+
+export function useClearAllNotifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => clearAllNotifications(),
     onSuccess: () => qc.invalidateQueries({ queryKey: notificationKeys.all }),
   });
 }
