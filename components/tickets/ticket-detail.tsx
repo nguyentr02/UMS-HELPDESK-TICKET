@@ -53,7 +53,7 @@ export function TicketDetail({ id }: { id: string }) {
           <SeverityBadge severity={ticket.severity} />
           <StatusBadge status={ticket.externalStatus} />
         </div>
-        <h1 className="text-2xl font-semibold sm:text-3xl">{ticket.title}</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">{ticket.title}</h1>
         <p className="text-base text-muted-foreground">
           {ticket.category?.name ?? 'Chưa phân loại'}
           {ticket.routedDepartment ? ` · ${ticket.routedDepartment.name}` : ''}
@@ -61,24 +61,28 @@ export function TicketDetail({ id }: { id: string }) {
       </header>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold tracking-tight">Mô tả</h2>
-        <p className="whitespace-pre-wrap text-base leading-relaxed">{ticket.description}</p>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Mô tả</h2>
+        <div className="rounded-md border border-border bg-muted/40 p-4">
+          <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
+            {ticket.description}
+          </p>
+        </div>
       </section>
 
       {ticket.attachments.length > 0 ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">Tệp đính kèm</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tệp đính kèm</h2>
           <AttachmentList attachments={ticket.attachments} />
         </section>
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Lịch sử xử lý</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Lịch sử xử lý</h2>
         {history.isLoading ? <Skeleton className="h-16" /> : <Timeline events={history.data ?? []} />}
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Bình luận</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Bình luận</h2>
         <CommentList ticketId={ticket.id} />
         {canComment(role, session.user.id, ticket) ? (
           <CommentBox ticketId={ticket.id} />
