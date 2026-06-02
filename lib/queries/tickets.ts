@@ -9,6 +9,7 @@ export const ticketKeys = {
   list: (q?: ListTicketsQuery) => ['tickets', q ?? {}] as const,
   detail: (id: string) => ['ticket', id] as const,
   history: (id: string) => ['ticket', id, 'history'] as const,
+  comments: (id: string) => ['ticket', id, 'comments'] as const,
 };
 
 export function useTickets(query?: ListTicketsQuery) {
@@ -29,6 +30,13 @@ export function useTicketHistory(id: string) {
   });
 }
 
+export function useTicketComments(id: string) {
+  return useQuery({
+    queryKey: ticketKeys.comments(id),
+    queryFn: () => ticketsApi.listTicketComments(id),
+  });
+}
+
 export function useCreateTicket() {
   const qc = useQueryClient();
   return useMutation({
@@ -44,6 +52,7 @@ export function useAddComment(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ticketKeys.detail(id) });
       qc.invalidateQueries({ queryKey: ticketKeys.history(id) });
+      qc.invalidateQueries({ queryKey: ticketKeys.comments(id) });
     },
   });
 }

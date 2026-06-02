@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Timeline } from './timeline';
 import { AttachmentList } from './attachment-list';
 import { CommentBox } from './comment-box';
+import { CommentList } from './comment-list';
 
 /** Requester ticket detail — external status + timeline (read-only, no reopen). */
 export function TicketDetail({ id }: { id: string }) {
@@ -76,12 +77,13 @@ export function TicketDetail({ id }: { id: string }) {
         {history.isLoading ? <Skeleton className="h-16" /> : <Timeline events={history.data ?? []} />}
       </section>
 
-      {canComment(role, session.user.id, ticket) ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-base font-medium">Bình luận</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-base font-medium">Bình luận</h2>
+        <CommentList ticketId={ticket.id} />
+        {canComment(role, session.user.id, ticket) ? (
           <CommentBox ticketId={ticket.id} />
-        </section>
-      ) : null}
+        ) : null}
+      </section>
     </article>
   );
 }

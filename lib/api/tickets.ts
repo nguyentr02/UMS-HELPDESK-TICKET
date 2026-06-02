@@ -53,6 +53,9 @@ export const getTicket = (id: string) => apiFetch<Ticket>(`/tickets/${id}`);
 export const getTicketHistory = (id: string) =>
   apiFetch<TicketEvent[]>(`/tickets/${id}/history`);
 
+export const listTicketComments = (id: string) =>
+  apiFetch<TicketComment[]>(`/tickets/${id}/comments`);
+
 export async function createTicket(form: FormData): Promise<Ticket> {
   const body = await formDataToJsonBody(form);
   return apiFetch<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(body) });
