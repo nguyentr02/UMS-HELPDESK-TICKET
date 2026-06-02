@@ -5,3 +5,6 @@ export const listNotifications = () => apiFetch<NotificationItem[]>('/notificati
 
 export const markNotificationRead = (id: string) =>
   apiFetch<NotificationItem>(`/notifications/${id}/read`, { method: 'POST' });
+
+export const markAllNotificationsRead = () =>
+  apiFetch<{ updated: number }>('/notifications/read-all', { method: 'POST' });
