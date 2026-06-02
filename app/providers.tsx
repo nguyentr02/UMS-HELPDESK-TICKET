@@ -8,6 +8,7 @@ import { SessionProvider } from '@/lib/auth/session';
 import { NavigationLoadingProvider } from '@/components/layout/navigation-loading';
 import { Toaster } from '@/components/ui/sonner';
 import { MswReady } from '@/components/providers/msw-ready';
+import { AppBootGate } from '@/components/layout/app-boot-gate';
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const FIVE_MIN = 5 * 60 * 1000;
@@ -47,7 +48,9 @@ export function Providers({ children }: { children: ReactNode }) {
     >
       <SessionProvider>
         <MswReady>
-          <NavigationLoadingProvider>{children}</NavigationLoadingProvider>
+          <NavigationLoadingProvider>
+            <AppBootGate>{children}</AppBootGate>
+          </NavigationLoadingProvider>
         </MswReady>
       </SessionProvider>
       <Toaster richColors position="top-right" />
