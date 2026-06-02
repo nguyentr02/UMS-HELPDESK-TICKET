@@ -82,19 +82,19 @@ export function StaffTicketDetail({ id }: { id: string }) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-2">
-            <h2 className="text-base font-medium">Mô tả</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Mô tả</h2>
             <p className="whitespace-pre-wrap text-base leading-relaxed">{ticket.description}</p>
           </section>
 
           {ticket.attachments.length > 0 ? (
             <section className="flex flex-col gap-2">
-              <h2 className="text-base font-medium">Tệp đính kèm</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Tệp đính kèm</h2>
               <AttachmentList attachments={ticket.attachments} />
             </section>
           ) : null}
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-base font-medium">Bình luận</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Bình luận</h2>
             <CommentList ticketId={ticket.id} />
             {canComment(role, session.user.id, ticket, session.user.departmentId) ? (
               <CommentBox ticketId={ticket.id} />
@@ -104,7 +104,7 @@ export function StaffTicketDetail({ id }: { id: string }) {
 
         <aside>
           <section className="flex flex-col gap-3">
-            <h2 className="text-base font-medium">Lịch sử xử lý</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Lịch sử xử lý</h2>
             {history.isLoading ? (
               <Skeleton className="h-16" />
             ) : (
