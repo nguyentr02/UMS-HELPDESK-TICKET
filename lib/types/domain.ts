@@ -59,6 +59,12 @@ export interface Attachment {
   kind: AttachmentKind;
   sizeBytes: number;
   createdAt: string;
+  /**
+   * Direct Blob URL when available (new direct-upload flow). `null` for
+   * legacy attachments stored in the memory/local adapter — those have to
+   * be fetched through the auth'd BE proxy at /attachments/:id.
+   */
+  url: string | null;
 }
 
 export interface TicketComment {
