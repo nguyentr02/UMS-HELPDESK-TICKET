@@ -48,8 +48,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const sections = isReady ? navSectionsFor(role) : [];
 
   return (
-    <div className="flex h-full flex-col border-r border-red-100 bg-red-50">
-      <div className="flex h-16 items-center border-b border-red-100 px-4">
+    <div className="flex h-full flex-col border-r border-slate-200 bg-white">
+      <div className="flex h-16 items-center border-b border-slate-200 px-4">
         <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white">
             <Headset className="h-5 w-5" aria-hidden />
@@ -75,7 +75,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ) : null}
         {sections.map((section) => (
           <div key={section.label} className="mb-2">
-            <p className="px-4 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wider text-red-800">
+            <p className="px-4 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               {section.label}
             </p>
             <ul className="flex flex-col gap-0.5">
@@ -89,8 +89,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={onNavigate}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-3 border-l-2 border-transparent px-4 py-2.5 text-sm font-medium text-red-900 transition-colors hover:bg-red-100/70 hover:text-red-900',
-                        active && 'border-red-600 bg-red-100 font-semibold text-red-900',
+                        'flex items-center gap-3 border-l-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-red-700',
+                        active && 'border-red-600 bg-red-50 font-semibold text-red-700',
                       )}
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
@@ -104,7 +104,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="border-t border-red-100 p-3">
+      <div className="border-t border-slate-200 p-3">
         <div className="mb-2 flex items-center gap-2">
           {isReady ? (
             <div
