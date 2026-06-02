@@ -18,7 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { TicketFilters, EMPTY_FILTERS, type RequesterFilters } from './ticket-filters';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
+import {
+  TicketFilters,
+  EMPTY_FILTERS,
+  countActiveFilters,
+  type RequesterFilters,
+} from './ticket-filters';
 
 const PAGE_SIZE = 20;
 
@@ -56,7 +62,16 @@ export function TicketList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <TicketFilters value={filters} onChange={onFilters} categories={categories ?? []} />
+      <div className="flex justify-end">
+        <FilterDrawer activeCount={countActiveFilters(filters)}>
+          <TicketFilters
+            value={filters}
+            onChange={onFilters}
+            categories={categories ?? []}
+            bare
+          />
+        </FilterDrawer>
+      </div>
 
       <DataState
         isLoading={isLoading}

@@ -92,6 +92,7 @@ describe('HelpdeskQueue (S2/S3)', () => {
       renderWithProviders(<HelpdeskQueue />, { role: 'HelpdeskLead' });
       await screen.findByText('Không có yêu cầu');
 
+      await user.click(screen.getByRole('button', { name: /^Bộ lọc/ }));
       await user.click(screen.getByRole('button', { name: 'High' }));
       await waitFor(() => expect(lastParams(urls).get('severity')).toBe('High'));
 

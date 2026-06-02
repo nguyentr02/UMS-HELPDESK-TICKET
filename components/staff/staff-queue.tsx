@@ -20,9 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
 import {
   QueueFilters,
   DEFAULT_QUEUE_FILTERS,
+  countActiveQueueFilters,
   type QueueFiltersState,
 } from '@/components/tickets/queue-filters';
 
@@ -58,7 +60,16 @@ export function StaffQueue() {
 
   return (
     <div className="flex flex-col gap-4">
-      <QueueFilters value={filters} onChange={onFilters} categories={categories ?? []} />
+      <div className="flex justify-end">
+        <FilterDrawer activeCount={countActiveQueueFilters(filters)}>
+          <QueueFilters
+            value={filters}
+            onChange={onFilters}
+            categories={categories ?? []}
+            bare
+          />
+        </FilterDrawer>
+      </div>
 
       <DataState
         isLoading={isLoading}

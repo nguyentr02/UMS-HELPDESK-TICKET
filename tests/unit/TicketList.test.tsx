@@ -86,6 +86,7 @@ describe('TicketList', () => {
       renderWithProviders(<TicketList />, { role: 'SV' });
       await screen.findByText('Không có yêu cầu nào khớp');
 
+      await user.click(screen.getByRole('button', { name: 'Bộ lọc' }));
       await user.click(screen.getByRole('button', { name: 'Đang xử lý' }));
       await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress'));
 
@@ -100,6 +101,7 @@ describe('TicketList', () => {
       renderWithProviders(<TicketList />, { role: 'SV' });
       await screen.findByText('Không có yêu cầu nào khớp');
 
+      await user.click(screen.getByRole('button', { name: 'Bộ lọc' }));
       await user.click(screen.getByRole('button', { name: 'High' }));
       await waitFor(() => expect(lastParams(urls).get('severity')).toBe('High'));
     });
@@ -110,6 +112,7 @@ describe('TicketList', () => {
       renderWithProviders(<TicketList />, { role: 'SV' });
       await screen.findByText('Không có yêu cầu nào khớp');
 
+      await user.click(screen.getByRole('button', { name: 'Bộ lọc' }));
       await user.type(screen.getByLabelText('Tìm theo tiêu đề hoặc mô tả'), 'wifi');
       await waitFor(() => expect(lastParams(urls).get('q')).toBe('wifi'));
     });
@@ -120,6 +123,7 @@ describe('TicketList', () => {
       renderWithProviders(<TicketList />, { role: 'SV' });
       await screen.findByText('Không có yêu cầu nào khớp');
 
+      await user.click(screen.getByRole('button', { name: 'Bộ lọc' }));
       await user.click(screen.getByRole('button', { name: 'Đang xử lý' }));
       await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress'));
 
