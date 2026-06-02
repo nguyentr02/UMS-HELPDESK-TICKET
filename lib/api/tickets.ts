@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import { uploadFilesToBlob } from './uploads';
 import type {
   ListTicketsQuery,
   Paginated,
@@ -7,6 +8,25 @@ import type {
   TicketComment,
   TicketEvent,
 } from '@/lib/types/domain';
+
+/**
+ * Pull form fields + the `attachments` File[] out of a FormData, upload the
+ * files to Vercel Blob first, then return the JSON payload to POST.
+ * The BE-side multipart route still exists as a fallback for small files /
+ * older clients, but going through Blob means we're no longer constrained
+ * by Vercel's 4.5 MB function-body limit.
+ */
+async function formDataToJsonBody(form: FormData): Promise<Record<string, unknown>> {
+  const files = form.getAll('attachments').filter((v): v is File => v instanceof File);
+  const attachments = await uploadFilesToBlob(files);
+  const body: Record<string, unknown> = { attachments };
+  for (const [k, v] of form.entries()) {
+    if (k === 'attachments') continue;
+    // FormData values are string|File; only stash string fields here.
+    if (typeof v === 'string') body[k] = v;
+  }
+  return body;
+}
 
 function toQuery(q: ListTicketsQuery = {}): string {
   const p = new URLSearchParams();
@@ -30,11 +50,18 @@ export const getTicket = (id: string) => apiFetch<Ticket>(`/tickets/${id}`);
 export const getTicketHistory = (id: string) =>
   apiFetch<TicketEvent[]>(`/tickets/${id}/history`);
 
-export const createTicket = (form: FormData) =>
-  apiFetch<Ticket>('/tickets', { method: 'POST', body: form });
+export async function createTicket(form: FormData): Promise<Ticket> {
+  const body = await formDataToJsonBody(form);
+  return apiFetch<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(body) });
+}
 
-export const addComment = (id: string, form: FormData) =>
-  apiFetch<TicketComment>(`/tickets/${id}/comments`, { method: 'POST', body: form });
+export async function addComment(id: string, form: FormData): Promise<TicketComment> {
+  const body = await formDataToJsonBody(form);
+  return apiFetch<TicketComment>(`/tickets/${id}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
 
 export const assignAgent = (id: string, agentId: string) =>
   apiFetch<Ticket>(`/tickets/${id}/assign`, { method: 'POST', body: JSON.stringify({ agentId }) });
