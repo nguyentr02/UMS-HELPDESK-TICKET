@@ -91,6 +91,12 @@ function resolveUser(u: SessionUser, deptMap: Record<string, string>): SessionUs
 interface SessionContextValue {
   user: SessionUser;
   role: Role;
+  /**
+   * `false` until the boot effect has restored the pinned identity from
+   * localStorage. RBAC-gated views read this so they don't flash AccessDenied
+   * with the default `initialRole` before the real identity lands.
+   */
+  isReady: boolean;
   /** Switch to the default identity for `role` (the first one in MOCK_IDENTITIES). */
   setRole: (role: Role) => void;
   /** Switch to a specific identity by its `id`. */
@@ -109,6 +115,7 @@ export function SessionProvider({
   const queryClient = useQueryClient();
   const initialUser = DEFAULT_BY_ROLE[initialRole];
   const [user, setUserState] = useState<SessionUser>(initialUser);
+  const [isReady, setIsReady] = useState(false);
   const deptMapRef = useRef<Record<string, string>>(loadDeptMap());
 
   // Switching the mock identity persists it *synchronously* (so the api client's
@@ -133,16 +140,20 @@ export function SessionProvider({
 
   // Restore the last-selected mock identity on mount (persists across reloads).
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      setIsReady(true);
+      return;
+    }
     const savedId = window.localStorage.getItem(USER_ID_KEY);
     if (savedId && IDENTITY_BY_ID.has(savedId)) {
       setIdentity(savedId);
-      return;
+    } else {
+      // Legacy fallback: m31.mockRole from before identity-level pinning.
+      const savedRole = window.localStorage.getItem(ROLE_KEY) as Role | null;
+      if (savedRole && savedRole in DEFAULT_BY_ROLE) setRole(savedRole);
+      else persist(resolveUser(initialUser, deptMapRef.current));
     }
-    // Legacy fallback: m31.mockRole from before identity-level pinning.
-    const savedRole = window.localStorage.getItem(ROLE_KEY) as Role | null;
-    if (savedRole && savedRole in DEFAULT_BY_ROLE) setRole(savedRole);
-    else persist(resolveUser(initialUser, deptMapRef.current));
+    setIsReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -180,8 +191,8 @@ export function SessionProvider({
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ user, role: user.role, setRole, setIdentity }),
-    [user, setRole, setIdentity],
+    () => ({ user, role: user.role, isReady, setRole, setIdentity }),
+    [user, isReady, setRole, setIdentity],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
