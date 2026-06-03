@@ -6,7 +6,6 @@ import {
   Bell,
   Building2,
   ClipboardList,
-  GitBranch,
   Headset,
   Inbox,
   LayoutDashboard,
@@ -28,7 +27,6 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   dept: Building2,
   notifications: Bell,
   categories: Tags,
-  routing: GitBranch,
 };
 
 function initials(name: string): string {

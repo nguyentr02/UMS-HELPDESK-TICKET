@@ -13,7 +13,6 @@ import {
   makeTicket,
   nextId,
   notifications,
-  routingRules,
   setStatus,
   tickets,
 } from './data';
@@ -52,11 +51,11 @@ export const handlers = [
   http.get(`${base}/categories`, () => ok(categories)),
   http.get(`${base}/departments`, () => ok(departments)),
   http.get(`${base}/agents`, () => ok(agents)),
-  http.get(`${base}/routing-rules`, () => ok(routingRules)),
 
-  // ---- Admin: category tree (S8) ----
+  // ---- Admin: flat category list (S8). Routing rules were removed; agents/
+  // leads now pick the dept independently when forwarding.
   http.post(`${base}/categories`, async ({ request }) => {
-    const { name, parentId } = (await request.json()) as { name?: string; parentId?: string | null };
+    const { name } = (await request.json()) as { name?: string };
     const trimmed = (name ?? '').trim();
     if (trimmed.length < 2) {
       return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục tối thiểu 2 ký tự' });
@@ -64,10 +63,7 @@ export const handlers = [
     if (categories.some((c) => c.name.trim().toLowerCase() === trimmed.toLowerCase())) {
       return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { name: 'Tên danh mục đã tồn tại' });
     }
-    if (parentId && !categories.some((c) => c.id === parentId)) {
-      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { parentId: 'Danh mục cha không hợp lệ' });
-    }
-    const cat = { id: nextId('cat'), name: trimmed, parentId: parentId ?? null, isActive: true };
+    const cat = { id: nextId('cat'), name: trimmed, isActive: true };
     categories.push(cat);
     return ok(cat, { status: 201 });
   }),
@@ -93,65 +89,7 @@ export const handlers = [
   http.delete(`${base}/categories/:id`, ({ params }) => {
     const idx = categories.findIndex((c) => c.id === params.id);
     if (idx === -1) return fail(404, 'not_found', 'Không tìm thấy danh mục');
-    if (categories.some((c) => c.parentId === params.id)) {
-      return fail(409, 'conflict', 'Không thể xóa danh mục đang có danh mục con.');
-    }
     categories.splice(idx, 1);
-    return ok({ id: params.id as string });
-  }),
-
-  // ---- Admin: routing rules (S8) ----
-  http.post(`${base}/routing-rules`, async ({ request }) => {
-    const { categoryId, departmentId, isDefault } = (await request.json()) as {
-      categoryId?: string;
-      departmentId?: string;
-      isDefault?: boolean;
-    };
-    if (!categories.some((c) => c.id === categoryId)) {
-      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { categoryId: 'Danh mục không hợp lệ' });
-    }
-    if (!departments.some((d) => d.id === departmentId)) {
-      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
-    }
-    if (isDefault) {
-      for (const r of routingRules) if (r.categoryId === categoryId) r.isDefault = false;
-    }
-    const rule = {
-      id: nextId('rr'),
-      categoryId: categoryId as string,
-      departmentId: departmentId as string,
-      isDefault: !!isDefault,
-    };
-    routingRules.push(rule);
-    return ok(rule, { status: 201 });
-  }),
-
-  http.patch(`${base}/routing-rules/:id`, async ({ params, request }) => {
-    const rule = routingRules.find((r) => r.id === params.id);
-    if (!rule) return fail(404, 'not_found', 'Không tìm thấy quy tắc định tuyến');
-    const { departmentId, isDefault } = (await request.json()) as {
-      departmentId?: string;
-      isDefault?: boolean;
-    };
-    if (departmentId !== undefined) {
-      if (!departments.some((d) => d.id === departmentId)) {
-        return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
-      }
-      rule.departmentId = departmentId;
-    }
-    if (isDefault) {
-      for (const r of routingRules) if (r.categoryId === rule.categoryId && r.id !== rule.id) r.isDefault = false;
-      rule.isDefault = true;
-    } else if (isDefault === false) {
-      rule.isDefault = false;
-    }
-    return ok(rule);
-  }),
-
-  http.delete(`${base}/routing-rules/:id`, ({ params }) => {
-    const idx = routingRules.findIndex((r) => r.id === params.id);
-    if (idx === -1) return fail(404, 'not_found', 'Không tìm thấy quy tắc định tuyến');
-    routingRules.splice(idx, 1);
     return ok({ id: params.id as string });
   }),
 

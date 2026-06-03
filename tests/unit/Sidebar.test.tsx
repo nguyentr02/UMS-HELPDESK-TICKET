@@ -38,11 +38,12 @@ describe('Sidebar (S2 — role-scoped nav, per role-permission-matrix.md)', () =
     expect(screen.getByRole('link', { name: 'Hàng đợi' })).toBeInTheDocument();
   });
 
-  it('S2-E3: Admin sees all-tickets + catalog + dashboard, not create', () => {
+  it('S2-E3: Admin sees all-tickets + catalog, not create or routing', () => {
     renderWithProviders(<Sidebar />, { role: 'Admin' });
     expect(screen.getByRole('link', { name: 'Tất cả yêu cầu' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Danh mục' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Định tuyến' })).toBeInTheDocument();
+    // Routing rules were removed.
+    expect(screen.queryByRole('link', { name: 'Định tuyến' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Tạo yêu cầu' })).not.toBeInTheDocument();
   });
 

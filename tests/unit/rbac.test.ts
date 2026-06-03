@@ -17,7 +17,6 @@ const MATRIX: Record<string, Role[]> = {
   canClose: ['HelpdeskAgent', 'HelpdeskLead'],
   canViewDashboard: ['HelpdeskLead', 'Admin'],
   canManageCategories: ['Admin'],
-  canManageRouting: ['Admin'],
   receivesDailyReminder: ['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'],
 };
 

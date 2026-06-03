@@ -12,11 +12,11 @@ const { toastSuccess, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), 
 vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError }, Toaster: () => null }));
 
 describe('CategoryManager (S8)', () => {
-  it('S8-H1: adding a category posts it and shows it in the tree', async () => {
+  it('S8-H1: adding a category posts it and shows it in the list', async () => {
     const user = userEvent.setup();
     renderWithProviders(<CategoryManager />, { role: 'Admin' });
-    const tree = await screen.findByRole('list', { name: 'Cây danh mục' }); // seed loaded
-    expect(within(tree).getByText('IT / Hệ thống số')).toBeInTheDocument();
+    const list = await screen.findByRole('list', { name: 'Danh sách danh mục' });
+    expect(within(list).getByText('IT / Hệ thống số')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Tên danh mục'), 'Thiết bị mạng');
     await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
@@ -24,7 +24,7 @@ describe('CategoryManager (S8)', () => {
     await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
     await waitFor(() =>
       expect(
-        within(screen.getByRole('list', { name: 'Cây danh mục' })).getByText('Thiết bị mạng'),
+        within(screen.getByRole('list', { name: 'Danh sách danh mục' })).getByText('Thiết bị mạng'),
       ).toBeInTheDocument(),
     );
   });
@@ -32,7 +32,7 @@ describe('CategoryManager (S8)', () => {
   it('S8-X2: a duplicate name is rejected with a field error (422)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<CategoryManager />, { role: 'Admin' });
-    await screen.findByRole('list', { name: 'Cây danh mục' });
+    await screen.findByRole('list', { name: 'Danh sách danh mục' });
 
     await user.type(screen.getByLabelText('Tên danh mục'), 'IT / Hệ thống số');
     await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
@@ -50,33 +50,13 @@ describe('CategoryManager (S8)', () => {
     );
     const user = userEvent.setup();
     renderWithProviders(<CategoryManager />, { role: 'Admin' });
-    await screen.findByRole('list', { name: 'Cây danh mục' });
+    await screen.findByRole('list', { name: 'Danh sách danh mục' });
 
     await user.type(screen.getByLabelText('Tên danh mục'), 'x');
     await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
 
     expect(await screen.findByText('Tên danh mục tối thiểu 2 ký tự')).toBeInTheDocument();
     expect(calls).toHaveLength(0);
-  });
-
-  it('S8-E1: a category with children cannot be deleted (guard)', async () => {
-    server.use(
-      http.get(`${base}/categories`, () =>
-        HttpResponse.json({
-          data: [
-            { id: 'c1', name: 'Cha', parentId: null, isActive: true },
-            { id: 'c2', name: 'Con', parentId: 'c1', isActive: true },
-          ],
-          error: null,
-          requestId: 'r',
-        }),
-      ),
-    );
-    renderWithProviders(<CategoryManager />, { role: 'Admin' });
-    await screen.findByRole('list', { name: 'Cây danh mục' });
-
-    expect(screen.getByRole('button', { name: 'Xóa Cha' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Xóa Con' })).not.toBeDisabled();
   });
 
   it('S8-X1: a non-Admin is denied the categories console', async () => {

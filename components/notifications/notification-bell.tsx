@@ -1,8 +1,12 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
-import { useNotifications } from '@/lib/queries/notifications';
+import { usePathname } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import { Bell, Loader2 } from 'lucide-react';
+import { notificationKeys, useNotifications } from '@/lib/queries/notifications';
+import { useSession } from '@/lib/auth/session';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,10 +16,39 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { NotificationList } from './notification-list';
 
+const BADGE_SPINNER_MS = 1000;
+
 /** Header notification bell — unread badge + a shadcn DropdownMenu panel of the latest few. */
 export function NotificationBell() {
   const { data } = useNotifications();
   const unread = (data ?? []).filter((n) => !n.readAt).length;
+
+  // The bell stays mounted for the whole session, so `refetchOnMount` alone
+  // never fires on a route change OR an identity switch (the switcher calls
+  // queryClient.clear() but that doesn't actively trigger a refetch — it just
+  // empties the cache). Watch both signals: invalidate the cache and show a
+  // spinner where the badge sits for ~1 s so the user never sees a stale
+  // number flicker between the old identity and the new one.
+  const qc = useQueryClient();
+  const pathname = usePathname();
+  const { user } = useSession();
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Skip the very first invocation — initial data is already covered by
+  // `refetchOnMount: 'always'` on useNotifications. The spinner is meant to
+  // mask the in-flight gap *between* states the user just caused, not the
+  // first-paint fetch.
+  const initialMount = useRef(true);
+  useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    qc.invalidateQueries({ queryKey: notificationKeys.all });
+    setRefreshing(true);
+    const t = setTimeout(() => setRefreshing(false), BADGE_SPINNER_MS);
+    return () => clearTimeout(t);
+  }, [pathname, user.id, qc]);
 
   return (
     <DropdownMenu>
@@ -23,11 +56,21 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label={unread > 0 ? `Thông báo (${unread} chưa đọc)` : 'Thông báo'}
+          aria-label={
+            refreshing
+              ? 'Đang tải thông báo'
+              : unread > 0
+                ? `Thông báo (${unread} chưa đọc)`
+                : 'Thông báo'
+          }
           className="relative text-slate-700 hover:bg-slate-200/80 hover:text-slate-900"
         >
           <Bell className="h-5 w-5" aria-hidden />
-          {unread > 0 ? (
+          {refreshing ? (
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-slate-100 bg-red-600 leading-none text-white">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+            </span>
+          ) : unread > 0 ? (
             <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-slate-100 bg-red-600 px-1 text-[11px] font-bold leading-none text-white">
               {unread > 9 ? '9+' : unread}
             </span>

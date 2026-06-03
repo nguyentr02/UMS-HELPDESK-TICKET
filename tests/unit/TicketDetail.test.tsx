@@ -16,7 +16,7 @@ const ticket: Ticket = {
   severity: 'High',
   internalStatus: 'InProgress',
   externalStatus: 'Processing',
-  category: { id: 'cat-csvc', name: 'Cơ sở vật chất (CSVC)', parentId: null, isActive: true },
+  category: { id: 'cat-csvc', name: 'Cơ sở vật chất (CSVC)', isActive: true },
   requester: { id: 'u-sv', displayName: 'SV Nguyễn Văn A' },
   helpdeskAssignee: null,
   routedDepartment: null,

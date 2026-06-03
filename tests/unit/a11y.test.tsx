@@ -130,7 +130,7 @@ describe('Accessibility sweep (Phase 7 — 0 violations)', () => {
 
   it('CategoryManager (Admin) has no a11y violations', async () => {
     const { container } = renderWithProviders(<CategoryManager />, { role: 'Admin' });
-    await screen.findByRole('list', { name: 'Cây danh mục' });
+    await screen.findByRole('list', { name: 'Danh sách danh mục' });
     await expectNoViolations(container);
   });
 });

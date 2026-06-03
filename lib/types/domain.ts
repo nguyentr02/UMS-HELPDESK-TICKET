@@ -37,15 +37,7 @@ export interface Department {
 export interface Category {
   id: string;
   name: string;
-  parentId: string | null;
   isActive: boolean;
-}
-
-export interface RoutingRule {
-  id: string;
-  categoryId: string;
-  departmentId: string;
-  isDefault: boolean;
 }
 
 export interface Attachment {

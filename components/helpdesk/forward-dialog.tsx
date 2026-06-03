@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { Ticket } from '@/lib/types/domain';
-import { useDepartments, useRoutingRules } from '@/lib/queries/catalog';
+import { useDepartments } from '@/lib/queries/catalog';
 import { invalidateTicket, useForwardTicket } from '@/lib/queries/helpdesk';
 import { handleMutationError } from '@/lib/api/errors';
 import { Button } from '@/components/ui/button';
@@ -19,28 +19,15 @@ import {
 } from '@/components/ui/dialog';
 import { Combobox } from '@/components/ui/combobox';
 
-/** S4 — Forward to a phòng ban; the category's default routing rule pre-selects it. */
+/** Forward to a phòng ban. No auto-preselect — Agent/Lead picks per ticket
+ *  (routing rules were removed for being too rigid for cross-domain tickets). */
 export function ForwardDialog({ ticket }: { ticket: Ticket }) {
   const qc = useQueryClient();
   const { data: departments } = useDepartments();
-  const { data: rules } = useRoutingRules();
   const forward = useForwardTicket(ticket.id);
   const [open, setOpen] = useState(false);
-  const [touched, setTouched] = useState(false);
   const [departmentId, setDepartmentId] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  // Default routing: the category's `isDefault` rule, else its first rule (§5/S4-H1).
-  const defaultDeptId = useMemo(() => {
-    const categoryId = ticket.category?.id;
-    if (!categoryId || !rules) return '';
-    const forCat = rules.filter((r) => r.categoryId === categoryId);
-    return (forCat.find((r) => r.isDefault) ?? forCat[0])?.departmentId ?? '';
-  }, [ticket.category, rules]);
-
-  useEffect(() => {
-    if (!touched) setDepartmentId(defaultDeptId);
-  }, [defaultDeptId, touched]);
 
   async function onConfirm() {
     if (!departmentId) {
@@ -86,7 +73,6 @@ export function ForwardDialog({ ticket }: { ticket: Ticket }) {
           options={(departments ?? []).map((d) => ({ value: d.id, label: d.name }))}
           value={departmentId}
           onChange={(v) => {
-            setTouched(true);
             setDepartmentId(v);
             setError(null);
           }}

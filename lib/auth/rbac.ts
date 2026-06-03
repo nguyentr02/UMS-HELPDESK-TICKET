@@ -60,7 +60,6 @@ export const canUpdateProgress = (r: Role): boolean =>
 export const canClose = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canViewDashboard = (r: Role): boolean => ['HelpdeskLead', 'Admin'].includes(r);
 export const canManageCategories = (r: Role): boolean => r === 'Admin';
-export const canManageRouting = (r: Role): boolean => r === 'Admin';
 export const receivesDailyReminder = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(r);
 

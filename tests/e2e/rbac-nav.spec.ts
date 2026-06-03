@@ -23,13 +23,14 @@ test.describe('S2-I1: role-scoped navigation', () => {
     await expect(nav.getByRole('link', { name: 'Danh mục' })).toHaveCount(0);
   });
 
-  test('Admin sees catalog + routing + all tickets, not create', async ({ page }) => {
+  test('Admin sees catalog + all tickets, not create or routing', async ({ page }) => {
     await page.goto('/');
     await setRole(page, 'Admin');
     const nav = page.getByRole('navigation');
     await expect(nav.getByRole('link', { name: 'Tất cả yêu cầu' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Danh mục' })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Định tuyến' })).toBeVisible();
+    // Routing rules were removed.
+    await expect(nav.getByRole('link', { name: 'Định tuyến' })).toHaveCount(0);
     await expect(nav.getByRole('link', { name: 'Tạo yêu cầu' })).toHaveCount(0);
   });
 });

@@ -27,7 +27,6 @@ export const closeSchema = z.object({
 
 export const categorySchema = z.object({
   name: z.string().trim().min(2, 'Tên danh mục tối thiểu 2 ký tự').max(100, 'Tối đa 100 ký tự'),
-  parentId: z.string().optional().nullable(),
 });
 
 // Attachment rules — the FE mirrors these for UX; the server is the authority.

@@ -1,7 +1,6 @@
 import type { Role } from '@/lib/types/domain';
 import {
   canManageCategories,
-  canManageRouting,
   canViewDashboard,
   canViewQueue,
   isRequester,
@@ -15,8 +14,7 @@ export type NavIcon =
   | 'queue'
   | 'dept'
   | 'notifications'
-  | 'categories'
-  | 'routing';
+  | 'categories';
 
 export interface NavItem {
   href: string;
@@ -99,7 +97,6 @@ export function navSectionsFor(role: Role): NavSection[] {
 
   const config: NavItem[] = [];
   if (canManageCategories(role)) config.push({ href: '/admin/categories', label: 'Danh mục', icon: 'categories' });
-  if (canManageRouting(role)) config.push({ href: '/admin/routing', label: 'Định tuyến', icon: 'routing' });
   if (config.length) sections.push({ label: 'Cấu hình', items: config });
 
   return sections;

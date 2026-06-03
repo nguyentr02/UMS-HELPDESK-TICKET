@@ -11,7 +11,19 @@ import {
 export const notificationKeys = { all: ['notifications'] as const };
 
 export function useNotifications() {
-  return useQuery({ queryKey: notificationKeys.all, queryFn: listNotifications });
+  // Notifications need to feel near-real-time. The header bell stays mounted
+  // for the whole session, so `refetchOnMount` alone would only fire once at
+  // app boot and the badge would drift. Pair a short stale window with a
+  // 30 s background poll: every subscriber (bell + dropdown + /notifications
+  // page) sees the same fresh count, even if the user never reloads or
+  // navigates.
+  return useQuery({
+    queryKey: notificationKeys.all,
+    queryFn: listNotifications,
+    staleTime: 15_000,
+    refetchOnMount: 'always',
+    refetchInterval: 30_000,
+  });
 }
 
 export function useMarkNotificationRead() {

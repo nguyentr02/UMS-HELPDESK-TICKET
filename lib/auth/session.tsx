@@ -97,11 +97,20 @@ interface SessionContextValue {
    * with the default `initialRole` before the real identity lands.
    */
   isReady: boolean;
+  /**
+   * `true` for a short window right after `setIdentity` / `setRole`. The
+   * AppBootGate reads this to keep the LoadingSplash on screen while the
+   * cleared React Query cache refetches with the new identity's headers, so
+   * users don't see the previous user's data leak through the transition.
+   */
+  isTransitioning: boolean;
   /** Switch to the default identity for `role` (the first one in MOCK_IDENTITIES). */
   setRole: (role: Role) => void;
   /** Switch to a specific identity by its `id`. */
   setIdentity: (id: string) => void;
 }
+
+const IDENTITY_TRANSITION_MS = 300;
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
@@ -116,11 +125,16 @@ export function SessionProvider({
   const initialUser = DEFAULT_BY_ROLE[initialRole];
   const [user, setUserState] = useState<SessionUser>(initialUser);
   const [isReady, setIsReady] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deptMapRef = useRef<Record<string, string>>(loadDeptMap());
 
   // Switching the mock identity persists it *synchronously* (so the api client's
   // X-Mock-* headers are correct on the very next fetch) and drops the Query
-  // cache, so another identity's data never leaks across the switch.
+  // cache, so another identity's data never leaks across the switch. We also
+  // raise an `isTransitioning` flag for IDENTITY_TRANSITION_MS so the boot gate
+  // covers the brief window with the LoadingSplash while every subscriber
+  // (bell, lists, dashboards) refetches against the new identity.
   const setIdentity = useCallback(
     (id: string) => {
       const target = IDENTITY_BY_ID.get(id);
@@ -129,9 +143,21 @@ export function SessionProvider({
       persist(resolved);
       setUserState(resolved);
       queryClient.clear();
+      setIsTransitioning(true);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+      transitionTimer.current = setTimeout(() => {
+        setIsTransitioning(false);
+        transitionTimer.current = null;
+      }, IDENTITY_TRANSITION_MS);
     },
     [queryClient],
   );
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    };
+  }, []);
 
   const setRole = useCallback(
     (next: Role) => setIdentity(DEFAULT_BY_ROLE[next].id),
@@ -191,8 +217,8 @@ export function SessionProvider({
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ user, role: user.role, isReady, setRole, setIdentity }),
-    [user, isReady, setRole, setIdentity],
+    () => ({ user, role: user.role, isReady, isTransitioning, setRole, setIdentity }),
+    [user, isReady, isTransitioning, setRole, setIdentity],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -3,7 +3,6 @@ import type {
   Department,
   EventType,
   NotificationItem,
-  RoutingRule,
   Severity,
   Ticket,
   TicketComment,
@@ -27,21 +26,12 @@ export const departments: Department[] = [
 ];
 
 export const categories: Category[] = [
-  { id: 'cat-it', name: 'IT / Hệ thống số', parentId: null, isActive: true },
-  { id: 'cat-csvc', name: 'Cơ sở vật chất (CSVC)', parentId: null, isActive: true },
-  { id: 'cat-hocvu', name: 'Học vụ / Đào tạo', parentId: null, isActive: true },
-  { id: 'cat-taichinh', name: 'Tài chính', parentId: null, isActive: true },
-  { id: 'cat-hcns', name: 'Nhân sự (HCNS)', parentId: null, isActive: true },
-  { id: 'cat-khac', name: 'Khác', parentId: null, isActive: true },
-];
-
-// Default routing rules (category → phòng ban). "Khác" has none (S4-E1).
-export const routingRules: RoutingRule[] = [
-  { id: 'rr-it', categoryId: 'cat-it', departmentId: 'dep-it', isDefault: true },
-  { id: 'rr-csvc', categoryId: 'cat-csvc', departmentId: 'dep-csvc', isDefault: true },
-  { id: 'rr-hocvu', categoryId: 'cat-hocvu', departmentId: 'dep-dt', isDefault: true },
-  { id: 'rr-taichinh', categoryId: 'cat-taichinh', departmentId: 'dep-kt', isDefault: true },
-  { id: 'rr-hcns', categoryId: 'cat-hcns', departmentId: 'dep-hcns', isDefault: true },
+  { id: 'cat-it', name: 'IT / Hệ thống số', isActive: true },
+  { id: 'cat-csvc', name: 'Cơ sở vật chất (CSVC)', isActive: true },
+  { id: 'cat-hocvu', name: 'Học vụ / Đào tạo', isActive: true },
+  { id: 'cat-taichinh', name: 'Tài chính', isActive: true },
+  { id: 'cat-hcns', name: 'Nhân sự (HCNS)', isActive: true },
+  { id: 'cat-khac', name: 'Khác', isActive: true },
 ];
 
 // Known identities (match lib/auth/session mock users). Agents are the assignable set.
