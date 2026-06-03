@@ -53,6 +53,8 @@ export function canComment(
 }
 export const canAssign = (r: Role): boolean => r === 'HelpdeskLead';
 export const canForward = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
+export const canCategorize = (r: Role): boolean =>
+  ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canOverrideSeverity = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canUpdateProgress = (r: Role): boolean =>

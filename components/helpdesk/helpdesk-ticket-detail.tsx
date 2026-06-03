@@ -5,6 +5,7 @@ import { ApiError } from '@/lib/api/client';
 import { useSession } from '@/lib/auth/session';
 import {
   canAssign,
+  canCategorize,
   canCloseTicket,
   canComment,
   canForward,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/auth/rbac';
 import {
   canAssignFrom,
+  canCategorizeFrom,
   canCloseFrom,
   canForwardFrom,
   canOverrideSeverityFrom,
@@ -27,6 +29,7 @@ import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
 import { AssignDialog } from './assign-dialog';
 import { ForwardDialog } from './forward-dialog';
+import { CategoryAssignDialog } from './category-assign-dialog';
 import { SeverityOverrideDialog } from './severity-override-dialog';
 import { CloseDialog } from './close-dialog';
 
@@ -75,13 +78,37 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
           <InternalStatusBadge status={s} />
         </div>
         <h1 className="text-xl font-semibold sm:text-2xl">{ticket.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {ticket.category?.name ?? 'Chưa phân loại'}
-          {ticket.routedDepartment ? ` · ${ticket.routedDepartment.name}` : ' · Chưa giao'}
-          {' · '}
-          {ticket.helpdeskAssignee
-            ? `Phụ trách: ${ticket.helpdeskAssignee.displayName}`
-            : 'Chưa gán nhân viên'}
+        {/* Each triage slot is coloured amber when empty (Lead/Agent still
+            needs to act on it), neutral muted when filled. The dot separators
+            stay muted so the warning colour only sits on the field itself. */}
+        <p className="text-sm">
+          <span
+            className={
+              ticket.category ? 'text-muted-foreground' : 'font-medium text-amber-600'
+            }
+          >
+            {ticket.category?.name ?? 'Chưa phân loại'}
+          </span>
+          <span className="text-muted-foreground"> · </span>
+          <span
+            className={
+              ticket.routedDepartment ? 'text-muted-foreground' : 'font-medium text-amber-600'
+            }
+          >
+            {ticket.routedDepartment ? ticket.routedDepartment.name : 'Chưa giao'}
+          </span>
+          <span className="text-muted-foreground"> · </span>
+          <span
+            className={
+              ticket.helpdeskAssignee
+                ? 'text-muted-foreground'
+                : 'font-medium text-amber-600'
+            }
+          >
+            {ticket.helpdeskAssignee
+              ? `Phụ trách: ${ticket.helpdeskAssignee.displayName}`
+              : 'Chưa gán nhân viên'}
+          </span>
         </p>
       </header>
 
@@ -89,6 +116,9 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
       <div className="flex flex-wrap gap-2">
         {canAssign(role) && canAssignFrom(s) ? <AssignDialog ticket={ticket} /> : null}
         {canForward(role) && canForwardFrom(s) ? <ForwardDialog ticket={ticket} /> : null}
+        {canCategorize(role) && canCategorizeFrom(s) ? (
+          <CategoryAssignDialog ticket={ticket} />
+        ) : null}
         {canOverrideSeverity(role) && canOverrideSeverityFrom(s) ? (
           <SeverityOverrideDialog ticket={ticket} />
         ) : null}

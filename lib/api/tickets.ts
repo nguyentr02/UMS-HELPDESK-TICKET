@@ -87,5 +87,11 @@ export const overrideSeverity = (id: string, severity: Severity) =>
     body: JSON.stringify({ severity }),
   });
 
+export const assignCategory = (id: string, categoryId: string | null) =>
+  apiFetch<Ticket>(`/tickets/${id}/category`, {
+    method: 'PATCH',
+    body: JSON.stringify({ categoryId }),
+  });
+
 export const closeTicket = (id: string, note?: string) =>
   apiFetch<Ticket>(`/tickets/${id}/close`, { method: 'POST', body: JSON.stringify({ note }) });

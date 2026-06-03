@@ -10,7 +10,9 @@ export const canForwardFrom = (s: TicketStatus): boolean => s === 'Pending';
 // Start progress: ASSIGNED→IN_PROGRESS.
 export const canProgressFrom = (s: TicketStatus): boolean => s === 'Assigned';
 
-// Assign owner / override severity / close: any non-terminal (CLOSED is terminal).
+// Assign owner / override severity / re-categorise / close: any non-terminal
+// (CLOSED is terminal).
 export const canAssignFrom = (s: TicketStatus): boolean => s !== 'Closed';
+export const canCategorizeFrom = (s: TicketStatus): boolean => s !== 'Closed';
 export const canOverrideSeverityFrom = (s: TicketStatus): boolean => s !== 'Closed';
 export const canCloseFrom = (s: TicketStatus): boolean => s !== 'Closed';

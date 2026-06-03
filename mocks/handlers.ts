@@ -251,6 +251,33 @@ export const handlers = [
     return ok(t);
   }),
 
+  // Helpdesk (Lead/Agent) re-categorises a ticket. Quiet update — no event,
+  // no notifications. `categoryId: null` clears the category.
+  http.patch(`${base}/tickets/:id/category`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus === 'Closed') return fail(409, 'conflict', 'Yêu cầu đã đóng.');
+    const { categoryId } = (await request.json()) as { categoryId?: string | null };
+    if (categoryId === undefined) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', {
+        categoryId: 'Thiếu danh mục',
+      });
+    }
+    if (categoryId !== null) {
+      const cat = categories.find((c) => c.id === categoryId);
+      if (!cat) {
+        return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', {
+          categoryId: 'Danh mục không tồn tại',
+        });
+      }
+      t.category = cat;
+    } else {
+      t.category = null;
+    }
+    t.updatedAt = new Date().toISOString();
+    return ok(t);
+  }),
+
   http.post(`${base}/tickets/:id/assign`, async ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');

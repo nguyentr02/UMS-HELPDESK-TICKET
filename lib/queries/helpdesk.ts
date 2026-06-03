@@ -36,6 +36,14 @@ export function useOverrideSeverity(id: string) {
   });
 }
 
+export function useAssignCategory(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (categoryId: string | null) => ticketsApi.assignCategory(id, categoryId),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
 export function useStartProgress(id: string) {
   const qc = useQueryClient();
   return useMutation({
