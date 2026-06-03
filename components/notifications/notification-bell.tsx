@@ -24,32 +24,32 @@ export function NotificationBell() {
           variant="ghost"
           size="icon"
           aria-label={unread > 0 ? `Thông báo (${unread} chưa đọc)` : 'Thông báo'}
-          className="relative"
+          className="relative text-slate-700 hover:bg-slate-200/80 hover:text-slate-900"
         >
           <Bell className="h-5 w-5" aria-hidden />
           {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-slate-100 bg-red-600 px-1 text-[11px] font-bold leading-none text-white">
               {unread > 9 ? '9+' : unread}
             </span>
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-medium">Thông báo</span>
-          {/* Wrap in DropdownMenuItem so Radix routes the click correctly — a
-              bare <Link> inside DropdownMenuContent has its click intercepted
-              by the menu's focus-trap and never reaches Next's router. */}
-          <DropdownMenuItem asChild className="m-0 p-0 focus:bg-transparent">
-            <Link
-              href="/notifications"
-              className="rounded text-xs font-medium text-red-700 hover:underline"
-            >
-              Xem tất cả
-            </Link>
-          </DropdownMenuItem>
-        </div>
-        <div className="max-h-[70vh] overflow-auto p-3">
+      <DropdownMenuContent align="end" className="w-80 p-0 pb-3">
+        <div className="max-h-[70vh] overflow-auto px-3 pt-3">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xl font-semibold">Thông báo</span>
+            {/* Wrap in DropdownMenuItem so Radix routes the click correctly — a
+                bare <Link> inside DropdownMenuContent has its click intercepted
+                by the menu's focus-trap and never reaches Next's router. */}
+            <DropdownMenuItem asChild className="m-0 p-0">
+              <Link
+                href="/notifications"
+                className="rounded-md px-2.5 py-1 text-xs font-medium text-red-700 outline-none transition-colors hover:bg-red-50 hover:text-red-800 focus:bg-red-50 focus:text-red-800"
+              >
+                Xem tất cả
+              </Link>
+            </DropdownMenuItem>
+          </div>
           <NotificationList limit={6} />
         </div>
       </DropdownMenuContent>

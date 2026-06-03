@@ -7,7 +7,6 @@ import { useRole } from '@/lib/auth/session';
 import { ticketDetailHref } from '@/lib/auth/nav';
 import { useMarkNotificationRead } from '@/lib/queries/notifications';
 import { SEVERITY_META } from '@/lib/status/severity';
-import { Button } from '@/components/ui/button';
 
 const TYPE_LABEL: Record<NotificationType, string> = {
   TicketClosed: 'Yêu cầu đã đóng',
@@ -69,7 +68,7 @@ export function NotificationItem({ item, onNavigate }: { item: Notification; onN
   }
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-md border border-border bg-card p-3">
+    <div className="flex flex-col gap-1.5 rounded-md border border-border bg-slate-50 p-3">
       <div className="flex items-start justify-between gap-2">
         <span className="flex items-center gap-2">
           {unread ? (
@@ -121,20 +120,6 @@ export function NotificationItem({ item, onNavigate }: { item: Notification; onN
       ) : (
         <p className="text-sm">{messageFor(item.type, code)}</p>
       )}
-
-      {unread ? (
-        <div className="pt-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onMarkRead}
-            disabled={markRead.isPending}
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-          >
-            Đánh dấu đã đọc
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }
