@@ -9,7 +9,6 @@ import {
   canComment,
   canForward,
   canOverrideSeverity,
-  canRedirect,
   canViewQueue,
 } from '@/lib/auth/rbac';
 import {
@@ -17,7 +16,6 @@ import {
   canCloseFrom,
   canForwardFrom,
   canOverrideSeverityFrom,
-  canRedirectFrom,
 } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
@@ -29,7 +27,6 @@ import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
 import { AssignDialog } from './assign-dialog';
 import { ForwardDialog } from './forward-dialog';
-import { RedirectDialog } from './redirect-dialog';
 import { SeverityOverrideDialog } from './severity-override-dialog';
 import { CloseDialog } from './close-dialog';
 
@@ -92,7 +89,6 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
       <div className="flex flex-wrap gap-2">
         {canAssign(role) && canAssignFrom(s) ? <AssignDialog ticket={ticket} /> : null}
         {canForward(role) && canForwardFrom(s) ? <ForwardDialog ticket={ticket} /> : null}
-        {canRedirect(role) && canRedirectFrom(s) ? <RedirectDialog ticket={ticket} /> : null}
         {canOverrideSeverity(role) && canOverrideSeverityFrom(s) ? (
           <SeverityOverrideDialog ticket={ticket} />
         ) : null}

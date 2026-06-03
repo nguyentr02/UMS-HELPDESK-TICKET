@@ -7,11 +7,10 @@ const COLOR: Record<TicketStatus, string> = {
   Pending: 'bg-gray-100 text-gray-800',
   Assigned: 'bg-amber-100 text-amber-800',
   InProgress: 'bg-blue-100 text-blue-800',
-  Redirected: 'bg-purple-100 text-purple-800',
   Closed: 'bg-green-100 text-green-800',
 };
 
-/** Internal (5-state) status pill — Helpdesk/Staff/Admin views only. */
+/** Internal (4-state) status pill — Helpdesk/Staff/Admin views only. */
 export function InternalStatusBadge({ status }: { status: TicketStatus }) {
   return (
     <Badge variant="outline" className={cn('border-transparent', COLOR[status])}>

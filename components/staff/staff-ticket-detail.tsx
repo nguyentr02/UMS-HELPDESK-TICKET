@@ -17,7 +17,7 @@ import { ProgressButton } from './progress-button';
 
 /**
  * Dept Staff ticket detail (S6) — internal status + the single "Bắt đầu xử lý"
- * action (no assign/forward/redirect/close — those are Helpdesk-only per the matrix)
+ * action (no assign/forward/close — those are Helpdesk-only per the matrix)
  * plus commenting.
  */
 export function StaffTicketDetail({ id }: { id: string }) {

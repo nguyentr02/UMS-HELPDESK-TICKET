@@ -7,7 +7,6 @@ import type {
   Ticket,
   TicketComment,
   TicketEvent,
-  TicketStatus,
 } from '@/lib/types/domain';
 
 /**
@@ -57,9 +56,6 @@ export const getTicketHistory = (id: string) =>
 export const listTicketComments = (id: string) =>
   apiFetch<TicketComment[]>(`/tickets/${id}/comments`);
 
-export const getTicketStatusCounts = () =>
-  apiFetch<Record<TicketStatus, number>>('/tickets/status-counts');
-
 export async function createTicket(form: FormData): Promise<Ticket> {
   const body = await formDataToJsonBody(form);
   return apiFetch<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(body) });
@@ -80,12 +76,6 @@ export const forwardTicket = (id: string, departmentId: string) =>
   apiFetch<Ticket>(`/tickets/${id}/forward`, {
     method: 'POST',
     body: JSON.stringify({ departmentId }),
-  });
-
-export const redirectTicket = (id: string, departmentId: string, reason: string) =>
-  apiFetch<Ticket>(`/tickets/${id}/redirect`, {
-    method: 'POST',
-    body: JSON.stringify({ departmentId, reason }),
   });
 
 export const startProgress = (id: string) =>

@@ -12,7 +12,6 @@ const MATRIX: Record<string, Role[]> = {
   canViewDeptQueue: ['DeptStaff', 'Admin'],
   canAssign: ['HelpdeskLead'],
   canForward: ['HelpdeskAgent', 'HelpdeskLead'],
-  canRedirect: ['HelpdeskAgent', 'HelpdeskLead'],
   canOverrideSeverity: ['HelpdeskAgent', 'HelpdeskLead'],
   canUpdateProgress: ['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'],
   canClose: ['HelpdeskAgent', 'HelpdeskLead'],

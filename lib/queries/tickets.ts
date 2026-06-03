@@ -10,7 +10,6 @@ export const ticketKeys = {
   detail: (id: string) => ['ticket', id] as const,
   history: (id: string) => ['ticket', id, 'history'] as const,
   comments: (id: string) => ['ticket', id, 'comments'] as const,
-  statusCounts: () => ['tickets', 'status-counts'] as const,
 };
 
 export function useTickets(query?: ListTicketsQuery) {
@@ -35,13 +34,6 @@ export function useTicketComments(id: string) {
   return useQuery({
     queryKey: ticketKeys.comments(id),
     queryFn: () => ticketsApi.listTicketComments(id),
-  });
-}
-
-export function useTicketStatusCounts() {
-  return useQuery({
-    queryKey: ticketKeys.statusCounts(),
-    queryFn: () => ticketsApi.getTicketStatusCounts(),
   });
 }
 

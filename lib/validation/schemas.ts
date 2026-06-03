@@ -14,11 +14,6 @@ export const forwardSchema = z.object({
   departmentId: z.string().min(1, 'Chọn phòng ban'),
 });
 
-export const redirectSchema = z.object({
-  departmentId: z.string().min(1, 'Chọn phòng ban'),
-  reason: z.string().trim().min(3, 'Lý do tối thiểu 3 ký tự').max(500, 'Tối đa 500 ký tự'),
-});
-
 export const assignSchema = z.object({
   agentId: z.string().min(1, 'Chọn nhân viên Helpdesk'),
 });

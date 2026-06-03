@@ -28,15 +28,6 @@ export function useForwardTicket(id: string) {
   });
 }
 
-export function useRedirectTicket(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { departmentId: string; reason: string }) =>
-      ticketsApi.redirectTicket(id, input.departmentId, input.reason),
-    onSuccess: () => invalidateTicket(qc, id),
-  });
-}
-
 export function useOverrideSeverity(id: string) {
   const qc = useQueryClient();
   return useMutation({

@@ -90,9 +90,9 @@ describe('TicketList', () => {
       await user.click(screen.getByRole('button', { name: 'Đang xử lý' }));
       await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress'));
 
-      // "Đã tiếp nhận" spans three internal states.
+      // "Đã tiếp nhận" spans the Pending + Assigned internal states.
       await user.click(screen.getByRole('button', { name: 'Đã tiếp nhận' }));
-      await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress,Pending,Assigned,Redirected'));
+      await waitFor(() => expect(lastParams(urls).get('status')).toBe('InProgress,Pending,Assigned'));
     });
 
     it('sends the selected severity', async () => {

@@ -19,8 +19,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FilterDrawer } from '@/components/ui/filter-drawer';
-import { useSession } from '@/lib/auth/session';
-import { StatusSummaryStrip } from './status-summary-strip';
 import {
   TicketFilters,
   EMPTY_FILTERS,
@@ -30,16 +28,15 @@ import {
 
 const PAGE_SIZE = 20;
 
-// Requesters filter by the 3 external statuses; the API speaks the 5 internal ones.
+// Requesters filter by the 3 external statuses; the API speaks the 4 internal ones.
 const EXTERNAL_TO_INTERNAL: Record<ExternalStatus, TicketStatus[]> = {
-  Requested: ['Pending', 'Assigned', 'Redirected'],
+  Requested: ['Pending', 'Assigned'],
   Processing: ['InProgress'],
   Finished: ['Closed'],
 };
 
 /** Requester "My tickets" — external statuses + a filter engine (search/status/severity/category/sort). */
 export function TicketList() {
-  const { role } = useSession();
   const [filters, setFilters] = useState<RequesterFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const { data: categories } = useCategories();
@@ -65,8 +62,6 @@ export function TicketList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <StatusSummaryStrip role={role} />
-
       <div className="flex justify-end">
         <FilterDrawer activeCount={countActiveFilters(filters)}>
           <TicketFilters

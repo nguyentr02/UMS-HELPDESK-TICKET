@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   canForwardFrom,
-  canRedirectFrom,
   canProgressFrom,
   canCloseFrom,
   canAssignFrom,
@@ -9,17 +8,11 @@ import {
 } from '@/lib/status/transitions';
 
 describe('status transition guards (state machine)', () => {
-  it('forward only from Pending or Redirected', () => {
+  it('forward only from Pending', () => {
     expect(canForwardFrom('Pending')).toBe(true);
-    expect(canForwardFrom('Redirected')).toBe(true);
     expect(canForwardFrom('Assigned')).toBe(false);
+    expect(canForwardFrom('InProgress')).toBe(false);
     expect(canForwardFrom('Closed')).toBe(false);
-  });
-
-  it('redirect only from Assigned or InProgress', () => {
-    expect(canRedirectFrom('Assigned')).toBe(true);
-    expect(canRedirectFrom('InProgress')).toBe(true);
-    expect(canRedirectFrom('Pending')).toBe(false);
   });
 
   it('progress only from Assigned', () => {

@@ -9,10 +9,9 @@ import {
 } from '@/lib/status/status';
 
 describe('status mappers', () => {
-  it('maps the 5 internal statuses to 3 external', () => {
+  it('maps the 4 internal statuses to 3 external', () => {
     expect(toExternalStatus('Pending')).toBe('Requested');
     expect(toExternalStatus('Assigned')).toBe('Requested');
-    expect(toExternalStatus('Redirected')).toBe('Requested');
     expect(toExternalStatus('InProgress')).toBe('Processing');
     expect(toExternalStatus('Closed')).toBe('Finished');
   });

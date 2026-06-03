@@ -80,7 +80,7 @@ describe('HelpdeskQueue (S2/S3)', () => {
       const urls = captureTickets([]);
       renderWithProviders(<HelpdeskQueue />, { role: 'HelpdeskLead' });
       await waitFor(() => expect(urls.length).toBeGreaterThan(0));
-      expect(lastParams(urls).get('status')).toBe('Pending,Assigned,InProgress,Redirected');
+      expect(lastParams(urls).get('status')).toBe('Pending,Assigned,InProgress');
     });
 
     // The assignee/category Selects are Radix (don't open in jsdom) → their
@@ -100,7 +100,7 @@ describe('HelpdeskQueue (S2/S3)', () => {
       await waitFor(() => {
         const p = lastParams(urls);
         expect(p.get('severity')).toBeNull();
-        expect(p.get('status')).toBe('Pending,Assigned,InProgress,Redirected');
+        expect(p.get('status')).toBe('Pending,Assigned,InProgress');
       });
     });
   });

@@ -217,20 +217,6 @@ export const handlers = [
     return ok({ items: items.slice(start, start + pageSize), page: { page, pageSize, total } });
   }),
 
-  // Must be declared BEFORE `/tickets/:id` so MSW doesn't capture "status-counts".
-  http.get(`${base}/tickets/status-counts`, ({ request }) => {
-    const c = caller(request);
-    let scoped = [...tickets];
-    if (isRequesterRole(c.role)) scoped = scoped.filter((t) => t.requester.id === c.id);
-    else if (c.role === 'DeptStaff')
-      scoped = scoped.filter((t) => t.routedDepartment?.id === c.deptId);
-    else if (c.role === 'HelpdeskAgent')
-      scoped = scoped.filter((t) => t.helpdeskAssignee?.id === c.id);
-    const counts = { Pending: 0, Assigned: 0, InProgress: 0, Redirected: 0, Closed: 0 };
-    for (const t of scoped) counts[t.internalStatus] += 1;
-    return ok(counts);
-  }),
-
   http.get(`${base}/tickets/:id`, ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
@@ -347,7 +333,7 @@ export const handlers = [
   http.post(`${base}/tickets/:id/forward`, async ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
-    if (t.internalStatus !== 'Pending' && t.internalStatus !== 'Redirected') {
+    if (t.internalStatus !== 'Pending') {
       return fail(409, 'conflict', 'Không thể chuyển ở trạng thái hiện tại.');
     }
     const { departmentId } = (await request.json()) as { departmentId?: string };
@@ -367,39 +353,6 @@ export const handlers = [
       fromDepartmentId: fromDeptId,
       toDepartmentId: dept.id,
     });
-    return ok(t);
-  }),
-
-  http.post(`${base}/tickets/:id/redirect`, async ({ params, request }) => {
-    const t = tickets.find((x) => x.id === params.id);
-    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
-    if (t.internalStatus !== 'Assigned' && t.internalStatus !== 'InProgress') {
-      return fail(409, 'conflict', 'Không thể chuyển hướng ở trạng thái hiện tại.');
-    }
-    const { departmentId, reason } = (await request.json()) as {
-      departmentId?: string;
-      reason?: string;
-    };
-    const dept = departments.find((d) => d.id === departmentId);
-    if (!dept) {
-      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
-    }
-    if (!reason || reason.trim().length < 3) {
-      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { reason: 'Lý do tối thiểu 3 ký tự' });
-    }
-    const fromStatus = t.internalStatus;
-    const fromDeptId = t.routedDepartment?.id ?? null;
-    appendEvent(t.id, {
-      type: 'Redirected',
-      actor: HELPDESK_ACTOR,
-      fromStatus,
-      toStatus: 'Assigned',
-      fromDepartmentId: fromDeptId,
-      toDepartmentId: dept.id,
-      note: reason,
-    });
-    t.routedDepartment = dept;
-    setStatus(t, 'Assigned');
     return ok(t);
   }),
 
@@ -462,7 +415,7 @@ export const handlers = [
 
   http.get(`${base}/analytics/summary`, () => {
     const bySeverity = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<Severity, number>;
-    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, Redirected: 0, Closed: 0 };
+    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, Closed: 0 };
     const deptCounts = new Map<string, number>();
     const catCounts = new Map<string, number>();
     let closed = 0;
