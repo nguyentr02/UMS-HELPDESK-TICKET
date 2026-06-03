@@ -5,7 +5,6 @@ export const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
 export const createTicketSchema = z.object({
   title: z.string().trim().min(3, 'Tiêu đề tối thiểu 3 ký tự').max(200, 'Tối đa 200 ký tự'),
   description: z.string().trim().min(1, 'Vui lòng mô tả vấn đề').max(5000, 'Tối đa 5000 ký tự'),
-  severity: z.enum(SEVERITIES, { errorMap: () => ({ message: 'Vui lòng chọn mức độ' }) }),
   categoryId: z.string().optional(),
 });
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;

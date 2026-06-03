@@ -23,7 +23,6 @@ vi.mock('sonner', () => ({
 async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Tiêu đề'), 'Mất điện phòng A1');
   await user.type(screen.getByLabelText('Mô tả'), 'Phòng A1 mất điện từ sáng');
-  await user.click(screen.getByRole('radio', { name: /High/ }));
 }
 
 describe('TicketForm (S1)', () => {
@@ -50,20 +49,16 @@ describe('TicketForm (S1)', () => {
     renderWithProviders(<TicketForm />, { role: 'SV' });
     await user.type(screen.getByLabelText('Tiêu đề'), 'ab');
     await user.type(screen.getByLabelText('Mô tả'), 'mô tả hợp lệ');
-    await user.click(screen.getByRole('radio', { name: /High/ }));
     await user.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
     expect(await screen.findByText('Tiêu đề tối thiểu 3 ký tự')).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('requires a severity before submitting', async () => {
-    const user = userEvent.setup();
+  it('does not surface a severity field — triage happens later', async () => {
     renderWithProviders(<TicketForm />, { role: 'SV' });
-    await user.type(screen.getByLabelText('Tiêu đề'), 'Mất điện phòng A1');
-    await user.type(screen.getByLabelText('Mô tả'), 'Phòng A1 mất điện từ sáng');
-    await user.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
-    expect(await screen.findByText('Vui lòng chọn mức độ')).toBeInTheDocument();
-    expect(push).not.toHaveBeenCalled();
+    // No severity radio group; no "Mức độ ưu tiên" label.
+    expect(screen.queryByText(/Mức độ ưu tiên/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /High/ })).not.toBeInTheDocument();
   });
 
   it('S1-X2: maps a 422 to the title field and preserves the form', async () => {

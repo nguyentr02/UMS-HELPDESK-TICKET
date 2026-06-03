@@ -240,7 +240,7 @@ export const handlers = [
     const form = await request.formData();
     const title = String(form.get('title') ?? '');
     const description = String(form.get('description') ?? '');
-    const severity = String(form.get('severity') ?? '');
+    const rawSeverity = String(form.get('severity') ?? '');
     const categoryId = form.get('categoryId') ? String(form.get('categoryId')) : null;
 
     if (title.trim().length < 3) {
@@ -248,16 +248,19 @@ export const handlers = [
         title: 'Tiêu đề tối thiểu 3 ký tự',
       });
     }
-    if (!SEVERITIES.includes(severity as Severity)) {
+    // Severity is optional (Lead/Agent triages); if a client sends one but
+    // it's not a valid value, reject — otherwise default to Medium.
+    if (rawSeverity && !SEVERITIES.includes(rawSeverity as Severity)) {
       return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', {
         severity: 'Mức độ không hợp lệ',
       });
     }
+    const severity: Severity = (rawSeverity as Severity) || 'Medium';
 
     const ticket = makeTicket({
       title,
       description,
-      severity: severity as Severity,
+      severity,
       categoryId,
       requesterId: c.id || 'u-sv',
     });
