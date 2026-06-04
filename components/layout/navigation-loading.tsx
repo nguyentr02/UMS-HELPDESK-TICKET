@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { useIsRestoring } from '@tanstack/react-query';
+import { useSessionOptional } from '@/lib/auth/session';
 
 interface NavigationLoadingValue {
   isNavigating: boolean;
@@ -70,10 +72,24 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
     }, OVERLAY_MAX_MS);
   }
 
+  // Suppress our overlay whenever the AppBootGate is already (or about to be)
+  // showing its full-screen LoadingSplash — otherwise the user sees both at
+  // once. The gate fires on session boot, persister rehydration, and the
+  // 300ms isTransitioning window after a role switch (which is the most
+  // common collision: the role switcher calls both startNavigation AND
+  // setIdentity in the same click). `useSessionOptional` returns null when
+  // we're rendered in isolation (unit tests), in which case we just behave
+  // as if the boot gate isn't covering.
+  const session = useSessionOptional();
+  const isRestoring = useIsRestoring();
+  const bootGateCovering =
+    session !== null && (!session.isReady || isRestoring || session.isTransitioning);
+  const showOverlay = isNavigating && !bootGateCovering;
+
   return (
     <NavigationLoadingContext.Provider value={{ isNavigating, startNavigation }}>
       {children}
-      {isNavigating ? <NavigationOverlay /> : null}
+      {showOverlay ? <NavigationOverlay /> : null}
     </NavigationLoadingContext.Provider>
   );
 }

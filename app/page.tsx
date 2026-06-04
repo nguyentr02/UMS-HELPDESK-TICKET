@@ -9,6 +9,9 @@ import { useSession } from '@/lib/auth/session';
 import { homeRouteFor } from '@/lib/auth/nav';
 
 const ENTER_DELAY_MS = 2000;
+// Last 500 ms of the splash plays the scale-up + fade-out exit animation
+// (matches the transition `duration-500` in LoadingSplash).
+const EXIT_ANIMATION_MS = 500;
 
 const FEATURES = [
   { icon: KeyRound, label: 'Account hỗ trợ' },
@@ -24,20 +27,25 @@ const FEATURES = [
  * LoadingSplash for ENTER_DELAY_MS, then routes into the role-appropriate
  * home (e.g. /analytics for a Lead, /tickets/new for an SV).
  */
+type Phase = 'idle' | 'loading' | 'exiting';
+
 export default function HomePage() {
   const router = useRouter();
   const { role } = useSession();
-  const [entering, setEntering] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
 
   function onBegin() {
-    if (entering) return;
-    setEntering(true);
+    if (phase !== 'idle') return;
+    setPhase('loading');
     const target = homeRouteFor(role);
     router.prefetch(target);
+    // Flip to `exiting` so the splash's scale-up + fade-out plays for the
+    // final EXIT_ANIMATION_MS before we actually navigate.
+    setTimeout(() => setPhase('exiting'), ENTER_DELAY_MS - EXIT_ANIMATION_MS);
     setTimeout(() => router.push(target), ENTER_DELAY_MS);
   }
 
-  if (entering) return <LoadingSplash />;
+  if (phase !== 'idle') return <LoadingSplash exiting={phase === 'exiting'} />;
 
   return (
     <div className="fixed inset-0 z-40 isolate flex flex-col overflow-hidden bg-background">

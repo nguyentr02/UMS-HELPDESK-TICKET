@@ -230,6 +230,16 @@ export function useSession(): SessionContextValue {
   return ctx;
 }
 
+/**
+ * Non-throwing variant for surfaces that may legitimately render without a
+ * SessionProvider (e.g. NavigationLoadingProvider in isolated unit tests).
+ * Returns `null` when there's no provider so callers can supply their own
+ * sensible defaults.
+ */
+export function useSessionOptional(): SessionContextValue | null {
+  return useContext(SessionContext);
+}
+
 export function useRole(): Role {
   return useSession().role;
 }
