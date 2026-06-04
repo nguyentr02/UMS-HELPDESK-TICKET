@@ -26,7 +26,7 @@ import {
   type RequesterFilters,
 } from './ticket-filters';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 
 // Requesters filter by the 3 external statuses; the API speaks the 4 internal ones.
 const EXTERNAL_TO_INTERNAL: Record<ExternalStatus, TicketStatus[]> = {

@@ -16,6 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 function CategoryRow({
   cat,
@@ -57,6 +65,9 @@ export function CategoryManager() {
 
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
+  // Holds the row the admin clicked Trash on — the actual DELETE only fires
+  // when they confirm in the dialog. `null` keeps the dialog closed.
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
 
   if (!canManageCategories(role)) return <AccessDenied />;
 
@@ -89,10 +100,12 @@ export function CategoryManager() {
     }
   }
 
-  async function onDelete(cat: Category) {
+  async function onConfirmDelete() {
+    if (!pendingDelete) return;
     try {
-      await deleteCat.mutateAsync(cat.id);
+      await deleteCat.mutateAsync(pendingDelete.id);
       toast.success('Đã xóa danh mục.');
+      setPendingDelete(null);
     } catch (err) {
       handleMutationError(err, { fallbackMessage: 'Không xóa được danh mục.' });
     }
@@ -138,11 +151,55 @@ export function CategoryManager() {
         <ul aria-label="Danh sách danh mục" className="flex flex-col gap-2">
           {cats.map((cat) => (
             <li key={cat.id}>
-              <CategoryRow cat={cat} pending={deleteCat.isPending} onDelete={onDelete} />
+              <CategoryRow
+                cat={cat}
+                pending={deleteCat.isPending}
+                onDelete={setPendingDelete}
+              />
             </li>
           ))}
         </ul>
       </DataState>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => {
+          if (!o) setPendingDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xoá danh mục?</DialogTitle>
+            <DialogDescription>
+              {pendingDelete ? (
+                <>
+                  Việc xoá <span className="font-semibold">“{pendingDelete.name}”</span> sẽ
+                  gỡ danh mục khỏi <span className="font-semibold">mọi yêu cầu</span> đang
+                  gắn danh mục này — các ticket đó sẽ trở về trạng thái{' '}
+                  <span className="font-semibold">chưa phân loại</span>. Hành động không
+                  thể hoàn tác.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setPendingDelete(null)}
+              disabled={deleteCat.isPending}
+            >
+              Không
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirmDelete}
+              disabled={deleteCat.isPending}
+            >
+              {deleteCat.isPending ? 'Đang xoá…' : 'Có, xoá'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

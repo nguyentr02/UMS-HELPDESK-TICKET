@@ -28,7 +28,7 @@ import {
   type QueueFiltersState,
 } from '@/components/tickets/queue-filters';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 
 /** Helpdesk intake queue (S3/S4 entry point): search / status / severity / category / assignee filters. */
 export function HelpdeskQueue() {

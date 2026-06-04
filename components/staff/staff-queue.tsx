@@ -28,7 +28,7 @@ import {
   type QueueFiltersState,
 } from '@/components/tickets/queue-filters';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 
 /**
  * Dept Staff queue (S6) — the tickets routed to the staff's own department.
