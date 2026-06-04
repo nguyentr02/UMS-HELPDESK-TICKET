@@ -50,8 +50,15 @@ export function NotificationBell() {
     return () => clearTimeout(t);
   }, [pathname, user.id, qc]);
 
+  // Controlled `open` so the dropdown can close itself when the user clicks
+  // a notification — the inner `<Link>`s aren't wrapped in DropdownMenuItem
+  // (Radix's own focus-trap was eating their clicks), so they bypass Radix's
+  // built-in "close on item click" behaviour. We compensate by passing an
+  // explicit close callback through NotificationList → NotificationItem.
+  const [open, setOpen] = useState(false);
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -67,9 +74,10 @@ export function NotificationBell() {
         >
           <Bell className="h-5 w-5" aria-hidden />
           {refreshing ? (
-            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-slate-100 bg-red-600 leading-none text-white">
-              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-            </span>
+            <Loader2
+              className="absolute -right-1 -top-1 h-3.5 w-3.5 animate-spin text-slate-900"
+              aria-hidden
+            />
           ) : unread > 0 ? (
             <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-slate-100 bg-red-600 px-1 text-[11px] font-bold leading-none text-white">
               {unread > 9 ? '9+' : unread}
@@ -93,7 +101,7 @@ export function NotificationBell() {
               </Link>
             </DropdownMenuItem>
           </div>
-          <NotificationList limit={6} />
+          <NotificationList limit={6} onNavigate={() => setOpen(false)} />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
