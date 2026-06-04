@@ -2,7 +2,7 @@
 
 import { Search, X } from 'lucide-react';
 import type { Category, Severity, TicketStatus, UserRef } from '@/lib/types/domain';
-import { ALL_STATUSES, INTERNAL_STATUS_VI, OPEN_STATUSES } from '@/lib/status/status';
+import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
 import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,12 @@ export interface QueueFiltersState {
   sort: string;
 }
 
-// Queues default to the open (non-Closed) statuses — the active work view.
+// Queues default to "show all" — no status pre-selected, no implicit
+// filter. Empty `statuses` array is sent to the API as `undefined`, which
+// returns every ticket regardless of state.
 export const DEFAULT_QUEUE_FILTERS: QueueFiltersState = {
   q: '',
-  statuses: [...OPEN_STATUSES],
+  statuses: [],
   severities: [],
   categoryId: '',
   assigneeId: '',

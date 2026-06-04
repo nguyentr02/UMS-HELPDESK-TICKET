@@ -76,17 +76,17 @@ describe('HelpdeskQueue (S2/S3)', () => {
   });
 
   describe('filter engine', () => {
-    it('defaults to the open (non-Closed) statuses', async () => {
+    it('defaults to "show all" (no status filter sent)', async () => {
       const urls = captureTickets([]);
       renderWithProviders(<HelpdeskQueue />, { role: 'HelpdeskLead' });
       await waitFor(() => expect(urls.length).toBeGreaterThan(0));
-      expect(lastParams(urls).get('status')).toBe('Pending,Assigned,InProgress');
+      expect(lastParams(urls).get('status')).toBeNull();
     });
 
     // The assignee/category Selects are Radix (don't open in jsdom) → their
     // open→pick interactions are covered by Playwright (tests/e2e/queue-filter.spec.ts).
     // Here we cover a status/severity chip (ToggleGroup, jsdom-safe) + the reset.
-    it('toggling a severity chip filters, and Xóa lọc resets to the open default', async () => {
+    it('toggling a severity chip filters, and Xóa lọc resets back to "show all"', async () => {
       const urls = captureTickets([]);
       const user = userEvent.setup();
       renderWithProviders(<HelpdeskQueue />, { role: 'HelpdeskLead' });
@@ -100,7 +100,7 @@ describe('HelpdeskQueue (S2/S3)', () => {
       await waitFor(() => {
         const p = lastParams(urls);
         expect(p.get('severity')).toBeNull();
-        expect(p.get('status')).toBe('Pending,Assigned,InProgress');
+        expect(p.get('status')).toBeNull();
       });
     });
   });
