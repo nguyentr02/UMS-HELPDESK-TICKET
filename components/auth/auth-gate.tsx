@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSessionOptional } from '@/lib/auth/session';
 import { homeRouteFor } from '@/lib/auth/nav';
 import { LoadingSplash } from '@/components/layout/loading-splash';
@@ -29,23 +29,28 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const ctx = useSessionOptional();
   const pathname = usePathname() ?? '/';
   const router = useRouter();
-  const searchParams = useSearchParams();
   const user = ctx?.user ?? null;
   const isReady = ctx?.isReady ?? false;
 
   useEffect(() => {
     if (!isReady) return;
+    // Read the URL via `window.location` rather than `useSearchParams` so we
+    // don't force the whole route into a Suspense boundary — `useSearchParams`
+    // opts a page out of static optimization in Next 14 unless explicitly
+    // wrapped. The effect only runs in the browser, so `window` is safe here.
+    const search = typeof window !== 'undefined' ? window.location.search : '';
     if (!user && !isPublic(pathname)) {
-      const next = encodeURIComponent(`${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ''}`);
+      const next = encodeURIComponent(`${pathname}${search}`);
       router.replace(`/login?next=${next}`);
       return;
     }
     if (user && pathname === '/login') {
-      const rawNext = searchParams?.get('next');
+      const params = new URLSearchParams(search);
+      const rawNext = params.get('next');
       const target = rawNext ? decodeURIComponent(rawNext) : homeRouteFor(user.role);
       router.replace(target);
     }
-  }, [isReady, user, pathname, router, searchParams]);
+  }, [isReady, user, pathname, router]);
 
   // Public paths render unconditionally — landing/login handle their own auth-aware logic.
   if (isPublic(pathname)) return <>{children}</>;

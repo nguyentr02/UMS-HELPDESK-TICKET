@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,7 +40,6 @@ export interface LoginFormHandle {
  */
 export const LoginForm = forwardRef<LoginFormHandle, unknown>(function LoginForm(_props, ref) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const login = useLoginMutation();
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +62,11 @@ export const LoginForm = forwardRef<LoginFormHandle, unknown>(function LoginForm
     setTopLevelError(null);
     try {
       const result = await login.mutateAsync(values);
-      const rawNext = searchParams?.get('next');
+      // Read `?next=` via window.location so we don't pull useSearchParams
+      // into the build — see the note in auth-gate.tsx.
+      const params =
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const rawNext = params?.get('next');
       const target = rawNext ? decodeURIComponent(rawNext) : homeRouteFor(result.user.role);
       router.replace(target);
     } catch (err) {
