@@ -20,9 +20,11 @@ export class ApiError extends Error {
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
 
 /**
- * Mock-SSO shim: forwards the current mock identity as headers so the MSW
- * handlers can scope responses (requester→own, dept→dept, helpdesk/admin→all).
- * A real SSO integration replaces this with a bearer token.
+ * Mock-SSO header bridge — used ONLY by the Vitest MSW suite (which still
+ * reads `X-Mock-*` to scope mock responses). In the browser these headers
+ * piggy-back on every request but the deployed BE ignores them when
+ * `AUTH_MODE=jwt` (the prod default), so they're harmless in production.
+ * The real auth is the `ums_session` cookie carried by `credentials: 'include'`.
  */
 function mockAuthHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {};
@@ -38,7 +40,6 @@ function mockAuthHeaders(): Record<string, string> {
     return {
       'X-Mock-User-Id': u.id,
       'X-Mock-Role': u.role,
-      // Encoded so non-ASCII Vietnamese names survive HTTP header transport.
       ...(u.displayName ? { 'X-Mock-Display-Name': encodeURIComponent(u.displayName) } : {}),
       ...(u.departmentId ? { 'X-Mock-Dept-Id': u.departmentId } : {}),
     };
@@ -49,9 +50,9 @@ function mockAuthHeaders(): Record<string, string> {
 
 /**
  * Fetch wrapper for the M31 API: sets JSON content-type (except FormData),
- * attaches the mock-SSO headers, unwraps the `{ data, error, requestId }`
- * envelope, and throws `ApiError` with the HTTP status so callers can map
- * 401/403/404/409/422/5xx (feature-plan §8).
+ * attaches the JWT cookie via `credentials: 'include'` (cross-origin), unwraps
+ * the `{ data, error, requestId }` envelope, and throws `ApiError` with the
+ * HTTP status so callers can map 401/403/404/409/422/5xx (feature-plan §8).
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const isForm = typeof FormData !== 'undefined' && init.body instanceof FormData;
@@ -61,7 +62,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
   for (const [k, v] of Object.entries(mockAuthHeaders())) headers.set(k, v);
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+  const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
+    ...init,
+    headers,
+  });
 
   let envelope: ApiEnvelope<T> | undefined;
   try {

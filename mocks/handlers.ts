@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type { AnalyticsSummary, Severity, TicketComment } from '@/lib/types/domain';
 import { SEVERITY_META } from '@/lib/status/severity';
+import { PERSONAS } from './personas';
 import {
   HELPDESK_ACTOR,
   USERS,
@@ -413,5 +414,91 @@ export const handlers = [
       })),
     };
     return ok(summary);
+  }),
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Auth (vitest-only — the deployed app talks to the real BE).
+  // ──────────────────────────────────────────────────────────────────────────
+  http.post(`${base}/auth/login`, async ({ request, cookies }) => {
+    void cookies;
+    const body = (await request.json().catch(() => null)) as
+      | { email?: string; password?: string }
+      | null;
+    if (!body || !body.email || !body.password) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', {
+        ...(body?.email ? {} : { email: 'Vui lòng nhập email' }),
+        ...(body?.password ? {} : { password: 'Vui lòng nhập mật khẩu' }),
+      });
+    }
+    const email = body.email.trim().toLowerCase();
+    const match = PERSONAS.find((p) => p.email.toLowerCase() === email && p.password === body.password);
+    if (!match) {
+      return fail(401, 'unauthenticated', 'Sai email hoặc mật khẩu');
+    }
+    const sessionUser = {
+      id: match.id,
+      role: match.role,
+      departmentId: match.departmentCode,
+      displayName: match.displayName,
+    };
+    return new HttpResponse(
+      JSON.stringify({ data: { user: sessionUser }, error: null, requestId: nextId('req') }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `ums_session=mock.${match.id}; Path=/; Max-Age=28800; SameSite=Lax`,
+        },
+      },
+    );
+  }),
+
+  http.post(`${base}/auth/logout`, () => {
+    return new HttpResponse(
+      JSON.stringify({ data: {}, error: null, requestId: nextId('req') }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': 'ums_session=; Path=/; Max-Age=0; SameSite=Lax',
+        },
+      },
+    );
+  }),
+
+  http.get(`${base}/auth/me`, ({ request, cookies }) => {
+    // MSW gives parsed `cookies` for same-origin; in cross-origin tests we fall
+    // back to the legacy X-Mock-* headers so renderWithProviders({ role }) keeps
+    // working without ceremony.
+    const sessionCookie = cookies['ums_session'];
+    if (sessionCookie?.startsWith('mock.')) {
+      const id = sessionCookie.slice('mock.'.length);
+      const persona = PERSONAS.find((p) => p.id === id);
+      if (persona) {
+        return ok({
+          user: {
+            id: persona.id,
+            role: persona.role,
+            departmentId: persona.departmentCode,
+            displayName: persona.displayName,
+          },
+        });
+      }
+    }
+    const mockUserId = request.headers.get('X-Mock-User-Id');
+    const mockRole = request.headers.get('X-Mock-Role');
+    if (mockUserId && mockRole) {
+      const persona = PERSONAS.find((p) => p.id === mockUserId);
+      const displayNameHeader = request.headers.get('X-Mock-Display-Name');
+      return ok({
+        user: {
+          id: mockUserId,
+          role: mockRole,
+          departmentId: request.headers.get('X-Mock-Dept-Id'),
+          displayName: persona?.displayName ?? (displayNameHeader ? decodeURIComponent(displayNameHeader) : mockUserId),
+        },
+      });
+    }
+    return fail(401, 'unauthenticated', 'Yêu cầu xác thực');
   }),
 ];

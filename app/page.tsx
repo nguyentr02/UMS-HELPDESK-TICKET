@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, BookOpen, KeyRound, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingSplash } from '@/components/layout/loading-splash';
-import { useSession } from '@/lib/auth/session';
+import { useSessionOptional } from '@/lib/auth/session';
 import { homeRouteFor } from '@/lib/auth/nav';
 
 const ENTER_DELAY_MS = 2000;
@@ -31,16 +31,16 @@ type Phase = 'idle' | 'loading' | 'exiting';
 
 export default function HomePage() {
   const router = useRouter();
-  const { role } = useSession();
+  const ctx = useSessionOptional();
   const [phase, setPhase] = useState<Phase>('idle');
 
   function onBegin() {
     if (phase !== 'idle') return;
     setPhase('loading');
-    const target = homeRouteFor(role);
+    // Logged-in → role's home; logged-out → /login. The AuthGate handles the
+    // edge case where `useMeQuery` is still pending (it shows the splash).
+    const target = ctx?.user ? homeRouteFor(ctx.user.role) : '/login';
     router.prefetch(target);
-    // Flip to `exiting` so the splash's scale-up + fade-out plays for the
-    // final EXIT_ANIMATION_MS before we actually navigate.
     setTimeout(() => setPhase('exiting'), ENTER_DELAY_MS - EXIT_ANIMATION_MS);
     setTimeout(() => router.push(target), ENTER_DELAY_MS);
   }
@@ -100,10 +100,6 @@ export default function HomePage() {
           ))}
         </div>
       </main>
-
-      <footer className="border-t border-border/60 bg-background/60 py-3 text-center text-xs text-muted-foreground backdrop-blur-sm">
-        © 2026 CAIRA-DAU
-      </footer>
     </div>
   );
 }

@@ -3,31 +3,26 @@
 import { type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIsRestoring } from '@tanstack/react-query';
-import { useSession } from '@/lib/auth/session';
+import { useSessionOptional } from '@/lib/auth/session';
 import { LoadingSplash } from './loading-splash';
 
 /**
  * Shows the branded loading screen until:
- *  (a) the SessionProvider has restored the pinned identity from localStorage,
+ *  (a) `GET /auth/me` has resolved (success or 401),
  *  (b) the React Query persister has finished rehydrating its cache, and
- *  (c) any in-flight identity switch (~200 ms) has settled. The bell's own
- *      in-badge spinner (~1 s, see notification-bell.tsx) covers any per-query
- *      lag after the splash hides, so this window can stay short.
+ *  (c) no auth-affecting mutation is still flying (`isTransitioning`).
  *
- * Once all three are settled the real app renders in one clean frame without
- * flashing default-role chrome, empty-state placeholders, or the previous
- * identity's data leaking through during a switch.
- *
- * The landing page (`/`) doesn't depend on session or cache, so the gate
- * passes through there — otherwise users would see a ~0.5 s loading flash
- * before the landing renders on first visit. The 2 s brand moment between
- * landing → app is owned by the landing page itself (see app/page.tsx).
+ * The landing page (`/`) and `/login` render unconditionally — they own their
+ * own auth-aware UX (the landing CTA branches on `useMeQuery`; `/login` IS the
+ * unauthenticated entry).
  */
 export function AppBootGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { isReady, isTransitioning } = useSession();
+  const ctx = useSessionOptional();
   const isRestoring = useIsRestoring();
-  if (pathname === '/') return <>{children}</>;
+  if (pathname === '/' || pathname === '/login') return <>{children}</>;
+  const isReady = ctx?.isReady ?? false;
+  const isTransitioning = ctx?.isTransitioning ?? false;
   if (isReady && !isRestoring && !isTransitioning) return <>{children}</>;
   return <LoadingSplash />;
 }

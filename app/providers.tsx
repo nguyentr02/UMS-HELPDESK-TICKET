@@ -9,6 +9,7 @@ import { NavigationLoadingProvider } from '@/components/layout/navigation-loadin
 import { Toaster } from '@/components/ui/sonner';
 import { MswReady } from '@/components/providers/msw-ready';
 import { AppBootGate } from '@/components/layout/app-boot-gate';
+import { AuthGate } from '@/components/auth/auth-gate';
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const FIVE_MIN = 5 * 60 * 1000;
@@ -46,13 +47,15 @@ export function Providers({ children }: { children: ReactNode }) {
       client={client}
       persistOptions={{ persister, maxAge: ONE_DAY }}
     >
-      <SessionProvider>
-        <MswReady>
+      <MswReady>
+        <SessionProvider>
           <NavigationLoadingProvider>
-            <AppBootGate>{children}</AppBootGate>
+            <AppBootGate>
+              <AuthGate>{children}</AuthGate>
+            </AppBootGate>
           </NavigationLoadingProvider>
-        </MswReady>
-      </SessionProvider>
+        </SessionProvider>
+      </MswReady>
       <Toaster richColors position="top-right" />
     </PersistQueryClientProvider>
   );

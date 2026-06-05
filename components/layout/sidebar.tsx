@@ -13,11 +13,11 @@ import {
   Tags,
   type LucideIcon,
 } from 'lucide-react';
-import { useSession } from '@/lib/auth/session';
+import { useSessionOptional } from '@/lib/auth/session';
 import { navSectionsFor, ROLE_VI, type NavIcon } from '@/lib/auth/nav';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RoleSwitcher } from './role-switcher';
+import { LogoutButton } from '@/components/auth/logout-button';
 
 const ICONS: Record<NavIcon, LucideIcon> = {
   create: Plus,
@@ -38,12 +38,14 @@ function initials(name: string): string {
 
 /** Sidebar interior — reused by the desktop `<aside>` and the mobile drawer. */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { user, role, isReady } = useSession();
+  const ctx = useSessionOptional();
+  const user = ctx?.user ?? null;
+  const role = ctx?.role ?? null;
+  const isReady = !!user;
   const pathname = usePathname();
-  // While the session is still restoring from localStorage the role is the
-  // SSR default (SV), so showing nav items here would flash the wrong sidebar
-  // before the real role lands.
-  const sections = isReady ? navSectionsFor(role) : [];
+  // No user / boot still pending → render skeleton placeholders (this only
+  // happens transiently before AuthGate has redirected to /login).
+  const sections = isReady && role ? navSectionsFor(role) : [];
 
   return (
     <div className="flex h-full flex-col border-r border-slate-200 bg-white">
@@ -55,7 +57,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="font-semibold">Helpdesk</span>
             <span className="truncate text-xs text-muted-foreground">
-              {isReady ? ROLE_VI[role] : ' '}
+              {isReady && role ? ROLE_VI[role] : ' '}
             </span>
           </span>
         </Link>
@@ -104,7 +106,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t border-slate-200 p-3">
         <div className="mb-2 flex items-center gap-2">
-          {isReady ? (
+          {isReady && user && role ? (
             <div
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white"
               aria-hidden
@@ -115,7 +117,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
           )}
           <div className="min-w-0 flex-1">
-            {isReady ? (
+            {isReady && user && role ? (
               <>
                 <div className="truncate text-sm font-medium">{user.displayName}</div>
                 <div className="truncate text-xs text-muted-foreground">{ROLE_VI[role]}</div>
@@ -128,7 +130,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             )}
           </div>
         </div>
-        {isReady ? <RoleSwitcher /> : <Skeleton className="h-9 w-full" />}
+        {isReady ? <LogoutButton variant="sidebar" onAfter={onNavigate} /> : <Skeleton className="h-9 w-full" />}
       </div>
     </div>
   );
@@ -137,7 +139,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 /** Desktop sidebar — fixed rail at `md:` and up; hidden on mobile (drawer instead). */
 export function Sidebar() {
   return (
-    <aside className="hidden w-56 shrink-0 md:sticky md:top-0 md:block md:h-screen">
+    <aside className="hidden w-56 shrink-0 md:sticky md:top-0 md:block md:h-[calc(100vh-1.5rem)]">
       <SidebarContent />
     </aside>
   );
