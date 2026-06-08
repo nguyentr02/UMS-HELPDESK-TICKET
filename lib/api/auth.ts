@@ -1,5 +1,5 @@
 import type { Role } from '@/lib/types/domain';
-import { apiFetch } from './client';
+import { apiFetch, BASE_URL } from './client';
 
 export interface SessionUser {
   id: string;
@@ -33,4 +33,17 @@ export function logoutRequest(): Promise<Record<string, never>> {
 /** GET /auth/me — returns the current session user, or throws ApiError(401) if no valid cookie. */
 export function fetchMe(): Promise<AuthEnvelope> {
   return apiFetch<AuthEnvelope>('/auth/me');
+}
+
+/**
+ * Build the absolute URL to start a Google OAuth flow — used by
+ * `window.location.href = …` (not `fetch`). The BE handles the round-trip
+ * and the final redirect back to this FE.
+ *
+ * `next` is the FE path to land on after the callback succeeds; the BE
+ * sanitizes it server-side so we don't trust user-controlled paths.
+ */
+export function googleLoginUrl(next: string = '/'): string {
+  const qs = `?next=${encodeURIComponent(next)}`;
+  return `${BASE_URL}/auth/google${qs}`;
 }

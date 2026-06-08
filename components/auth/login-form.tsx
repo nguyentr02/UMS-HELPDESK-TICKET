@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/api/client';
 import { useLoginMutation } from '@/lib/queries/auth';
 import { homeRouteFor } from '@/lib/auth/nav';
+import { GoogleLoginButton } from './google-login-button';
 
 const LoginSchema = z.object({
   email: z.string().min(1, 'Vui lòng nhập email').email('Email không hợp lệ'),
@@ -27,6 +28,15 @@ export interface LoginFormHandle {
   setPassword: (password: string) => void;
 }
 
+export interface LoginFormProps {
+  /**
+   * Persistent error banner shown at the top of the form. Used by the parent
+   * page to surface BE-callback failures (e.g. `?error=domain_not_allowed`)
+   * that the user might miss as a transient toast.
+   */
+  externalError?: string | null;
+}
+
 /**
  * Email + password form. On 401 surfaces a single field-agnostic error
  * ("Sai email hoặc mật khẩu") so reviewers can't enumerate users. After a
@@ -38,7 +48,10 @@ export interface LoginFormHandle {
  * helper note still respects this — the visible characters are the persona's
  * password whenever the user toggles reveal on.
  */
-export const LoginForm = forwardRef<LoginFormHandle, unknown>(function LoginForm(_props, ref) {
+export const LoginForm = forwardRef<LoginFormHandle, LoginFormProps>(function LoginForm(
+  { externalError },
+  ref,
+) {
   const router = useRouter();
   const login = useLoginMutation();
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
@@ -92,6 +105,15 @@ export const LoginForm = forwardRef<LoginFormHandle, unknown>(function LoginForm
       className="space-y-4"
       aria-label="Đăng nhập"
     >
+      {externalError ? (
+        <p
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          role="alert"
+        >
+          {externalError}
+        </p>
+      ) : null}
+
       <div className="space-y-1.5">
         <Label htmlFor="login-email">Email</Label>
         <Input
@@ -171,6 +193,19 @@ export const LoginForm = forwardRef<LoginFormHandle, unknown>(function LoginForm
       <Button type="submit" className="w-full" disabled={login.isPending} aria-label="Đăng nhập">
         {login.isPending ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </Button>
+
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
+          <span className="w-full border-t border-slate-200" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-card px-2 text-xs uppercase tracking-wider text-muted-foreground">
+            hoặc
+          </span>
+        </div>
+      </div>
+
+      <GoogleLoginButton />
     </form>
   );
 });

@@ -1,11 +1,26 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Info } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CredentialHelperNote } from '@/components/auth/credential-helper-note';
 import { LoginForm, type LoginFormHandle } from '@/components/auth/login-form';
+
+/**
+ * Map BE callback error codes (`/login?error=<code>`) to user-facing messages.
+ * Source of codes: `feat-helpdesk-api/src/routes/auth.ts` GET /auth/google/callback.
+ */
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  invalid_state: 'Phiên đăng nhập Google đã hết hạn hoặc không hợp lệ. Vui lòng thử lại.',
+  google_verification_failed: 'Xác minh tài khoản Google thất bại. Vui lòng thử lại.',
+  domain_not_allowed:
+    'Tài khoản Google không thuộc miền cho phép (@ums.edu.vn hoặc @dau.edu.vn).',
+  access_denied: 'Bạn đã từ chối cấp quyền cho ứng dụng. Vui lòng thử lại nếu cần.',
+  unknown_error: 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.',
+};
 
 /**
  * Demo login page. Full-screen overlay above the AppShell chrome.
@@ -19,7 +34,29 @@ import { LoginForm, type LoginFormHandle } from '@/components/auth/login-form';
  */
 export default function LoginPage() {
   const formRef = useRef<LoginFormHandle | null>(null);
+  const router = useRouter();
+  const [externalError, setExternalError] = useState<string | null>(null);
+  // Note opens by default UNLESS we landed here with a `?error=` — surfacing
+  // the failure should be the first thing the user sees, not the demo creds.
   const [noteOpen, setNoteOpen] = useState(true);
+
+  // Surface BE callback errors (e.g. `/login?error=domain_not_allowed`) two
+  // ways: a transient toast (caught immediately) AND a persistent inline
+  // banner on the form (caught by users who blinked past the toast). Reads
+  // from `window.location.search` directly to avoid pulling
+  // `useSearchParams` into the page — that opts the route out of static
+  // optimization unless wrapped in <Suspense>.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('error');
+    if (!code) return;
+    const message = GOOGLE_ERROR_MESSAGES[code] ?? GOOGLE_ERROR_MESSAGES.unknown_error;
+    setExternalError(message);
+    setNoteOpen(false);
+    toast.error(message);
+    router.replace('/login');
+  }, [router]);
 
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto bg-background">
@@ -70,7 +107,7 @@ export default function LoginPage() {
                 </Button>
               ) : null}
             </div>
-            <LoginForm ref={formRef} />
+            <LoginForm ref={formRef} externalError={externalError} />
           </Card>
         </section>
       </div>
