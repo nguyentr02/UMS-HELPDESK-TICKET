@@ -52,6 +52,23 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [isReady, user, pathname, router]);
 
+  // Bfcache (browser back/forward cache) defense: when the user hits Back
+  // *after* logging out, the browser may restore the previously-viewed
+  // protected page directly from its in-memory snapshot — React components
+  // aren't re-mounted, so the effect above never runs and the stale logged-in
+  // UI is shown for a user whose cookie is already gone.
+  //
+  // The `pageshow` event fires both on initial load AND on bfcache restoration,
+  // with `event.persisted === true` distinguishing the latter. Force a full
+  // reload in that case so the session is re-evaluated from scratch.
+  useEffect(() => {
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted) window.location.reload();
+    }
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
+
   // Public paths render unconditionally — landing/login handle their own auth-aware logic.
   if (isPublic(pathname)) return <>{children}</>;
   // While the boot query is pending (or we've decided to redirect), don't leak protected content.
