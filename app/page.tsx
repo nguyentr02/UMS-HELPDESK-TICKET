@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, BookOpen, KeyRound, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,20 +32,36 @@ type Phase = 'idle' | 'loading' | 'exiting';
 export default function HomePage() {
   const router = useRouter();
   const ctx = useSessionOptional();
+  const isReady = ctx?.isReady ?? false;
+  const user = ctx?.user ?? null;
   const [phase, setPhase] = useState<Phase>('idle');
+
+  // Authenticated visitors don't need the brand splash + "Bắt đầu" CTA —
+  // those exist to onboard anonymous visitors into the login flow. If the
+  // session is already established (e.g. Google login redirected back here
+  // with `next=/`), skip the landing entirely and route to the role's home.
+  useEffect(() => {
+    if (!isReady || !user || phase !== 'idle') return;
+    router.replace(homeRouteFor(user.role));
+  }, [isReady, user, phase, router]);
 
   function onBegin() {
     if (phase !== 'idle') return;
     setPhase('loading');
     // Logged-in → role's home; logged-out → /login. The AuthGate handles the
     // edge case where `useMeQuery` is still pending (it shows the splash).
-    const target = ctx?.user ? homeRouteFor(ctx.user.role) : '/login';
+    const target = user ? homeRouteFor(user.role) : '/login';
     router.prefetch(target);
     setTimeout(() => setPhase('exiting'), ENTER_DELAY_MS - EXIT_ANIMATION_MS);
     setTimeout(() => router.push(target), ENTER_DELAY_MS);
   }
 
   if (phase !== 'idle') return <LoadingSplash exiting={phase === 'exiting'} />;
+
+  // While we're about to redirect an authenticated user away (or while the
+  // session query is still loading), don't flash the brand splash + CTA —
+  // it would briefly read as "click to enter" to a user who's already in.
+  if (!isReady || user) return <LoadingSplash />;
 
   return (
     <div className="fixed inset-0 z-40 isolate flex flex-col overflow-hidden bg-background">
