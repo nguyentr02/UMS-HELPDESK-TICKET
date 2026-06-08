@@ -92,7 +92,7 @@ export default function LoginPage() {
 
         {/* Right — login card column. */}
         <section className="flex flex-1 items-center justify-center px-4 py-10">
-          <Card className="w-full max-w-md p-6 shadow-md">
+          <Card className="w-full max-w-md p-6 shadow-2xl ring-1 ring-slate-900/5">
             <div className="mb-5 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <h1 className="text-xl font-semibold text-foreground">Đăng nhập</h1>
