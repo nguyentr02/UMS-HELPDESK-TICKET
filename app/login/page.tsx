@@ -36,26 +36,33 @@ export default function LoginPage() {
   const formRef = useRef<LoginFormHandle | null>(null);
   const router = useRouter();
   const [externalError, setExternalError] = useState<string | null>(null);
-  // Note opens by default UNLESS we landed here with a `?error=` — surfacing
-  // the failure should be the first thing the user sees, not the demo creds.
-  const [noteOpen, setNoteOpen] = useState(true);
+  // `null` until the boot-effect decides whether to open the note. We can't
+  // peek at `window.location` in the initial render without risking a
+  // hydration mismatch — so the note simply doesn't render for a frame, and
+  // then opens (no error) or stays closed (with error). Avoids the flash
+  // where the modal opens briefly before the error handler closes it.
+  const [noteOpen, setNoteOpen] = useState<boolean | null>(null);
 
   // Surface BE callback errors (e.g. `/login?error=domain_not_allowed`) two
-  // ways: a transient toast (caught immediately) AND a persistent inline
-  // banner on the form (caught by users who blinked past the toast). Reads
-  // from `window.location.search` directly to avoid pulling
+  // ways: a sticky toast (10 s — long enough to read) AND a persistent
+  // inline amber banner on the form (caught by users who blinked past the
+  // toast). Reads from `window.location.search` directly to avoid pulling
   // `useSearchParams` into the page — that opts the route out of static
   // optimization unless wrapped in <Suspense>.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const code = params.get('error');
-    if (!code) return;
-    const message = GOOGLE_ERROR_MESSAGES[code] ?? GOOGLE_ERROR_MESSAGES.unknown_error;
-    setExternalError(message);
-    setNoteOpen(false);
-    toast.error(message);
-    router.replace('/login');
+    if (code) {
+      const message = GOOGLE_ERROR_MESSAGES[code] ?? GOOGLE_ERROR_MESSAGES.unknown_error;
+      setExternalError(message);
+      setNoteOpen(false);
+      toast.error(message, { duration: 10_000 });
+      router.replace('/login');
+      return;
+    }
+    // Plain `/login` visit (no Google round-trip residue) — open the note.
+    setNoteOpen(true);
   }, [router]);
 
   return (
@@ -93,7 +100,7 @@ export default function LoginPage() {
                   Nhập email và mật khẩu để truy cập DAU Helpdesk.
                 </p>
               </div>
-              {!noteOpen ? (
+              {noteOpen === false ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -114,7 +121,7 @@ export default function LoginPage() {
 
       {/* Credential helper modal — controlled from this page; covers the full viewport. */}
       <CredentialHelperNote
-        open={noteOpen}
+        open={noteOpen === true}
         onClose={() => setNoteOpen(false)}
         onPick={(persona) => {
           formRef.current?.setEmail(persona.email);
