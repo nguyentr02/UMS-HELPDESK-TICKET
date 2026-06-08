@@ -111,3 +111,51 @@ export function homeRouteFor(role: Role): string {
   const sections = navSectionsFor(role);
   return sections[0]?.items[0]?.href ?? '/';
 }
+
+/**
+ * Per-prefix route guard table. Each entry says: "for any path that exactly
+ * matches `prefix` OR starts with `prefix/`, the role must pass `allowed`."
+ * Used by `safeNextForRole` to validate a `?next=` value before redirecting
+ * a freshly-authenticated user — without this, a Lead-only path like
+ * `/analytics` would be honored for an SV bouncing through `/login?next=…`.
+ */
+const ROUTE_GUARDS: ReadonlyArray<{ prefix: string; allowed: (role: Role) => boolean }> = [
+  // Requester surfaces (also reachable by DeptStaff via CTA, per the matrix).
+  { prefix: '/tickets', allowed: (r) => isRequester(r) || r === 'DeptStaff' },
+  // Helpdesk console — Agent, Lead, and Admin all see the queue.
+  { prefix: '/helpdesk', allowed: canViewQueue },
+  // Dept Staff queue + ticket detail.
+  { prefix: '/staff', allowed: (r) => r === 'DeptStaff' },
+  // Admin-only category management.
+  { prefix: '/admin', allowed: canManageCategories },
+  // Dashboard — Lead + Admin only.
+  { prefix: '/analytics', allowed: canViewDashboard },
+  // Notifications inbox — any authenticated user.
+  { prefix: '/notifications', allowed: () => true },
+];
+
+/** Whether `role` can access the given app path. Public paths (`/`, `/login`) return `true`. */
+export function canAccessPath(role: Role, path: string): boolean {
+  const cleanPath = path.split('?')[0].split('#')[0];
+  for (const guard of ROUTE_GUARDS) {
+    if (cleanPath === guard.prefix || cleanPath.startsWith(`${guard.prefix}/`)) {
+      return guard.allowed(role);
+    }
+  }
+  return true;
+}
+
+/**
+ * Sanitize a `?next=` value for a freshly-authenticated user. Returns `next`
+ * when it's safe AND the role can access it; otherwise falls back to the
+ * role's home. Bouncing rules:
+ *  - `null` / `undefined` / non-`/` paths / protocol-relative `//…` → home
+ *  - `/` or `/login` (login bounce) → home
+ *  - role can't access the path under `ROUTE_GUARDS` → home
+ */
+export function safeNextForRole(next: string | null | undefined, role: Role): string {
+  if (!next) return homeRouteFor(role);
+  if (!next.startsWith('/') || next.startsWith('//')) return homeRouteFor(role);
+  if (next === '/' || next.startsWith('/login')) return homeRouteFor(role);
+  return canAccessPath(role, next) ? next : homeRouteFor(role);
+}

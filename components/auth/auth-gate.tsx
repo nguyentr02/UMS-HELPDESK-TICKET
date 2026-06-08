@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSessionOptional } from '@/lib/auth/session';
-import { homeRouteFor } from '@/lib/auth/nav';
+import { safeNextForRole } from '@/lib/auth/nav';
 import { LoadingSplash } from '@/components/layout/loading-splash';
 
 /** Routes that anyone can reach without a session. */
@@ -47,8 +47,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (user && pathname === '/login') {
       const params = new URLSearchParams(search);
       const rawNext = params.get('next');
-      const target = rawNext ? decodeURIComponent(rawNext) : homeRouteFor(user.role);
-      router.replace(target);
+      const decoded = rawNext ? decodeURIComponent(rawNext) : null;
+      // Validate `next` against the role — without this, an SV bouncing
+      // through `/login?next=%2Fanalytics` would be sent to a Lead-only
+      // route and 403 on the first data call.
+      router.replace(safeNextForRole(decoded, user.role));
     }
   }, [isReady, user, pathname, router]);
 

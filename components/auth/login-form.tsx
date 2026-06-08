@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/api/client';
 import { useLoginMutation } from '@/lib/queries/auth';
-import { homeRouteFor } from '@/lib/auth/nav';
+import { safeNextForRole } from '@/lib/auth/nav';
 import { GoogleLoginButton } from './google-login-button';
 
 const LoginSchema = z.object({
@@ -76,12 +76,15 @@ export const LoginForm = forwardRef<LoginFormHandle, LoginFormProps>(function Lo
     try {
       const result = await login.mutateAsync(values);
       // Read `?next=` via window.location so we don't pull useSearchParams
-      // into the build — see the note in auth-gate.tsx.
+      // into the build — see the note in auth-gate.tsx. `safeNextForRole`
+      // validates the path against the user's role and falls back to home
+      // when the role can't access it (e.g. SV bouncing through
+      // `/login?next=%2Fanalytics`).
       const params =
         typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const rawNext = params?.get('next');
-      const target = rawNext ? decodeURIComponent(rawNext) : homeRouteFor(result.user.role);
-      router.replace(target);
+      const decoded = rawNext ? decodeURIComponent(rawNext) : null;
+      router.replace(safeNextForRole(decoded, result.user.role));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setTopLevelError('Sai email hoặc mật khẩu');
