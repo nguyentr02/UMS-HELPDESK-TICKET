@@ -1,0 +1,103 @@
+# Role Permission Matrix — M31 Helpdesk / Ticket
+
+> Source of truth for RBAC implementation.
+> Use this to determine which UI controls to render/hide per role.
+> A role that cannot perform an action must **never** see the control — not even disabled.
+>
+> **Implemented verbatim in `lib/auth/rbac.ts`** and locked by the 100-case grid in `tests/unit/rbac.test.ts`. Role ids: `SV | GV | NV | HelpdeskAgent | HelpdeskLead | DeptStaff | Admin`. The sidebar (`lib/auth/nav.ts` → `navSectionsFor`) is gated by these predicates.
+
+> **All entries are conditional on authentication.** Every row below assumes the user has logged in via `POST /auth/login` and holds a valid JWT session cookie. Logged-out visitors hit the route guard (`auth/auth-gate.tsx` — Feature Plan §11.5) and get redirected to `/login` before any of these predicates run. No role has anonymous access to any surface beyond `/` (landing) and `/login` itself.
+
+## Matrix
+
+| Chức năng | SV/GV/NV | Helpdesk Agent | Helpdesk Lead | Dept Staff | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Tạo ticket mới | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Xem ticket của mình | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Comment trên ticket | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Truy cập hàng đợi ticket | ❌ | ✅¹ | ✅ | ❌ | ✅ |
+| Xem ticket của dept mình | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Assign ticket cho Agent | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Forward đến phòng ban | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Redirect ticket | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Override severity | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Cập nhật In Progress | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Đóng ticket | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Dashboard tổng quan | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Quản lý Category tree | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Quản lý Routing rules | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Xem danh sách người dùng | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Tạo người dùng | ❌ | ❌ | ❌ | ❌ | ✅* |
+| Cập nhật người dùng (PATCH) | ❌ | ❌ | ❌ | ❌ | ✅* |
+| Xóa (vô hiệu hóa) người dùng | ❌ | ❌ | ❌ | ❌ | ✅* |
+| Daily reminder | ❌ | ✅ | ✅ | ✅ | ❌ |
+
+> \* **Scope exceptions:** user lifecycle (create/update/delete) normally lives in M1 (IAM). The helpdesk module exposes `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id` (soft — `isActive=false`) for the practice/demo flow only, per explicit product decisions (2026-06-09 for create, 2026-06-10 for update + delete). Email is intentionally immutable here. Admin cannot delete themselves (BE 409). Read-only fetch (`GET /users`, `GET /users/:id`) is the long-term contract.
+
+> ¹ **Helpdesk Agent chỉ thấy ticket được gán cho mình** trong hàng đợi (server-derived scoping); mở ticket của agent khác → **403**. Chỉ **Lead** và **Admin** thấy tất cả ticket. Agent vẫn truy cập màn hình hàng đợi (`canViewQueue` = true), nhưng dữ liệu bị giới hạn theo `helpdeskAssigneeId = caller.id`.
+
+## Role definitions
+
+| Role | Mô tả |
+|---|---|
+| **SV/GV/NV** | Sinh viên, Giảng viên, Nhân viên — người tạo và theo dõi ticket của mình |
+| **Helpdesk Agent** | Nhân viên Helpdesk — xử lý **các ticket được gán cho mình**; forward, redirect, đóng ticket |
+| **Helpdesk Lead** | Trưởng Helpdesk — toàn quyền của Agent + assign ticket cho Agent + xem Dashboard |
+| **Dept Staff** | Nhân viên phòng ban — xem và xử lý ticket được gán cho phòng ban mình |
+| **Admin** | Admin hệ thống — xem tất cả ticket + quản lý category tree & routing rules |
+
+## Sidebar navigation per role
+
+### SV / GV / NV
+- Tạo ticket mới
+- Ticket của tôi
+
+### Helpdesk Agent
+- Hàng đợi (Queue) — tất cả ticket
+- Thông báo (daily reminder)
+
+### Helpdesk Lead
+- Dashboard
+- Hàng đợi (Queue) — tất cả ticket
+- Thông báo (daily reminder)
+
+### Dept Staff
+- Queue phòng ban — ticket được gán cho dept
+- Thông báo (daily reminder)
+
+### Admin
+- Dashboard
+- Tất cả ticket
+- Quản lý Danh mục (Category tree)
+- Quản lý Routing rules
+- Người dùng (read-only directory)
+
+## Implementation notes
+
+- `canCreate(role)` → `['SV', 'GV', 'NV', 'DeptStaff'].includes(role)`
+- `canViewOwn(role)` → `['SV', 'GV', 'NV', 'DeptStaff'].includes(role)`
+- `canViewQueue(role)` → `['HelpdeskAgent', 'HelpdeskLead', 'Admin'].includes(role)`
+- `canViewDeptQueue(role)` → `['DeptStaff', 'Admin'].includes(role)`
+- `canAssign(role)` → `role === 'HelpdeskLead'`
+- `canForward(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canRedirect(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canOverrideSeverity(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canUpdateProgress(role)` → `['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(role)`
+- `canClose(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canViewDashboard(role)` → `['HelpdeskLead', 'Admin'].includes(role)`
+- `canManageCategories(role)` → `role === 'Admin'`
+- `canManageRouting(role)` → `role === 'Admin'`
+- `canViewUsers(role)` → `role === 'Admin'` *(read-only fetch; departments + faculties are owned by other UMS modules)*
+- `canCreateUsers(role)` → `role === 'Admin'` *(scope exception — see note above the matrix)*
+- `canUpdateUsers(role)` → `role === 'Admin'` *(scope exception 2026-06-10 — email immutable; password reset supported)*
+- `canDeleteUsers(role)` → `role === 'Admin'` *(scope exception 2026-06-10 — soft delete; self-target blocked at BE 409)*
+- `receivesDailyReminder(role)` → `['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(role)`
+
+## Traceability
+
+- ISO: `ISO_M31_Helpdesk_Ticket_v1.1.docx`
+- Brief: `docs/brief.md` §3 Target users & roles
+- Feature Plan: `docs/feature-plan.md` §3 (personas) + §11 (RBAC × state-machine guards)
+- Implementation Plan: `docs/impl-plans/feat-M31-helpdesk-fe.md`
+- Code: `lib/auth/rbac.ts` (predicates) · `lib/auth/nav.ts` (sidebar) · `tests/unit/rbac.test.ts` (grid)
+- UI Design: `docs/ui-design/helpdesk-console.html`
