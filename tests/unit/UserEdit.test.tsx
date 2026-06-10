@@ -38,13 +38,26 @@ describe('UserEdit — Admin edit-user flow (FE-S16)', () => {
 
     const nameInput = await screen.findByLabelText('Họ tên');
     await user.clear(nameInput);
-    await user.type(nameInput, 'SV Nguyễn Văn A (đã đổi)');
+    await user.type(nameInput, 'Nguyễn Văn A Đã Đổi');
 
     await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/admin/users/u-sv-1');
     });
+  });
+
+  it('M31-FE-S16-X5: displayName with digits → inline field error, no PATCH', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserEdit id="u-sv-1" />, { role: 'Admin' });
+
+    const nameInput = await screen.findByLabelText('Họ tên');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Nguyen Van 123');
+    await user.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+
+    expect(await screen.findByText('Họ tên chỉ được chứa chữ cái và khoảng trắng')).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it('M31-FE-S16-X2: no changes → no PATCH; user is informed', async () => {

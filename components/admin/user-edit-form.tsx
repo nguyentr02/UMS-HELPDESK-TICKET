@@ -30,6 +30,7 @@ import { useUpdateUser } from '@/lib/queries/users';
 import { ROLE_VI } from '@/lib/auth/nav';
 import { handleMutationError } from '@/lib/api/errors';
 import { updateCreatedPersona } from '@/lib/auth/created-personas';
+import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
 import type { Role, User } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +48,12 @@ const ROLE_OPTIONS: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead',
  */
 const FormSchema = z
   .object({
-    displayName: z.string().trim().min(2, 'Tối thiểu 2 ký tự').max(200),
+    displayName: z
+      .string()
+      .trim()
+      .min(2, 'Tối thiểu 2 ký tự')
+      .max(200)
+      .regex(NAME_REGEX, NAME_ERROR),
     role: z.enum(ROLE_OPTIONS as [Role, ...Role[]]),
     departmentId: z.string(),
     password: z.string().refine((v) => v === '' || v.length >= 8, 'Mật khẩu tối thiểu 8 ký tự'),

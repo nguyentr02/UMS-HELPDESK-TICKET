@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type { AnalyticsSummary, Severity, TicketComment } from '@/lib/types/domain';
 import { SEVERITY_META } from '@/lib/status/severity';
+import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
 import { PERSONAS } from './personas';
 import {
   HELPDESK_ACTOR,
@@ -605,6 +606,7 @@ export const handlers = [
     if (!emailRaw) fields.email = 'Vui lòng nhập email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) fields.email = 'Email không hợp lệ';
     if (displayName.length < 2) fields.displayName = 'Tối thiểu 2 ký tự';
+    else if (!NAME_REGEX.test(displayName)) fields.displayName = NAME_ERROR;
     if (!ROLES.includes(role as (typeof ROLES)[number])) fields.role = 'Vai trò không hợp lệ';
     if (passwordRaw != null && passwordRaw.length < 8) fields.password = 'Mật khẩu tối thiểu 8 ký tự';
     if (role === 'DeptStaff' && !departmentIdRaw) fields.departmentId = 'Bắt buộc cho vai trò DeptStaff';
@@ -651,6 +653,8 @@ export const handlers = [
     if ('displayName' in body) {
       if (typeof body.displayName !== 'string' || body.displayName.trim().length < 2) {
         fields.displayName = 'Tối thiểu 2 ký tự';
+      } else if (!NAME_REGEX.test(body.displayName.trim())) {
+        fields.displayName = NAME_ERROR;
       } else {
         nextDisplayName = body.displayName.trim();
       }

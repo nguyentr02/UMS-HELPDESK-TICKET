@@ -31,6 +31,7 @@ import { ROLE_VI } from '@/lib/auth/nav';
 import { handleMutationError } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/client';
 import { addCreatedPersona } from '@/lib/auth/created-personas';
+import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
 import type { Role } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +42,7 @@ const ROLE_OPTIONS: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead',
 /**
  * Zod schema mirrors the BE `CreateUserBody` shape (routes/users.ts):
  *   - email: trimmed, lower-cased, email format, max 200
- *   - displayName: 2–200 chars
+ *   - displayName: 2–200 chars, letters (incl. Vietnamese diacritics) + spaces only
  *   - role: required enum
  *   - departmentId: required only when role=DeptStaff (cross-field refine)
  *   - password: optional, ≥ 8 chars when set
@@ -49,7 +50,12 @@ const ROLE_OPTIONS: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead',
 const FormSchema = z
   .object({
     email: z.string().trim().min(1, 'Vui lòng nhập email').email('Email không hợp lệ').max(200),
-    displayName: z.string().trim().min(2, 'Tối thiểu 2 ký tự').max(200),
+    displayName: z
+      .string()
+      .trim()
+      .min(2, 'Tối thiểu 2 ký tự')
+      .max(200)
+      .regex(NAME_REGEX, NAME_ERROR),
     role: z.enum(ROLE_OPTIONS as [Role, ...Role[]], { required_error: 'Chọn vai trò' }),
     departmentId: z.string(),
     password: z.string().refine((v) => v === '' || v.length >= 8, 'Mật khẩu tối thiểu 8 ký tự'),

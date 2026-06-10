@@ -78,6 +78,33 @@ describe('UserCreateForm — Admin create-user flow (FE-S15)', () => {
     expect(await screen.findByText('Mật khẩu tối thiểu 8 ký tự')).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  it('M31-FE-S15-X3: displayName with digits → inline field error, no navigate', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserCreateForm />, { role: 'Admin' });
+
+    await user.type(screen.getByLabelText('Email'), 'digitname@ums.edu.vn');
+    await user.type(screen.getByLabelText('Họ tên'), 'Nguyen Van 123');
+    await user.click(screen.getByRole('button', { name: 'Tạo người dùng' }));
+
+    expect(await screen.findByText('Họ tên chỉ được chứa chữ cái và khoảng trắng')).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('M31-FE-S15-X4: Vietnamese displayName with diacritics is accepted (no name error)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserCreateForm />, { role: 'Admin' });
+
+    await user.type(screen.getByLabelText('Email'), 'vietname@ums.edu.vn');
+    await user.type(screen.getByLabelText('Họ tên'), 'Nguyễn Thị Lệ Ước');
+    await user.click(screen.getByRole('button', { name: 'Tạo người dùng' }));
+
+    // No name-format error should appear (the submit proceeds / navigates).
+    await waitFor(() => {
+      expect(screen.queryByText('Họ tên chỉ được chứa chữ cái và khoảng trắng')).not.toBeInTheDocument();
+      expect(pushMock).toHaveBeenCalled();
+    });
+  });
 });
 
 describe('UserDirectory — "Tạo người dùng" trigger visibility (FE-S15)', () => {
