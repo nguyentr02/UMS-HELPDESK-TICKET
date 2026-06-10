@@ -18,6 +18,8 @@ const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   google_verification_failed: 'Xác minh tài khoản Google thất bại. Vui lòng thử lại.',
   domain_not_allowed:
     'Tài khoản Google không thuộc miền cho phép (@ums.edu.vn hoặc @dau.edu.vn).',
+  account_disabled:
+    'Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.',
   access_denied: 'Bạn đã từ chối cấp quyền cho ứng dụng. Vui lòng thử lại nếu cần.',
   unknown_error: 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.',
 };
