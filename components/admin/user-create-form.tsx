@@ -30,6 +30,7 @@ import { useCreateUser } from '@/lib/queries/users';
 import { ROLE_VI } from '@/lib/auth/nav';
 import { handleMutationError } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/client';
+import { addCreatedPersona } from '@/lib/auth/created-personas';
 import type { Role } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
@@ -98,6 +99,19 @@ export function UserCreateForm() {
         departmentId: values.departmentId || null,
         password: values.password || null,
       });
+      // Surface the new user on the /login credential helper note so reviewers
+      // can sign in as them directly. Only meaningful when a password was set
+      // (SSO-only users have nothing to fill).
+      if (values.password) {
+        addCreatedPersona({
+          id: created.id,
+          email: created.email,
+          password: values.password,
+          displayName: created.displayName,
+          role: created.role,
+          departmentCode: created.department?.code ?? null,
+        });
+      }
       toast.success(`Đã tạo người dùng ${created.displayName}`);
       router.push(`/admin/users/${created.id}`);
     } catch (err) {

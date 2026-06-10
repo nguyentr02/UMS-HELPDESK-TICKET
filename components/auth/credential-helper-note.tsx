@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PERSONAS, type Persona } from "@/mocks/personas";
+import { getCreatedPersonas } from "@/lib/auth/created-personas";
 import { ROLE_VI } from "@/lib/auth/nav";
 import type { Role } from "@/lib/types/domain";
 
@@ -56,16 +57,23 @@ export function CredentialHelperNote({
 }) {
   const [activeRole, setActiveRole] = useState<Role>("SV");
   const [revealedId, setRevealedId] = useState<string | null>(null);
+  const [createdPersonas, setCreatedPersonas] = useState<Persona[]>([]);
+
+  // Refresh the localStorage-backed list each time the note opens, so admins
+  // who just created a user (then navigated to /login) see them immediately.
+  useEffect(() => {
+    if (open) setCreatedPersonas(getCreatedPersonas());
+  }, [open]);
 
   const personasByRole = useMemo(() => {
     const map = new Map<Role, Persona[]>();
-    for (const p of PERSONAS) {
+    for (const p of [...PERSONAS, ...createdPersonas]) {
       const list = map.get(p.role) ?? [];
       list.push(p);
       map.set(p.role, list);
     }
     return map;
-  }, []);
+  }, [createdPersonas]);
 
   if (!open) return null;
 
