@@ -67,3 +67,38 @@ export function addCreatedPersona(p: CreatedPersona): void {
     // localStorage full / disabled / privacy mode — silently skip.
   }
 }
+
+/**
+ * Patch an existing entry's identity fields after a PATCH /users/:id. No-op
+ * when the id isn't in the local list (e.g. the admin edited a seeded
+ * persona — those live in the bundled `PERSONAS` constant and we don't
+ * mutate the bundle). Password is stripped if a caller accidentally passes it.
+ */
+export function updateCreatedPersona(id: string, patch: Partial<CreatedPersona>): void {
+  if (typeof window === 'undefined') return;
+  const existing = getCreatedPersonas();
+  const idx = existing.findIndex((e) => e.id === id);
+  if (idx === -1) return;
+  const { password: _drop, ...safePatch } = patch as Partial<CreatedPersona> & { password?: unknown };
+  const next = [...existing];
+  next[idx] = { ...existing[idx], ...safePatch } as CreatedPersona;
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    // ignore — best-effort.
+  }
+}
+
+/** Drop an entry after a soft-delete so the deactivated user stops appearing
+ *  in the /login credential helper. No-op when the id isn't present. */
+export function removeCreatedPersona(id: string): void {
+  if (typeof window === 'undefined') return;
+  const existing = getCreatedPersonas();
+  const next = existing.filter((e) => e.id !== id);
+  if (next.length === existing.length) return;
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    // ignore — best-effort.
+  }
+}

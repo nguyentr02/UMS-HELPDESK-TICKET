@@ -29,6 +29,7 @@ import { useDepartments } from '@/lib/queries/catalog';
 import { useUpdateUser } from '@/lib/queries/users';
 import { ROLE_VI } from '@/lib/auth/nav';
 import { handleMutationError } from '@/lib/api/errors';
+import { updateCreatedPersona } from '@/lib/auth/created-personas';
 import type { Role, User } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
@@ -109,6 +110,15 @@ export function UserEditForm({ user }: { user: User }) {
       }
 
       const updated = await update.mutateAsync(patch);
+      // Mirror the new identity into the localStorage-backed credential
+      // helper list (no-op if the user is a seeded persona, which lives in
+      // the bundled PERSONAS constant). Without this, a role/dept change
+      // would leave the helper showing the user under their old role tab.
+      updateCreatedPersona(updated.id, {
+        displayName: updated.displayName,
+        role: updated.role,
+        departmentCode: updated.department?.code ?? null,
+      });
       toast.success(`Đã cập nhật ${updated.displayName}`);
       router.push(`/admin/users/${updated.id}`);
     } catch (err) {

@@ -531,7 +531,13 @@ export const handlers = [
       };
     });
 
-    const filtered = allPersonas.filter((u) => {
+    // Created users participate in the directory too; PATCH overrides win.
+    const createdRows = CREATED_USERS.map((u) => USER_OVERRIDES.get(u.id) ?? u);
+    const personaRows = allPersonas.map((u) => USER_OVERRIDES.get(u.id) ?? u);
+
+    const filtered = [...personaRows, ...createdRows].filter((u) => {
+      // Soft-deleted users disappear from the list (mirrors BE `isActive=true`).
+      if (DEACTIVATED_USERS.has(u.id)) return false;
       if (roleFilter && u.role !== roleFilter) return false;
       if (departmentIdFilter && u.department?.id !== departmentIdFilter) return false;
       if (searchTerm) {

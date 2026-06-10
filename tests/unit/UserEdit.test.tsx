@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { UserEdit } from '@/components/admin/user-edit';
 import { UserDetail } from '@/components/admin/user-detail';
 import { __resetCreatedUsers, __getDeactivatedUserIds } from '@/mocks/handlers';
+import { createUser, deactivateUser, listUsers } from '@/lib/api/users';
 import { renderWithProviders } from '../helpers/render';
 
 const pushMock = vi.fn();
@@ -117,5 +118,28 @@ describe('UserDetail — Admin delete flow (FE-S16)', () => {
       expect(pushMock).toHaveBeenCalledWith('/admin/users');
     });
     expect(__getDeactivatedUserIds()).toContain('u-sv-1');
+  });
+
+  it('M31-FE-S16-H4: a soft-deleted user is excluded from listUsers() (the reported bug)', async () => {
+    // Seed Admin mock-role so apiFetch sends X-Mock-Role: Admin.
+    window.localStorage.setItem(
+      'm31.mockUser',
+      JSON.stringify({ id: 'u-admin', role: 'Admin', departmentId: null, displayName: 'Quản trị viên' }),
+    );
+
+    const created = await createUser({
+      email: 'todelete@ums.edu.vn',
+      displayName: 'Sắp Bị Xóa',
+      role: 'SV',
+      password: 'temp-pass-1',
+    });
+
+    const before = await listUsers({ pageSize: 100 });
+    expect(before.items.map((u) => u.id)).toContain(created.id);
+
+    await deactivateUser(created.id);
+
+    const after = await listUsers({ pageSize: 100 });
+    expect(after.items.map((u) => u.id)).not.toContain(created.id);
   });
 });

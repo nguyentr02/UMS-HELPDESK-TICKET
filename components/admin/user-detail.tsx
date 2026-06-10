@@ -11,6 +11,7 @@ import { ROLE_VI } from '@/lib/auth/nav';
 import { useDeactivateUser, useUser } from '@/lib/queries/users';
 import { ApiError } from '@/lib/api/client';
 import { handleMutationError } from '@/lib/api/errors';
+import { removeCreatedPersona } from '@/lib/auth/created-personas';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,9 @@ export function UserDetail({ id }: { id: string }) {
     if (!user) return;
     try {
       await deactivate.mutateAsync(user.id);
+      // Drop the entry from the /login credential helper so a deactivated user
+      // doesn't keep showing as "pick me to log in". No-op for seeded personas.
+      removeCreatedPersona(user.id);
       toast.success(`Đã xóa ${user.displayName}`);
       setConfirmOpen(false);
       router.push('/admin/users');
