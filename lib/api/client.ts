@@ -81,6 +81,18 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       code: 'unknown_error',
       message: res.statusText || 'Đã xảy ra lỗi',
     };
+    // 401 from any non-/auth/* endpoint = session expired. Fire an event so
+    // app/providers.tsx can wipe the persisted cache and let AuthGate bounce
+    // the user to /login. /auth/* paths are skipped — useMeQuery already
+    // handles its own 401, LoginForm surfaces it inline, and logout is
+    // idempotent so we don't want a redirect loop.
+    if (
+      res.status === 401 &&
+      typeof window !== 'undefined' &&
+      !path.startsWith('/auth/')
+    ) {
+      window.dispatchEvent(new CustomEvent('m31:session-expired'));
+    }
     throw new ApiError(res.status, body, requestId);
   }
 
