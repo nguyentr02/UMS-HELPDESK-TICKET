@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { CreateUserInput, ListUsersQuery, User, UserListResponse } from '@/lib/types/domain';
+import type { CreateUserInput, ListUsersQuery, UpdateUserInput, User, UserListResponse } from '@/lib/types/domain';
 
 function buildQuery(q: ListUsersQuery): string {
   const params = new URLSearchParams();
@@ -26,3 +26,15 @@ export const createUser = (input: CreateUserInput) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+
+/** Admin-only: partial update. 404 if user doesn't exist, 422 on validation, 403 for non-admin. */
+export const updateUser = (id: string, input: UpdateUserInput) =>
+  apiFetch<User>(`/users/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+/** Admin-only: soft delete (deactivate). 409 if admin targets themselves. */
+export const deactivateUser = (id: string) =>
+  apiFetch<User>(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });

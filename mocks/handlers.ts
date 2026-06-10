@@ -624,20 +624,138 @@ export const handlers = [
     CREATED_USERS.push(created);
     return ok(created, { status: 201 });
   }),
+
+  // PATCH /users/:id — partial update (BE-S16). Mirrors BE invariants:
+  // 404 unknown id, 422 invalid body, 403 non-Admin. Email is NOT mutable.
+  http.patch(`${base}/users/:id`, async ({ request, params }) => {
+    if ((request.headers.get('X-Mock-Role') ?? '') !== 'Admin') {
+      return fail(403, 'forbidden', 'Không có quyền truy cập');
+    }
+    const id = String(params.id);
+    const current = resolveMockUser(id);
+    if (!current) return fail(404, 'not_found', 'Không tìm thấy người dùng');
+
+    const body = (await request.json().catch(() => null)) as
+      | { displayName?: unknown; role?: unknown; departmentId?: unknown; password?: unknown }
+      | null;
+    if (!body) return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { _: 'JSON không hợp lệ' });
+
+    const fields: Record<string, string> = {};
+    let nextDisplayName = current.displayName;
+    if ('displayName' in body) {
+      if (typeof body.displayName !== 'string' || body.displayName.trim().length < 2) {
+        fields.displayName = 'Tối thiểu 2 ký tự';
+      } else {
+        nextDisplayName = body.displayName.trim();
+      }
+    }
+    let nextRole: (typeof ROLES)[number] = current.role;
+    if ('role' in body) {
+      if (typeof body.role !== 'string' || !ROLES.includes(body.role as (typeof ROLES)[number])) {
+        fields.role = 'Vai trò không hợp lệ';
+      } else {
+        nextRole = body.role as (typeof ROLES)[number];
+      }
+    }
+    let nextDept = current.department;
+    if ('departmentId' in body) {
+      if (body.departmentId === null || body.departmentId === '') {
+        nextDept = null;
+      } else if (typeof body.departmentId === 'string') {
+        const found = departments.find((d) => d.id === body.departmentId);
+        if (!found) fields.departmentId = 'Phòng ban không tồn tại';
+        else nextDept = found;
+      } else {
+        fields.departmentId = 'Phòng ban không hợp lệ';
+      }
+    }
+    if ('password' in body && body.password != null && body.password !== '') {
+      if (typeof body.password !== 'string' || body.password.length < 8) {
+        fields.password = 'Mật khẩu tối thiểu 8 ký tự';
+      }
+    }
+    if (nextRole === 'DeptStaff' && !nextDept) {
+      fields.departmentId = fields.departmentId ?? 'Bắt buộc cho vai trò DeptStaff';
+    }
+    if (Object.keys(fields).length > 0) return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', fields);
+
+    const updated = {
+      id: current.id,
+      email: current.email,
+      displayName: nextDisplayName,
+      role: nextRole,
+      department: nextDept,
+    };
+    USER_OVERRIDES.set(id, updated);
+    return ok(updated);
+  }),
+
+  // DELETE /users/:id — soft delete (BE-S16). Admin-only. 409 if self-target.
+  // The DTO doesn't carry isActive today, so we just return the user as-is;
+  // the test-only `__getDeactivatedUserIds()` exposes the set for assertions.
+  http.delete(`${base}/users/:id`, ({ request, params }) => {
+    if ((request.headers.get('X-Mock-Role') ?? '') !== 'Admin') {
+      return fail(403, 'forbidden', 'Không có quyền truy cập');
+    }
+    const id = String(params.id);
+    const callerId = request.headers.get('X-Mock-User-Id') ?? '';
+    if (id === callerId) return fail(409, 'conflict', 'Không thể tự xóa chính bạn');
+
+    const current = resolveMockUser(id);
+    if (!current) return fail(404, 'not_found', 'Không tìm thấy người dùng');
+
+    DEACTIVATED_USERS.add(id);
+    return ok(current);
+  }),
 ];
 
 const ROLES = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead', 'DeptStaff', 'Admin'] as const;
 
-/** Test-scope register of POST /users creations so subsequent GET /users:id and
- *  duplicate-email checks see them. Cleared in tests via `__resetCreatedUsers`. */
-const CREATED_USERS: Array<{
+interface MockUserRow {
   id: string;
   email: string;
   displayName: string;
   role: (typeof ROLES)[number];
   department: { id: string; code: string; name: string } | null;
-}> = [];
+}
+
+/** Test-scope register of POST /users creations so subsequent GET /users:id and
+ *  duplicate-email checks see them. Cleared in tests via `__resetCreatedUsers`. */
+const CREATED_USERS: MockUserRow[] = [];
+
+/** PATCH /users/:id mutation overlay so subsequent GETs reflect the change. */
+const USER_OVERRIDES = new Map<string, MockUserRow>();
+
+/** DELETE /users/:id targets — observable by tests via `__getDeactivatedUserIds`. */
+const DEACTIVATED_USERS = new Set<string>();
+
+/** Resolve a user id to a MockUserRow consulting (in order): the PATCH overlay,
+ *  the seeded personas, then created users. Returns null on a true miss. */
+function resolveMockUser(id: string): MockUserRow | null {
+  const override = USER_OVERRIDES.get(id);
+  if (override) return override;
+  const persona = PERSONAS.find((p) => p.id === id);
+  if (persona) {
+    const dept = persona.departmentCode
+      ? departments.find((d) => d.code === persona.departmentCode) ?? null
+      : null;
+    return {
+      id: persona.id,
+      email: persona.email,
+      displayName: persona.displayName,
+      role: persona.role,
+      department: dept,
+    };
+  }
+  return CREATED_USERS.find((u) => u.id === id) ?? null;
+}
 
 export function __resetCreatedUsers() {
   CREATED_USERS.length = 0;
+  USER_OVERRIDES.clear();
+  DEACTIVATED_USERS.clear();
+}
+
+export function __getDeactivatedUserIds(): string[] {
+  return Array.from(DEACTIVATED_USERS);
 }

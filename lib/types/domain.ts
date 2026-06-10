@@ -72,6 +72,16 @@ export interface CreateUserInput {
   password?: string | null;
 }
 
+/** Admin-only partial update. Every field optional. `departmentId: null`
+ *  clears the dept; omitting it keeps the current value. `password` (≥ 8 chars)
+ *  replaces the hash; omit/null leaves it alone. Email is NOT mutable. */
+export interface UpdateUserInput {
+  displayName?: string;
+  role?: Role;
+  departmentId?: string | null;
+  password?: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;

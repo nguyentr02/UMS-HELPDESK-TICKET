@@ -1,7 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { UserDetail } from '@/components/admin/user-detail';
 import { renderWithProviders } from '../helpers/render';
+
+// UserDetail uses useRouter for the post-delete navigation; mock so the hook
+// doesn't throw "app router not mounted" in jsdom.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => '/admin/users/u-admin',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 describe('UserDetail — Admin per-user view (FE-S14)', () => {
   it('M31-FE-S14-X2: a non-Admin role sees AccessDenied', async () => {

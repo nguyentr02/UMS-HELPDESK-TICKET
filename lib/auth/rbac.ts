@@ -70,6 +70,10 @@ export const canViewUsers = (r: Role): boolean => r === 'Admin';
  * kept here for the practice/demo flow per explicit product decision.
  */
 export const canCreateUsers = (r: Role): boolean => r === 'Admin';
+/** Admin-only: edit a user (displayName / role / dept / password). Same scope-exception caveat as create. */
+export const canUpdateUsers = (r: Role): boolean => r === 'Admin';
+/** Admin-only: soft-delete (deactivate) a user. The BE blocks self-delete with 409. */
+export const canDeleteUsers = (r: Role): boolean => r === 'Admin';
 export const receivesDailyReminder = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(r);
 

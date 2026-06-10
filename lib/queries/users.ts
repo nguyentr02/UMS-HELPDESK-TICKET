@@ -1,8 +1,8 @@
 'use client';
 
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { createUser, fetchUser, listUsers } from '@/lib/api/users';
-import type { CreateUserInput, ListUsersQuery, User } from '@/lib/types/domain';
+import { createUser, deactivateUser, fetchUser, listUsers, updateUser } from '@/lib/api/users';
+import type { CreateUserInput, ListUsersQuery, UpdateUserInput, User } from '@/lib/types/domain';
 
 export const userKeys = {
   all: ['users'] as const,
@@ -39,6 +39,33 @@ export function useCreateUser() {
     onSuccess: (created: User) => {
       qc.invalidateQueries({ queryKey: userKeys.all });
       qc.setQueryData(userKeys.detail(created.id), created);
+    },
+  });
+}
+
+/** Admin-only update mutation. Invalidates list + writes the fresh DTO into
+ *  the detail cache so the redirect after save shows the new values. */
+export function useUpdateUser(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateUserInput) => updateUser(id, input),
+    onSuccess: (updated: User) => {
+      qc.invalidateQueries({ queryKey: userKeys.all });
+      qc.setQueryData(userKeys.detail(updated.id), updated);
+    },
+  });
+}
+
+/** Admin-only soft-delete mutation. Invalidates list + detail (the soft-deleted
+ *  row still exists, just with `isActive=false` server-side — the DTO doesn't
+ *  expose that flag today, but the cache should refresh anyway). */
+export function useDeactivateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deactivateUser(id),
+    onSuccess: (deactivated: User) => {
+      qc.invalidateQueries({ queryKey: userKeys.all });
+      qc.setQueryData(userKeys.detail(deactivated.id), deactivated);
     },
   });
 }
