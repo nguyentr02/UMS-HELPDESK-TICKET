@@ -155,4 +155,34 @@ describe('UserDetail — Admin delete flow (FE-S16)', () => {
     const after = await listUsers({ pageSize: 100 });
     expect(after.items.map((u) => u.id)).not.toContain(created.id);
   });
+
+  it('M31-FE-S16-H5: re-creating a deleted user\'s email revives the same row (no 409)', async () => {
+    window.localStorage.setItem(
+      'm31.mockUser',
+      JSON.stringify({ id: 'u-admin', role: 'Admin', departmentId: null, displayName: 'Quản trị viên' }),
+    );
+
+    const created = await createUser({
+      email: 'reuse@ums.edu.vn',
+      displayName: 'Bản Gốc',
+      role: 'SV',
+      password: 'temp-pass-1',
+    });
+    await deactivateUser(created.id);
+
+    // Re-create with the same email — should revive, not throw 409.
+    const revived = await createUser({
+      email: 'reuse@ums.edu.vn',
+      displayName: 'Bản Hồi Sinh',
+      role: 'GV',
+      password: 'temp-pass-2',
+    });
+    expect(revived.id).toBe(created.id);
+    expect(revived.displayName).toBe('Bản Hồi Sinh');
+    expect(revived.role).toBe('GV');
+
+    // And it's back in the directory.
+    const list = await listUsers({ pageSize: 100 });
+    expect(list.items.map((u) => u.id)).toContain(created.id);
+  });
 });

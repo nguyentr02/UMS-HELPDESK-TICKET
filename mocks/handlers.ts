@@ -615,13 +615,31 @@ export const handlers = [
     }
     if (Object.keys(fields).length > 0) return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', fields);
 
-    const personaEmailConflict = PERSONAS.some((p) => p.email.toLowerCase() === emailRaw);
-    const createdEmailConflict = CREATED_USERS.some((u) => u.email.toLowerCase() === emailRaw);
-    if (personaEmailConflict || createdEmailConflict) {
-      return fail(409, 'conflict', 'Email đã được sử dụng');
+    const dept = departmentIdRaw ? departments.find((d) => d.id === departmentIdRaw) ?? null : null;
+
+    // Locate any existing row owning this email (persona or created + overrides).
+    const conflictId =
+      PERSONAS.find((p) => p.email.toLowerCase() === emailRaw)?.id ??
+      CREATED_USERS.find((u) => u.email.toLowerCase() === emailRaw)?.id ??
+      null;
+
+    if (conflictId) {
+      // Active collision → 409. Deactivated → revive the same row.
+      if (!DEACTIVATED_USERS.has(conflictId)) {
+        return fail(409, 'conflict', 'Email đã được sử dụng');
+      }
+      DEACTIVATED_USERS.delete(conflictId);
+      const revived = {
+        id: conflictId,
+        email: emailRaw,
+        displayName,
+        role: role as (typeof ROLES)[number],
+        department: dept,
+      };
+      USER_OVERRIDES.set(conflictId, revived);
+      return ok(revived, { status: 201 });
     }
 
-    const dept = departmentIdRaw ? departments.find((d) => d.id === departmentIdRaw) ?? null : null;
     const created = {
       id: `u-created-${CREATED_USERS.length + 1}`,
       email: emailRaw,
