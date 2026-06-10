@@ -185,14 +185,23 @@ export function UserCreateForm() {
           )}
         />
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        {/* Phòng ban only applies to DeptStaff. For SV/GV/NV/Agent/Lead/Admin
+            it's irrelevant, so the field is hidden — and switching away from
+            DeptStaff clears any value so a stale dept can't be submitted. */}
+        <div className={deptRequired ? 'grid gap-5 sm:grid-cols-2' : ''}>
           <FormField
             control={form.control}
             name="role"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Vai trò</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    if (v !== 'DeptStaff') form.setValue('departmentId', '');
+                  }}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger aria-label="Vai trò">
                       <SelectValue placeholder="Chọn vai trò" />
@@ -211,41 +220,39 @@ export function UserCreateForm() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="departmentId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Phòng ban {deptRequired ? <span className="text-red-600">*</span> : null}
-                </FormLabel>
-                <Select
-                  onValueChange={(v) => field.onChange(v === NO_DEPT ? '' : v)}
-                  value={field.value === '' ? NO_DEPT : field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger aria-label="Phòng ban">
-                      <SelectValue placeholder="Không có" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={NO_DEPT}>Không có</SelectItem>
-                    {(departments.data ?? []).map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  {deptRequired
-                    ? 'Bắt buộc cho vai trò Nhân viên phòng ban.'
-                    : 'Tùy chọn cho các vai trò khác.'}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {deptRequired ? (
+            <FormField
+              control={form.control}
+              name="departmentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Phòng ban <span className="text-red-600">*</span>
+                  </FormLabel>
+                  <Select
+                    onValueChange={(v) => field.onChange(v === NO_DEPT ? '' : v)}
+                    value={field.value === '' ? NO_DEPT : field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger aria-label="Phòng ban">
+                        <SelectValue placeholder="Không có" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NO_DEPT}>Không có</SelectItem>
+                      {(departments.data ?? []).map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Bắt buộc cho vai trò Nhân viên phòng ban.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
         </div>
 
         <FormField

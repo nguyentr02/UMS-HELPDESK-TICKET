@@ -91,6 +91,13 @@ describe('UserCreateForm — Admin create-user flow (FE-S15)', () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  it('M31-FE-S15-X6: Phòng ban field is hidden for non-DeptStaff roles (default SV)', async () => {
+    renderWithProviders(<UserCreateForm />, { role: 'Admin' });
+    // Role defaults to SV — the department field must not be rendered.
+    await screen.findByLabelText('Email');
+    expect(screen.queryByLabelText('Phòng ban')).not.toBeInTheDocument();
+  });
+
   it('M31-FE-S15-X5: personal email (gmail) → inline email field error, no navigate', async () => {
     const user = userEvent.setup();
     renderWithProviders(<UserCreateForm />, { role: 'Admin' });
