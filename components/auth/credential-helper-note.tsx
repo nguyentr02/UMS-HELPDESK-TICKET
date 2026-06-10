@@ -6,9 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PERSONAS, type Persona } from "@/mocks/personas";
-import { getCreatedPersonas } from "@/lib/auth/created-personas";
+import { getCreatedPersonas, type CreatedPersona } from "@/lib/auth/created-personas";
 import { ROLE_VI } from "@/lib/auth/nav";
 import type { Role } from "@/lib/types/domain";
+
+// Union covers both: seeded personas (have plain-text demo password) AND
+// admin-created personas (identity only — password is never stored).
+type AnyPersona = Persona | CreatedPersona;
+function hasPassword(p: AnyPersona): p is Persona {
+  return 'password' in p;
+}
 
 const ROLE_ORDER: Role[] = [
   "SV",
@@ -57,7 +64,7 @@ export function CredentialHelperNote({
 }) {
   const [activeRole, setActiveRole] = useState<Role>("SV");
   const [revealedId, setRevealedId] = useState<string | null>(null);
-  const [createdPersonas, setCreatedPersonas] = useState<Persona[]>([]);
+  const [createdPersonas, setCreatedPersonas] = useState<CreatedPersona[]>([]);
 
   // Refresh the localStorage-backed list each time the note opens, so admins
   // who just created a user (then navigated to /login) see them immediately.
@@ -66,8 +73,8 @@ export function CredentialHelperNote({
   }, [open]);
 
   const personasByRole = useMemo(() => {
-    const map = new Map<Role, Persona[]>();
-    for (const p of [...PERSONAS, ...createdPersonas]) {
+    const map = new Map<Role, AnyPersona[]>();
+    for (const p of [...PERSONAS, ...createdPersonas] as AnyPersona[]) {
       const list = map.get(p.role) ?? [];
       list.push(p);
       map.set(p.role, list);
@@ -77,9 +84,11 @@ export function CredentialHelperNote({
 
   if (!open) return null;
 
-  function handlePick(p: Persona) {
+  function handlePick(p: AnyPersona) {
     setRevealedId(p.id);
-    onPick(p);
+    // Created personas have no stored password — auto-fill email only by
+    // passing an empty password through.
+    onPick(hasPassword(p) ? p : { ...p, password: '' });
   }
 
   return (
@@ -196,10 +205,16 @@ export function CredentialHelperNote({
                         <span className="text-slate-500">Email: </span>
                         {p.email}
                       </div>
-                      <div>
-                        <span className="text-slate-500">Mật khẩu: </span>
-                        {p.password}
-                      </div>
+                      {hasPassword(p) ? (
+                        <div>
+                          <span className="text-slate-500">Mật khẩu: </span>
+                          {p.password}
+                        </div>
+                      ) : (
+                        <div className="italic text-slate-500">
+                          Tự nhập mật khẩu khi đăng nhập
+                        </div>
+                      )}
                     </span>
                   ) : (
                     <span className="text-xs text-slate-500">

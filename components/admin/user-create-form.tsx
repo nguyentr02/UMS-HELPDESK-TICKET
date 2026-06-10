@@ -99,19 +99,17 @@ export function UserCreateForm() {
         departmentId: values.departmentId || null,
         password: values.password || null,
       });
-      // Surface the new user on the /login credential helper note so reviewers
-      // can sign in as them directly. Only meaningful when a password was set
-      // (SSO-only users have nothing to fill).
-      if (values.password) {
-        addCreatedPersona({
-          id: created.id,
-          email: created.email,
-          password: values.password,
-          displayName: created.displayName,
-          role: created.role,
-          departmentCode: created.department?.code ?? null,
-        });
-      }
+      // Surface the new user on the /login credential helper so the admin can
+      // recognize "yes that account I just made shows up here" and the click
+      // auto-fills the email. **Password is never persisted client-side** —
+      // see lib/auth/created-personas.ts for the rationale.
+      addCreatedPersona({
+        id: created.id,
+        email: created.email,
+        displayName: created.displayName,
+        role: created.role,
+        departmentCode: created.department?.code ?? null,
+      });
       toast.success(`Đã tạo người dùng ${created.displayName}`);
       router.push(`/admin/users/${created.id}`);
     } catch (err) {
