@@ -3,6 +3,7 @@ import {
   canManageCategories,
   canViewDashboard,
   canViewQueue,
+  canViewUsers,
   isRequester,
   receivesDailyReminder,
 } from './rbac';
@@ -14,7 +15,8 @@ export type NavIcon =
   | 'queue'
   | 'dept'
   | 'notifications'
-  | 'categories';
+  | 'categories'
+  | 'users';
 
 export interface NavItem {
   href: string;
@@ -97,6 +99,7 @@ export function navSectionsFor(role: Role): NavSection[] {
 
   const config: NavItem[] = [];
   if (canManageCategories(role)) config.push({ href: '/admin/categories', label: 'Danh mục', icon: 'categories' });
+  if (canViewUsers(role)) config.push({ href: '/admin/users', label: 'Người dùng', icon: 'users' });
   if (config.length) sections.push({ label: 'Cấu hình', items: config });
 
   return sections;

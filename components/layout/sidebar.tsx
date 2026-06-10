@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Plus,
   Tags,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { useSessionOptional } from '@/lib/auth/session';
@@ -27,6 +28,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   dept: Building2,
   notifications: Bell,
   categories: Tags,
+  users: Users,
 };
 
 function initials(name: string): string {

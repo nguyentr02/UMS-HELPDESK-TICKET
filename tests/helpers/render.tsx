@@ -45,14 +45,29 @@ export function renderWithProviders(
     const persona = personaId
       ? PERSONAS.find((p) => p.id === personaId) ?? defaultPersonaForRole(role)
       : defaultPersonaForRole(role);
+    const resolvedDeptId = resolveDeptId(persona.departmentCode);
     client.setQueryData(authKeys.me, {
       user: {
         id: persona.id,
         role: persona.role,
-        departmentId: resolveDeptId(persona.departmentCode),
+        departmentId: resolvedDeptId,
         displayName: persona.displayName,
       },
     });
+    // Also seed `localStorage.m31.mockUser` — `apiFetch` in `lib/api/client.ts`
+    // reads this and sends `X-Mock-*` headers so MSW handlers that scope
+    // responses by role/dept (`/tickets`, `/users`, etc.) see the test persona.
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(
+        'm31.mockUser',
+        JSON.stringify({
+          id: persona.id,
+          role: persona.role,
+          departmentId: resolvedDeptId,
+          displayName: persona.displayName,
+        }),
+      );
+    }
   }
 
   function Wrapper({ children }: { children: ReactNode }) {

@@ -62,6 +62,14 @@ export const canUpdateProgress = (r: Role): boolean =>
 export const canClose = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canViewDashboard = (r: Role): boolean => ['HelpdeskLead', 'Admin'].includes(r);
 export const canManageCategories = (r: Role): boolean => r === 'Admin';
+/** Admin-only: read-only user directory. No create/update/delete — users come from other UMS modules. */
+export const canViewUsers = (r: Role): boolean => r === 'Admin';
+/**
+ * Admin-only: create a user inside Helpdesk. This deliberately steps outside
+ * the helpdesk's bounded context (M1 / IAM normally owns user lifecycle);
+ * kept here for the practice/demo flow per explicit product decision.
+ */
+export const canCreateUsers = (r: Role): boolean => r === 'Admin';
 export const receivesDailyReminder = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(r);
 

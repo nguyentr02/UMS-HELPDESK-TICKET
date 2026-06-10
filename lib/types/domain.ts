@@ -34,6 +34,44 @@ export interface Department {
   name: string;
 }
 
+/**
+ * Admin user directory DTO (BE: `GET /users` and `GET /users/:id`). Sensitive
+ * fields (`passwordHash`, `ssoSubject`, `googleId`, `avatarUrl`) are projected
+ * out by the BE and never appear here.
+ */
+export interface User {
+  id: string;
+  email: string;
+  displayName: string;
+  role: Role;
+  department: Department | null;
+}
+
+export interface UserListResponse {
+  items: User[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ListUsersQuery {
+  role?: Role;
+  departmentId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** Admin-only create input. `departmentId` is required when `role=DeptStaff`;
+ *  `password` is optional — blank means SSO-only login. */
+export interface CreateUserInput {
+  email: string;
+  displayName: string;
+  role: Role;
+  departmentId?: string | null;
+  password?: string | null;
+}
+
 export interface Category {
   id: string;
   name: string;

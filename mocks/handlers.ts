@@ -501,4 +501,143 @@ export const handlers = [
     }
     return fail(401, 'unauthenticated', 'Yêu cầu xác thực');
   }),
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Admin user directory (BE-S13). Admin only — the FE component gates UI,
+  // and the MSW handler mirrors the BE by 403'ing non-Admin callers via the
+  // X-Mock-Role header.
+  // ──────────────────────────────────────────────────────────────────────────
+  http.get(`${base}/users`, ({ request }) => {
+    if ((request.headers.get('X-Mock-Role') ?? '') !== 'Admin') {
+      return fail(403, 'forbidden', 'Không có quyền truy cập');
+    }
+    const url = new URL(request.url);
+    const roleFilter = url.searchParams.get('role');
+    const departmentIdFilter = url.searchParams.get('departmentId');
+    const searchTerm = (url.searchParams.get('search') ?? '').trim().toLowerCase();
+    const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? '20')));
+
+    const allPersonas = PERSONAS.map((p) => {
+      const dept = p.departmentCode
+        ? departments.find((d) => d.code === p.departmentCode) ?? null
+        : null;
+      return {
+        id: p.id,
+        email: p.email,
+        displayName: p.displayName,
+        role: p.role,
+        department: dept,
+      };
+    });
+
+    const filtered = allPersonas.filter((u) => {
+      if (roleFilter && u.role !== roleFilter) return false;
+      if (departmentIdFilter && u.department?.id !== departmentIdFilter) return false;
+      if (searchTerm) {
+        const hay = `${u.displayName} ${u.email}`.toLowerCase();
+        if (!hay.includes(searchTerm)) return false;
+      }
+      return true;
+    });
+
+    filtered.sort((a, b) => a.role.localeCompare(b.role) || a.displayName.localeCompare(b.displayName));
+    const start = (page - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    return ok({ items, page, pageSize, total: filtered.length });
+  }),
+
+  http.get(`${base}/users/:id`, ({ request, params }) => {
+    if ((request.headers.get('X-Mock-Role') ?? '') !== 'Admin') {
+      return fail(403, 'forbidden', 'Không có quyền truy cập');
+    }
+    const id = String(params.id);
+    const persona = PERSONAS.find((p) => p.id === id);
+    if (persona) {
+      const dept = persona.departmentCode
+        ? departments.find((d) => d.code === persona.departmentCode) ?? null
+        : null;
+      return ok({
+        id: persona.id,
+        email: persona.email,
+        displayName: persona.displayName,
+        role: persona.role,
+        department: dept,
+      });
+    }
+    const created = CREATED_USERS.find((u) => u.id === id);
+    if (created) return ok(created);
+    return fail(404, 'not_found', 'Không tìm thấy người dùng');
+  }),
+
+  // POST /users — Admin-only create (BE-S15). Mirrors the BE invariants:
+  // 422 on missing/invalid fields, 409 on duplicate email, 403 for non-Admin.
+  http.post(`${base}/users`, async ({ request }) => {
+    if ((request.headers.get('X-Mock-Role') ?? '') !== 'Admin') {
+      return fail(403, 'forbidden', 'Không có quyền truy cập');
+    }
+    const body = (await request.json().catch(() => null)) as
+      | {
+          email?: unknown;
+          displayName?: unknown;
+          role?: unknown;
+          departmentId?: unknown;
+          password?: unknown;
+        }
+      | null;
+    if (!body) return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { _: 'JSON không hợp lệ' });
+
+    const fields: Record<string, string> = {};
+    const emailRaw = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
+    const role = typeof body.role === 'string' ? body.role : '';
+    const departmentIdRaw =
+      typeof body.departmentId === 'string' && body.departmentId !== '' ? body.departmentId : null;
+    const passwordRaw = typeof body.password === 'string' && body.password !== '' ? body.password : null;
+
+    if (!emailRaw) fields.email = 'Vui lòng nhập email';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) fields.email = 'Email không hợp lệ';
+    if (displayName.length < 2) fields.displayName = 'Tối thiểu 2 ký tự';
+    if (!ROLES.includes(role as (typeof ROLES)[number])) fields.role = 'Vai trò không hợp lệ';
+    if (passwordRaw != null && passwordRaw.length < 8) fields.password = 'Mật khẩu tối thiểu 8 ký tự';
+    if (role === 'DeptStaff' && !departmentIdRaw) fields.departmentId = 'Bắt buộc cho vai trò DeptStaff';
+    if (departmentIdRaw && !departments.some((d) => d.id === departmentIdRaw)) {
+      fields.departmentId = 'Phòng ban không tồn tại';
+    }
+    if (Object.keys(fields).length > 0) return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', fields);
+
+    const personaEmailConflict = PERSONAS.some((p) => p.email.toLowerCase() === emailRaw);
+    const createdEmailConflict = CREATED_USERS.some((u) => u.email.toLowerCase() === emailRaw);
+    if (personaEmailConflict || createdEmailConflict) {
+      return fail(409, 'conflict', 'Email đã được sử dụng');
+    }
+
+    const dept = departmentIdRaw ? departments.find((d) => d.id === departmentIdRaw) ?? null : null;
+    const created = {
+      id: `u-created-${CREATED_USERS.length + 1}`,
+      email: emailRaw,
+      displayName,
+      role: role as (typeof ROLES)[number],
+      department: dept,
+    };
+    CREATED_USERS.push(created);
+    return ok(created, { status: 201 });
+  }),
 ];
+
+const ROLES = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead', 'DeptStaff', 'Admin'] as const;
+
+/** Test-scope register of POST /users creations so subsequent GET /users:id and
+ *  duplicate-email checks see them. Cleared in tests via `__resetCreatedUsers`. */
+const CREATED_USERS: Array<{
+  id: string;
+  email: string;
+  displayName: string;
+  role: (typeof ROLES)[number];
+  department: { id: string; code: string; name: string } | null;
+}> = [];
+
+export function __resetCreatedUsers() {
+  CREATED_USERS.length = 0;
+}
