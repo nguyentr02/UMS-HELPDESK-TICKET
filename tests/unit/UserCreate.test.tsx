@@ -91,6 +91,18 @@ describe('UserCreateForm — Admin create-user flow (FE-S15)', () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  it('M31-FE-S15-X5: personal email (gmail) → inline email field error, no navigate', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserCreateForm />, { role: 'Admin' });
+
+    await user.type(screen.getByLabelText('Email'), 'someone@gmail.com');
+    await user.type(screen.getByLabelText('Họ tên'), 'Email Cá Nhân');
+    await user.click(screen.getByRole('button', { name: 'Tạo người dùng' }));
+
+    expect(await screen.findByText('Email phải thuộc miền @ums.edu.vn hoặc @dau.edu.vn')).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
   it('M31-FE-S15-X4: Vietnamese displayName with diacritics is accepted (no name error)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<UserCreateForm />, { role: 'Admin' });

@@ -32,6 +32,7 @@ import { handleMutationError } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/client';
 import { addCreatedPersona } from '@/lib/auth/created-personas';
 import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
+import { isAllowedEmailDomain, EMAIL_DOMAIN_ERROR } from '@/lib/validation/email-domains';
 import type { Role } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
@@ -49,7 +50,13 @@ const ROLE_OPTIONS: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead',
  */
 const FormSchema = z
   .object({
-    email: z.string().trim().min(1, 'Vui lòng nhập email').email('Email không hợp lệ').max(200),
+    email: z
+      .string()
+      .trim()
+      .min(1, 'Vui lòng nhập email')
+      .email('Email không hợp lệ')
+      .max(200)
+      .refine(isAllowedEmailDomain, EMAIL_DOMAIN_ERROR),
     displayName: z
       .string()
       .trim()

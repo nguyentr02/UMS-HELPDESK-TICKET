@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { AnalyticsSummary, Severity, TicketComment } from '@/lib/types/domain';
 import { SEVERITY_META } from '@/lib/status/severity';
 import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
+import { isAllowedEmailDomain, EMAIL_DOMAIN_ERROR } from '@/lib/validation/email-domains';
 import { PERSONAS } from './personas';
 import {
   HELPDESK_ACTOR,
@@ -605,6 +606,7 @@ export const handlers = [
 
     if (!emailRaw) fields.email = 'Vui lòng nhập email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) fields.email = 'Email không hợp lệ';
+    else if (!isAllowedEmailDomain(emailRaw)) fields.email = EMAIL_DOMAIN_ERROR;
     if (displayName.length < 2) fields.displayName = 'Tối thiểu 2 ký tự';
     else if (!NAME_REGEX.test(displayName)) fields.displayName = NAME_ERROR;
     if (!ROLES.includes(role as (typeof ROLES)[number])) fields.role = 'Vai trò không hợp lệ';
