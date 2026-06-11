@@ -22,7 +22,9 @@
 | Redirect ticket | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Override severity | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Cập nhật In Progress | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Đóng ticket | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Đóng ticket (trực tiếp) | ❌ | ✅² | ✅ | ❌ | ❌ |
+| Yêu cầu đóng (kèm minh chứng) | ❌ | ❌ | ❌ | ✅³ | ❌ |
+| Duyệt / Từ chối yêu cầu đóng | ❌ | ✅² | ✅ | ❌ | ❌ |
 | Dashboard tổng quan | ❌ | ❌ | ✅ | ❌ | ✅ |
 | Quản lý Category tree | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Quản lý Routing rules | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -35,6 +37,10 @@
 > \* **Scope exceptions:** user lifecycle (create/update/delete) normally lives in M1 (IAM). The helpdesk module exposes `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id` (soft — `isActive=false`) for the practice/demo flow only, per explicit product decisions (2026-06-09 for create, 2026-06-10 for update + delete). Email is intentionally immutable here. Admin cannot delete themselves (BE 409). Read-only fetch (`GET /users`, `GET /users/:id`) is the long-term contract.
 
 > ¹ **Helpdesk Agent chỉ thấy ticket được gán cho mình** trong hàng đợi (server-derived scoping); mở ticket của agent khác → **403**. Chỉ **Lead** và **Admin** thấy tất cả ticket. Agent vẫn truy cập màn hình hàng đợi (`canViewQueue` = true), nhưng dữ liệu bị giới hạn theo `helpdeskAssigneeId = caller.id`.
+>
+> ² **Ownership backstop:** một **Agent** chỉ đóng / duyệt / từ chối ticket **được gán cho mình**; **Lead** thao tác trên mọi ticket.
+>
+> ³ **Close request (S17, 2026-06-11):** DeptStaff của **phòng được phân công** gửi yêu cầu đóng kèm **comment bắt buộc + ảnh tuỳ chọn** khi ticket đang `InProgress`. Ticket chuyển sang `CloseRequested` (người yêu cầu vẫn thấy "Đang xử lý"). Agent/Lead phụ trách **Duyệt** (→ Closed) hoặc **Từ chối** (kèm lý do → InProgress để làm lại). Mọi bước (yêu cầu / duyệt / từ chối) gửi notification cho bên liên quan. Đóng trực tiếp (không qua yêu cầu) vẫn dành cho Agent/Lead như cũ.
 
 ## Role definitions
 
@@ -84,6 +90,8 @@
 - `canOverrideSeverity(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
 - `canUpdateProgress(role)` → `['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(role)`
 - `canClose(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canRequestClose(role)` → `role === 'DeptStaff'`; `canRequestCloseTicket(role, deptId, ticket)` adds the routed-dept match *(S17)*
+- `canReviewCloseRequest(role, userId, ticket)` → same ownership rule as `canCloseTicket` (Lead any; Agent only their assigned) *(S17)*
 - `canViewDashboard(role)` → `['HelpdeskLead', 'Admin'].includes(role)`
 - `canManageCategories(role)` → `role === 'Admin'`
 - `canManageRouting(role)` → `role === 'Admin'`

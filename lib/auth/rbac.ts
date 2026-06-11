@@ -90,3 +90,29 @@ export function canCloseTicket(
   if (role === 'HelpdeskLead') return true;
   return ticket.helpdeskAssignee?.id === userId;
 }
+
+/** DeptStaff may request a close (with proof). Role gate; the component also
+ *  checks the ticket is InProgress and routed to the staffer's department. */
+export const canRequestClose = (r: Role): boolean => r === 'DeptStaff';
+
+/** Per-ticket gate for requesting a close: DeptStaff of the routed dept only. */
+export function canRequestCloseTicket(
+  role: Role,
+  userDepartmentId: string | null,
+  ticket: { routedDepartment: { id: string } | null },
+): boolean {
+  if (!canRequestClose(role)) return false;
+  return !!userDepartmentId && ticket.routedDepartment?.id === userDepartmentId;
+}
+
+/**
+ * Review (approve/refuse) a pending close request — same ownership rule as a
+ * direct close: a Lead may review any, an Agent only the ticket assigned to them.
+ */
+export function canReviewCloseRequest(
+  role: Role,
+  userId: string,
+  ticket: { helpdeskAssignee: UserRef | null },
+): boolean {
+  return canCloseTicket(role, userId, ticket);
+}

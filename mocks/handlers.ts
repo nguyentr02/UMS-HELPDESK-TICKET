@@ -45,6 +45,9 @@ function caller(request: Request): Caller {
     deptId: request.headers.get('X-Mock-Dept-Id') ?? '',
   };
 }
+
+/** ticketId → the DeptStaff who submitted the pending close request (S17). */
+const closeRequesters = new Map<string, string>();
 const isRequesterRole = (r: string) => ['SV', 'GV', 'NV'].includes(r);
 
 /** MSW handlers implementing the M31 API contract (feature-plan App. A) + the §2 state machine. */
@@ -364,6 +367,106 @@ export const handlers = [
     return ok(t);
   }),
 
+  // S17 — DeptStaff requests close with proof (comment + optional images).
+  http.post(`${base}/tickets/:id/request-close`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    const c = caller(request);
+    if (c.role !== 'DeptStaff' || t.routedDepartment?.id !== c.deptId) {
+      return fail(403, 'forbidden', 'Yêu cầu không thuộc phòng ban của bạn');
+    }
+    if (t.internalStatus !== 'InProgress') {
+      return fail(409, 'conflict', 'Chỉ có thể yêu cầu đóng khi đang xử lý.');
+    }
+    const form = await request.formData();
+    const note = String(form.get('note') ?? '');
+    if (note.trim().length < 1) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { note: 'Cần mô tả công việc đã hoàn thành' });
+    }
+    const author = USERS[c.id] ?? t.requester;
+    (comments[t.id] ??= []).push({
+      id: nextId('cm'),
+      ticketId: t.id,
+      author,
+      body: note,
+      createdAt: new Date().toISOString(),
+      attachments: [],
+    });
+    appendEvent(t.id, { type: 'CloseRequested', actor: author, fromStatus: 'InProgress', toStatus: 'CloseRequested' });
+    closeRequesters.set(t.id, c.id);
+    setStatus(t, 'CloseRequested');
+    // Notify the assigned agent (if any).
+    if (t.helpdeskAssignee) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId: t.helpdeskAssignee.id,
+        type: 'CloseRequested',
+        ticketId: t.id,
+        payload: { code: t.code },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
+  // S17 — owning Agent/Lead approves a pending close request → Closed.
+  http.post(`${base}/tickets/:id/approve-close`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus !== 'CloseRequested') {
+      return fail(409, 'conflict', 'Yêu cầu không ở trạng thái chờ duyệt đóng.');
+    }
+    const body = (await request.json().catch(() => ({}))) as { reason?: string };
+    const note = body?.reason ? String(body.reason) : null;
+    appendEvent(t.id, { type: 'Closed', actor: HELPDESK_ACTOR, fromStatus: 'CloseRequested', toStatus: 'Closed', note });
+    setStatus(t, 'Closed');
+    const staffId = closeRequesters.get(t.id);
+    closeRequesters.delete(t.id);
+    for (const userId of [t.requester.id, staffId].filter((v): v is string => !!v)) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId,
+        type: 'TicketClosed',
+        ticketId: t.id,
+        payload: { code: t.code },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
+  // S17 — owning Agent/Lead refuses (reason required) → back to InProgress.
+  http.post(`${base}/tickets/:id/refuse-close`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus !== 'CloseRequested') {
+      return fail(409, 'conflict', 'Yêu cầu không ở trạng thái chờ duyệt đóng.');
+    }
+    const body = (await request.json().catch(() => ({}))) as { reason?: string };
+    const reason = body?.reason ? String(body.reason) : '';
+    if (reason.trim().length < 1) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { reason: 'Cần lý do từ chối' });
+    }
+    appendEvent(t.id, { type: 'CloseRefused', actor: HELPDESK_ACTOR, fromStatus: 'CloseRequested', toStatus: 'InProgress', note: reason });
+    setStatus(t, 'InProgress');
+    const staffId = closeRequesters.get(t.id);
+    closeRequesters.delete(t.id);
+    if (staffId) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId: staffId,
+        type: 'CloseRefused',
+        ticketId: t.id,
+        payload: { code: t.code, reason },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
   http.get(`${base}/notifications`, ({ request }) => {
     const c = caller(request);
     const mine = notifications
@@ -386,7 +489,7 @@ export const handlers = [
 
   http.get(`${base}/analytics/summary`, () => {
     const bySeverity = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<Severity, number>;
-    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, Closed: 0 };
+    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, CloseRequested: 0, Closed: 0 };
     const deptCounts = new Map<string, number>();
     const catCounts = new Map<string, number>();
     let closed = 0;

@@ -2,7 +2,7 @@
 // Role identifiers match role-permission-matrix.md verbatim.
 
 export type Severity = 'Critical' | 'High' | 'Medium' | 'Low';
-export type TicketStatus = 'Pending' | 'Assigned' | 'InProgress' | 'Closed';
+export type TicketStatus = 'Pending' | 'Assigned' | 'InProgress' | 'CloseRequested' | 'Closed';
 export type ExternalStatus = 'Requested' | 'Processing' | 'Finished';
 export type Role = 'SV' | 'GV' | 'NV' | 'HelpdeskAgent' | 'HelpdeskLead' | 'DeptStaff' | 'Admin';
 export type NotificationType =
@@ -12,7 +12,9 @@ export type NotificationType =
   | 'TicketForwarded'
   | 'StatusChanged'
   | 'TicketCreated'
-  | 'TicketCommented';
+  | 'TicketCommented'
+  | 'CloseRequested'
+  | 'CloseRefused';
 export type EventType =
   | 'Created'
   | 'AgentAssigned'
@@ -20,6 +22,8 @@ export type EventType =
   | 'Started'
   | 'SeverityChanged'
   | 'Commented'
+  | 'CloseRequested'
+  | 'CloseRefused'
   | 'Closed';
 export type AttachmentKind = 'Image' | 'Document';
 

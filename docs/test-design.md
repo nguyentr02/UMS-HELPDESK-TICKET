@@ -182,6 +182,12 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **H2** — Admin sees **Cập nhật** + **Xóa** for another user. **X4** — **Xóa** disabled when viewing self. **H3** — confirm → DELETE → nav to list. **H4** — a soft-deleted user is excluded from `listUsers()`. **H5** — re-creating a deleted user's email revives the same row (no 409).
 - **Ghost-user** (`ApiClient` cases) — a 401 from a non-`/auth/*` endpoint fires `m31:session-expired`; `/auth/me` + `/auth/login` 401 and any 403 do not.
 
+### S17 — DeptStaff close request workflow  *(new, 2026-06-11)*
+- **H1** — `RequestCloseDialog`: a note → POST `/request-close` with the note + success toast. **E1** — an empty note → inline error, no request.
+- **H2** — `ReviewCloseDialog`: approve → POST `/approve-close` + toast. **H3** — refuse with a reason → POST `/refuse-close` carrying the reason. **E2** — refuse with no reason → inline error, no request.
+- **G1** — DeptStaff (routed dept) on `InProgress` sees "Yêu cầu đóng"; **G2** — hidden before In Progress; **G3** — `CloseRequested` shows the "chờ Helpdesk duyệt" banner.
+- **G4** — Lead on `CloseRequested` sees "Duyệt đóng" + "Từ chối" (direct-close hidden in this paused state); **G5** — the assigned Agent sees them; **G6** — a non-assignee Agent does not.
+
 ---
 
 ## 4. RBAC visibility grid (S2 expansion — derived from `role-permission-matrix.md`)
@@ -226,9 +232,10 @@ This grid is realized as a **parametrized test** (one row per role) at the unit 
 | S14 | 2 | 1 | 3 | — | ✅ |
 | S15 | 3 | 1 | 6 | — | ✅ |
 | S16 | 4 | 1 | 4 | — | ✅ |
+| S17 | 5 | — | 6 | — | ✅ |
 
 **Totals (v1, S1…S11):** 12 Happy · 27 Edge · 26 Error · 11 Integration = **76 FE test cases**.
-**User-management additions (S14/S15/S16, 2026-06):** ~30 more cases (6 S14 + 10 S15 + credential-helper/ghost-user + 10 S16), in the same Vitest suite. Full FE suite green at the latest sync (**225 passing**).
+**User-management + close-request additions (S14/S15/S16/S17, 2026-06):** ~41 more cases (6 S14 + 10 S15 + 10 S16 + 11 S17 + credential-helper/ghost-user), in the same Vitest suite. Full FE suite green at the latest sync (**236 passing**).
 
 ---
 

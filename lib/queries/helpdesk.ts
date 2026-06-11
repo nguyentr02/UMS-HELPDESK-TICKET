@@ -59,3 +59,33 @@ export function useCloseTicket(id: string) {
     onSuccess: () => invalidateTicket(qc, id),
   });
 }
+
+/** DeptStaff submits a close request (proof comment + optional images). */
+export function useRequestClose(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (form: FormData) => ticketsApi.requestClose(id, form),
+    onSuccess: () => {
+      invalidateTicket(qc, id);
+      qc.invalidateQueries({ queryKey: ticketKeys.comments(id) });
+    },
+  });
+}
+
+/** Owning Agent/Lead approves a pending close request → Closed. */
+export function useApproveClose(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason?: string) => ticketsApi.approveClose(id, reason),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
+/** Owning Agent/Lead refuses (reason required) → back to InProgress. */
+export function useRefuseClose(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) => ticketsApi.refuseClose(id, reason),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}

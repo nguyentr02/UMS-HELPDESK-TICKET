@@ -10,6 +10,7 @@ import {
   canComment,
   canForward,
   canOverrideSeverity,
+  canReviewCloseRequest,
   canViewQueue,
 } from '@/lib/auth/rbac';
 import {
@@ -18,6 +19,7 @@ import {
   canCloseFrom,
   canForwardFrom,
   canOverrideSeverityFrom,
+  canReviewCloseFrom,
 } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
@@ -32,6 +34,7 @@ import { ForwardDialog } from './forward-dialog';
 import { CategoryAssignDialog } from './category-assign-dialog';
 import { SeverityOverrideDialog } from './severity-override-dialog';
 import { CloseDialog } from './close-dialog';
+import { ReviewCloseDialog } from './review-close-dialog';
 
 /** Helpdesk console ticket detail — internal status + role×status-gated actions. */
 export function HelpdeskTicketDetail({ id }: { id: string }) {
@@ -125,7 +128,20 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
         {canCloseTicket(role, user.id, ticket) && canCloseFrom(s) ? (
           <CloseDialog ticket={ticket} />
         ) : null}
+        {canReviewCloseRequest(role, user.id, ticket) && canReviewCloseFrom(s) ? (
+          <ReviewCloseDialog ticket={ticket} />
+        ) : null}
       </div>
+
+      {/* When a close request is pending, point the reviewer at the proof below. */}
+      {canReviewCloseRequest(role, user.id, ticket) && canReviewCloseFrom(s) ? (
+        <p
+          role="status"
+          className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-900"
+        >
+          Phòng ban đã yêu cầu đóng — xem minh chứng trong phần bình luận bên dưới rồi duyệt hoặc từ chối.
+        </p>
+      ) : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex flex-col gap-6">

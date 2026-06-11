@@ -1,10 +1,12 @@
 import type { EventType, ExternalStatus, TicketStatus } from '@/lib/types/domain';
 
-// Internal (4) → external (3) status mapping — feature-plan App. B.
+// Internal (5) → external (3) status mapping — feature-plan App. B.
 export const INTERNAL_TO_EXTERNAL: Record<TicketStatus, ExternalStatus> = {
   Pending: 'Requested',
   Assigned: 'Requested',
   InProgress: 'Processing',
+  // A pending close request is internal-only; requesters keep seeing "Processing".
+  CloseRequested: 'Processing',
   Closed: 'Finished',
 };
 
@@ -19,11 +21,12 @@ export const EXTERNAL_STATUS_VI: Record<ExternalStatus, string> = {
   Finished: 'Hoàn tất',
 };
 
-// Vietnamese labels for the 4 internal statuses — Helpdesk/Staff/Admin views only.
+// Vietnamese labels for the 5 internal statuses — Helpdesk/Staff/Admin views only.
 export const INTERNAL_STATUS_VI: Record<TicketStatus, string> = {
   Pending: 'Chờ tiếp nhận',
   Assigned: 'Đã giao phòng ban',
   InProgress: 'Đang xử lý',
+  CloseRequested: 'Chờ duyệt đóng',
   Closed: 'Đã đóng',
 };
 
@@ -35,6 +38,8 @@ export const EVENT_VI: Record<EventType, string> = {
   Started: 'Bắt đầu xử lý',
   SeverityChanged: 'Điều chỉnh mức độ',
   Commented: 'Bình luận',
+  CloseRequested: 'Yêu cầu đóng',
+  CloseRefused: 'Từ chối đóng',
   Closed: 'Đóng yêu cầu',
 };
 
@@ -42,11 +47,12 @@ export const ALL_STATUSES: TicketStatus[] = [
   'Pending',
   'Assigned',
   'InProgress',
+  'CloseRequested',
   'Closed',
 ];
 
 // "open" / unsolved = every non-Closed state (drives the status=open filter).
-export const OPEN_STATUSES: TicketStatus[] = ['Pending', 'Assigned', 'InProgress'];
+export const OPEN_STATUSES: TicketStatus[] = ['Pending', 'Assigned', 'InProgress', 'CloseRequested'];
 
 export function isOpen(status: TicketStatus): boolean {
   return status !== 'Closed';

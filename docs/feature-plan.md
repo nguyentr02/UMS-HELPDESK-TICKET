@@ -718,6 +718,7 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | S14 — Admin user directory *(2026-06)* | Admin-only `/admin/users` paged/filterable table + `/admin/users/[id]` detail; non-Admin → AccessDenied; no PII columns; right-side FilterDrawer mirrors the ticket list |
 | S15 — Admin create user *(scope exception)* | `/admin/users/new`; institutional email + letters-only name; **Phòng ban shown only for DeptStaff**; optional password (blank ⇒ SSO-only); 409 dup → inline error; success → detail. Created users surface (identity-only) on the `/login` helper |
 | S16 — Admin edit + soft delete *(scope exception)* | `/admin/users/[id]/edit` (email read-only, only-changed-fields PATCH); **Xóa** with confirm dialog, disabled on self; soft-deleted users vanish from the list + are blocked from SSO; re-creating their email revives the row |
+| S17 — DeptStaff close request *(2026-06-11)* | DeptStaff (routed dept) on an InProgress ticket sees **Yêu cầu đóng** → dialog (comment required + optional images) → `CloseRequested`; the owning Agent/Lead sees **Duyệt đóng** / **Từ chối** (reason required, → InProgress). New internal status `Chờ duyệt đóng` (external still Processing); each step notifies the relevant party. Direct close by Agent/Lead unchanged |
 
 ---
 
@@ -742,6 +743,9 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | `POST /tickets/:id/forward` | `{departmentId}` | Helpdesk | Pending→Assigned (or Redirected→Assigned) |
 | `POST /tickets/:id/redirect` | `{departmentId, reason}` | Helpdesk | Assigned/InProgress→Assigned (new dept) |
 | `POST /tickets/:id/progress` | start | DeptStaff(dept)/Helpdesk | Assigned→InProgress |
+| `POST /tickets/:id/request-close` | proof `{note}` + images (multipart) | DeptStaff(dept) | InProgress→CloseRequested |
+| `POST /tickets/:id/approve-close` | `{reason?}` | Lead or assigned Agent | CloseRequested→Closed |
+| `POST /tickets/:id/refuse-close` | `{reason}` | Lead or assigned Agent | CloseRequested→InProgress |
 | `POST /tickets/:id/close` | `{note?}` | Lead or assigned Agent | →Closed (+ TicketClosed notification) |
 | `GET /tickets/:id/history` | audit | participants/Helpdesk/Admin | — |
 | `GET /attachments/:id` | download (authz) | participants/Helpdesk/Admin | — |
@@ -797,17 +801,19 @@ Close    { note? }
 | `Pending` | Đã tiếp nhận | Created, awaiting Lead assignment / forwarding |
 | `Assigned` | Đã tiếp nhận | Forwarded to a phòng ban |
 | `InProgress` | **Đang xử lý** | Phòng ban is working on it |
-| `Redirected` | Đã tiếp nhận | Helpdesk is re-routing (transient — server lands back in `Assigned`) |
+| `CloseRequested` | **Đang xử lý** | DeptStaff asked to close (with proof); awaiting Agent/Lead review *(S17, 2026-06-11)* |
 | `Closed` | **Hoàn tất** | Helpdesk confirmed completion (terminal) |
+
+> `Redirected` was dropped from the enum (migration `drop_redirected`); re-routing reuses `Assigned`. The current internal set is **Pending / Assigned / InProgress / CloseRequested / Closed**.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Pending: create (SV/GV/NV)
   Pending --> Assigned: forward (Helpdesk)
   Assigned --> InProgress: progress (DeptStaff/Helpdesk)
-  Assigned --> Redirected: redirect (Helpdesk)
-  InProgress --> Redirected: redirect (Helpdesk)
-  Redirected --> Assigned: re-forward (Helpdesk)
+  InProgress --> CloseRequested: request-close (DeptStaff)
+  CloseRequested --> Closed: approve-close (Agent/Lead)
+  CloseRequested --> InProgress: refuse-close (Agent/Lead)
   Pending --> Closed: close (Helpdesk)
   Assigned --> Closed: close (Helpdesk)
   InProgress --> Closed: close (Helpdesk)

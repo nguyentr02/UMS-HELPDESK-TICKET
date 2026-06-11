@@ -95,3 +95,26 @@ export const assignCategory = (id: string, categoryId: string | null) =>
 
 export const closeTicket = (id: string, note?: string) =>
   apiFetch<Ticket>(`/tickets/${id}/close`, { method: 'POST', body: JSON.stringify({ note }) });
+
+/** DeptStaff close request — proof note (required) + optional images (FormData). */
+export async function requestClose(id: string, form: FormData): Promise<Ticket> {
+  const body = await formDataToJsonBody(form);
+  return apiFetch<Ticket>(`/tickets/${id}/request-close`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** Owning Agent/Lead approves a pending close request → Closed. */
+export const approveClose = (id: string, reason?: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/approve-close`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+
+/** Owning Agent/Lead refuses (reason required) → back to InProgress. */
+export const refuseClose = (id: string, reason: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/refuse-close`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });

@@ -14,7 +14,7 @@ const summary: AnalyticsSummary = {
   closed: 3,
   avgHandlingDays: 2.4,
   bySeverity: { Critical: 2, High: 4, Medium: 3, Low: 3 },
-  byStatus: { Pending: 3, Assigned: 2, InProgress: 4, Closed: 3 },
+  byStatus: { Pending: 3, Assigned: 2, InProgress: 4, CloseRequested: 0, Closed: 3 },
   byDepartment: [{ departmentId: 'dep-it', name: 'CAIRA / Phòng IT', count: 5 }],
   byCategory: [{ categoryId: 'cat-it', name: 'IT / Hệ thống số', count: 6 }],
 };

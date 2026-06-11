@@ -70,4 +70,23 @@ describe('StaffTicketDetail (S6 gating)', () => {
     renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'SV' });
     expect(await screen.findByText('Bạn không có quyền truy cập khu vực này.')).toBeInTheDocument();
   });
+
+  it('M31-FE-S17-G1: DeptStaff (of routed dept) on an InProgress ticket sees "Yêu cầu đóng"', async () => {
+    mockTicket(ticket({ internalStatus: 'InProgress' }));
+    renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
+    expect(await screen.findByRole('button', { name: 'Yêu cầu đóng' })).toBeInTheDocument();
+  });
+
+  it('M31-FE-S17-G2: the request-close action is hidden before In Progress (Assigned)', async () => {
+    mockTicket(ticket({ internalStatus: 'Assigned' }));
+    renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
+    await screen.findByText('Máy chiếu hỏng');
+    expect(screen.queryByRole('button', { name: 'Yêu cầu đóng' })).not.toBeInTheDocument();
+  });
+
+  it('M31-FE-S17-G3: a pending close request shows the "chờ Helpdesk duyệt" banner', async () => {
+    mockTicket(ticket({ internalStatus: 'CloseRequested' }));
+    renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
+    expect(await screen.findByText(/đang chờ Helpdesk duyệt/i)).toBeInTheDocument();
+  });
 });

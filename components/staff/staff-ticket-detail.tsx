@@ -3,7 +3,12 @@
 import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import { ApiError } from '@/lib/api/client';
 import { useSession } from '@/lib/auth/session';
-import { canComment, canUpdateProgress, canViewDeptQueue } from '@/lib/auth/rbac';
+import {
+  canComment,
+  canRequestCloseTicket,
+  canUpdateProgress,
+  canViewDeptQueue,
+} from '@/lib/auth/rbac';
 import { canProgressFrom } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
@@ -14,6 +19,7 @@ import { AttachmentList } from '@/components/tickets/attachment-list';
 import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
 import { ProgressButton } from './progress-button';
+import { RequestCloseDialog } from './request-close-dialog';
 
 /**
  * Dept Staff ticket detail (S6) — internal status + the single "Bắt đầu xử lý"
@@ -72,11 +78,26 @@ export function StaffTicketDetail({ id }: { id: string }) {
         </p>
       </header>
 
-      {/* Only Mark-In-Progress, gated by role (matrix) AND status (Assigned → InProgress). */}
-      {canUpdateProgress(role) && canProgressFrom(s) ? (
+      {/* DeptStaff actions: Mark-In-Progress (Assigned→InProgress) and, once
+          in progress, request a close with proof. */}
+      {(canUpdateProgress(role) && canProgressFrom(s)) ||
+      (canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'InProgress') ? (
         <div className="flex flex-wrap gap-2">
-          <ProgressButton ticket={ticket} />
+          {canUpdateProgress(role) && canProgressFrom(s) ? <ProgressButton ticket={ticket} /> : null}
+          {canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'InProgress' ? (
+            <RequestCloseDialog ticket={ticket} />
+          ) : null}
         </div>
+      ) : null}
+
+      {/* While the close request is pending, show the staffer it's awaiting review. */}
+      {s === 'CloseRequested' && canRequestCloseTicket(role, session.user.departmentId, ticket) ? (
+        <p
+          role="status"
+          className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-900"
+        >
+          Đã gửi yêu cầu đóng — đang chờ Helpdesk duyệt.
+        </p>
       ) : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">

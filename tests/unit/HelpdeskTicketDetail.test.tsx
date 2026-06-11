@@ -77,4 +77,27 @@ describe('HelpdeskTicketDetail (S2/S3/S7 gating)', () => {
     expect(screen.queryByRole('button', { name: 'Gán nhân viên' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Đóng yêu cầu' })).not.toBeInTheDocument();
   });
+
+  it('M31-FE-S17-G4: a Lead on a CloseRequested ticket sees "Duyệt đóng" + "Từ chối"', async () => {
+    mockTicket(ticket({ internalStatus: 'CloseRequested', helpdeskAssignee: { id: 'u-hda', displayName: 'Agent' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskLead' });
+    expect(await screen.findByRole('button', { name: 'Duyệt đóng' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Từ chối' })).toBeInTheDocument();
+    // The direct close + assign controls are hidden in this paused state.
+    expect(screen.queryByRole('button', { name: 'Đóng yêu cầu' })).not.toBeInTheDocument();
+  });
+
+  it('M31-FE-S17-G5: the assigned Agent sees the review controls', async () => {
+    mockTicket(ticket({ internalStatus: 'CloseRequested', helpdeskAssignee: { id: 'u-hda', displayName: 'Agent' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskAgent' });
+    expect(await screen.findByRole('button', { name: 'Duyệt đóng' })).toBeInTheDocument();
+  });
+
+  it('M31-FE-S17-G6: an Agent who is NOT the assignee sees no review controls', async () => {
+    mockTicket(ticket({ internalStatus: 'CloseRequested', helpdeskAssignee: { id: 'u-hda2', displayName: 'Other' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskAgent' });
+    await screen.findByText('Wifi chậm');
+    expect(screen.queryByRole('button', { name: 'Duyệt đóng' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).not.toBeInTheDocument();
+  });
 });

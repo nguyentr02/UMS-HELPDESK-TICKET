@@ -16,6 +16,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   StatusChanged: 'Cập nhật trạng thái',
   TicketCreated: 'Yêu cầu mới',
   TicketCommented: 'Bình luận mới',
+  CloseRequested: 'Yêu cầu đóng',
+  CloseRefused: 'Từ chối đóng',
 };
 
 interface BacklogEntry {
@@ -39,6 +41,10 @@ function messageFor(type: NotificationType, code: string): string {
       return `Có yêu cầu mới: ${code}.`;
     case 'TicketCommented':
       return `Có bình luận mới trên ${code}.`;
+    case 'CloseRequested':
+      return `Có yêu cầu đóng cần duyệt trên ${code}.`;
+    case 'CloseRefused':
+      return `Yêu cầu đóng ${code} bị từ chối. Vui lòng kiểm tra và xử lý lại.`;
     default:
       return '';
   }

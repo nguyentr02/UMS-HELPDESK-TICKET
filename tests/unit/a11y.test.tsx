@@ -97,7 +97,7 @@ describe('Accessibility sweep (Phase 7 — 0 violations)', () => {
       closed: 1,
       avgHandlingDays: 2.4,
       bySeverity: { Critical: 1, High: 2, Medium: 1, Low: 1 },
-      byStatus: { Pending: 2, Assigned: 1, InProgress: 1, Closed: 1 },
+      byStatus: { Pending: 2, Assigned: 1, InProgress: 1, CloseRequested: 0, Closed: 1 },
       byDepartment: [{ departmentId: 'dep-it', name: 'CAIRA / Phòng IT', count: 3 }],
       byCategory: [{ categoryId: 'cat-it', name: 'IT / Hệ thống số', count: 4 }],
     };

@@ -82,6 +82,8 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 | `helpdesk/helpdesk-queue.tsx` | Intake queue — `QueueFilters` (search/status/severity/category/assignee/sort) + responsive table + mobile cards (internal status) |
 | `helpdesk/helpdesk-ticket-detail.tsx` | Internal detail + action bar gated by **role × status** + timeline |
 | `helpdesk/{assign,forward,redirect,severity-override,close}-dialog.tsx` | The 5 action dialogs (S3/S4/S5/S7); each = `Dialog` + mutation hook + `handleMutationError` (409→toast+invalidate+close). Assign/Forward/Redirect use the shadcn `Combobox` picker |
+| `helpdesk/review-close-dialog.tsx` | S17 — owner (Lead/assigned-Agent) **Duyệt đóng** (optional note → Closed) / **Từ chối** (reason required → InProgress), shown only on `CloseRequested` |
+| `staff/request-close-dialog.tsx` | S17 — DeptStaff **Yêu cầu đóng**: comment (required) + optional images (`FileUpload`) → `request-close`; shown only on `InProgress` |
 | `staff/staff-queue.tsx` | Dept Staff queue (S6) — dept-scoped open queue; **responsive** desktop table + mobile cards |
 | `staff/staff-ticket-detail.tsx` | Dept Staff detail (S6) — internal status + only the Mark-In-Progress action + comment (no assign/forward/redirect/close) |
 | `staff/progress-button.tsx` | "Bắt đầu xử lý" — `POST /progress` (`Assigned`→`InProgress`); 403 (not your dept)/409 → refetch + toast |

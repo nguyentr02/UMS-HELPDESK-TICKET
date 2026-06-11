@@ -249,6 +249,17 @@ Admin-only `/admin/users/[id]/edit` + a **Xóa** action on the detail page, on B
 
 > **Ghost-user fix (2026-06-08):** `app/providers.tsx` excludes `["auth","me"]` from the persisted TanStack cache and listens for `m31:session-expired` (fired by `apiFetch` on any non-`/auth/*` 401) to wipe the cache + redirect — so an expired cookie can't show a stale logged-in chrome. Tests: `tests/unit/ApiClient.test.tsx`.
 
+### Phase 17 — DeptStaff close request workflow  *(S17 — new, 2026-06-11)*
+
+DeptStaff who did the work can request a close with proof; the owning Agent/Lead approves or refuses. New 6th status `CloseRequested` (external still `Processing`).
+
+- [x] `lib/types/domain.ts` + `lib/status/status.ts` — `CloseRequested` status (label "Chờ duyệt đóng", purple badge) + `CloseRequested`/`CloseRefused` event & notification types. `lib/status/transitions.ts` — `canRequestCloseFrom` (InProgress) / `canReviewCloseFrom` (CloseRequested); other `*From` guards tightened to the active set so they hide on the paused state.
+- [x] `lib/auth/rbac.ts` — `canRequestClose` / `canRequestCloseTicket` (dept match) + `canReviewCloseRequest` (= close ownership).
+- [x] `lib/api/tickets.ts` + `lib/queries/helpdesk.ts` — `requestClose` (multipart) / `approveClose` / `refuseClose` + `useRequestClose` / `useApproveClose` / `useRefuseClose`.
+- [x] `components/staff/request-close-dialog.tsx` (comment required + image upload) wired into `staff-ticket-detail` (InProgress → button; CloseRequested → "chờ duyệt" banner). `components/helpdesk/review-close-dialog.tsx` (Duyệt đóng / Từ chối) wired into `helpdesk-ticket-detail` (owner + CloseRequested gated).
+- [x] MSW `request-close` / `approve-close` / `refuse-close` handlers + `NotificationItem` copy.
+- **Tests:** `RequestCloseDialog` (`S17-H1/E1`), `ReviewCloseDialog` (`S17-H2/H3/E2`), `StaffTicketDetail` (`S17-G1..G3`), `HelpdeskTicketDetail` (`S17-G4..G6`).
+
 ---
 
 ## D. Cross-cutting / shared-code risks
@@ -293,6 +304,7 @@ Admin-only `/admin/users/[id]/edit` + a **Xóa** action on the detail page, on B
 | 14 | S14 | `S14-H1/H3/E1/X1/X2/X3` (Admin user directory) |
 | 15 | S15 | `S15-H1/H2/H3/X1..X6` + credential-helper `S15-S5..S8` (Admin create — scope exception) |
 | 16 | S16 | `S16-H1..H5/X1..X5` (Admin edit + soft delete — scope exception) + ghost-user `ApiClient` cases |
+| 17 | S17 | `S17-H1/H2/H3/E1/E2` (request + review dialogs) + `S17-G1..G6` (detail gating) |
 
 ---
 
