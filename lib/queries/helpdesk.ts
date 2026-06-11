@@ -4,12 +4,16 @@ import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-q
 import * as ticketsApi from '@/lib/api/tickets';
 import type { Severity } from '@/lib/types/domain';
 import { ticketKeys } from './tickets';
+import { analyticsKeys } from './analytics';
 
-/** Refetch everything a transition can touch: the ticket, its history, and all lists. */
+/** Refetch everything a transition can touch: the ticket, its history, all
+ *  lists, AND the dashboard summary (status/severity counts shift on every
+ *  transition — without this the dashboard shows stale counts). */
 export function invalidateTicket(qc: QueryClient, id: string) {
   qc.invalidateQueries({ queryKey: ticketKeys.detail(id) });
   qc.invalidateQueries({ queryKey: ticketKeys.history(id) });
   qc.invalidateQueries({ queryKey: ticketKeys.all });
+  qc.invalidateQueries({ queryKey: analyticsKeys.summary });
 }
 
 export function useAssignAgent(id: string) {
