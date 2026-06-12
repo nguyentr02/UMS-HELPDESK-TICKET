@@ -18,8 +18,10 @@
 | Truy cập hàng đợi ticket | ❌ | ✅¹ | ✅ | ❌ | ✅ |
 | Xem ticket của dept mình | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Assign ticket cho Agent | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Forward đến phòng ban | ❌ | ✅ | ✅ | ❌ | ❌ |
-| Redirect ticket | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Forward đến phòng ban (Pending→Assigned) | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Redirect sang phòng khác (trực tiếp) | ❌ | ✅² | ✅ | ❌ | ❌ |
+| Xin chuyển phòng ban (kèm lý do) | ❌ | ❌ | ❌ | ✅³ | ❌ |
+| Duyệt / Từ chối yêu cầu chuyển | ❌ | ✅² | ✅ | ❌ | ❌ |
 | Override severity | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Cập nhật In Progress | ❌ | ✅ | ✅ | ✅ | ❌ |
 | Đóng ticket (trực tiếp) | ❌ | ✅² | ✅ | ❌ | ❌ |
@@ -41,6 +43,8 @@
 > ² **Ownership backstop:** một **Agent** chỉ đóng / duyệt / từ chối ticket **được gán cho mình**; **Lead** thao tác trên mọi ticket.
 >
 > ³ **Close request (S17, 2026-06-11):** DeptStaff của **phòng được phân công** gửi yêu cầu đóng kèm **comment bắt buộc + ảnh tuỳ chọn** khi ticket đang `InProgress`. Ticket chuyển sang `CloseRequested` (người yêu cầu vẫn thấy "Đang xử lý"). Agent/Lead phụ trách **Duyệt** (→ Closed) hoặc **Từ chối** (kèm lý do → InProgress để làm lại). Mọi bước (yêu cầu / duyệt / từ chối) gửi notification cho bên liên quan. Đóng trực tiếp (không qua yêu cầu) vẫn dành cho Agent/Lead như cũ.
+>
+> **Redirect (S18/S19, 2026-06-11):** **Trực tiếp (S18)** — Agent/Lead chuyển ticket `Assigned`/`InProgress` sang phòng ban khác (kèm lý do); ticket reset về `Assigned` cho phòng mới, giữ nguyên agent phụ trách. **Yêu cầu (S19)** — DeptStaff của phòng đang xử lý gửi **yêu cầu chuyển kèm lý do** (không chọn phòng đích); ticket sang `RedirectRequested`; Agent/Lead phụ trách **Duyệt** (tự chọn phòng đích → Assigned) hoặc **Từ chối** (kèm lý do → trạng thái trước đó). Mọi bước gửi notification.
 
 ## Role definitions
 
@@ -92,6 +96,9 @@
 - `canClose(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
 - `canRequestClose(role)` → `role === 'DeptStaff'`; `canRequestCloseTicket(role, deptId, ticket)` adds the routed-dept match *(S17)*
 - `canReviewCloseRequest(role, userId, ticket)` → same ownership rule as `canCloseTicket` (Lead any; Agent only their assigned) *(S17)*
+- `canRedirect(role)` → `['HelpdeskAgent','HelpdeskLead']`; `canRedirectTicket(role, userId, ticket)` adds the close-style ownership *(S18)*
+- `canRequestRedirect(role)` → `role === 'DeptStaff'`; `canRequestRedirectTicket(role, deptId, ticket)` adds the routed-dept match *(S19)*
+- `canReviewRedirectRequest(role, userId, ticket)` → same ownership as `canRedirectTicket` *(S19)*
 - `canViewDashboard(role)` → `['HelpdeskLead', 'Admin'].includes(role)`
 - `canManageCategories(role)` → `role === 'Admin'`
 - `canManageRouting(role)` → `role === 'Admin'`

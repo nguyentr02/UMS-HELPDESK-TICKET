@@ -100,4 +100,33 @@ describe('HelpdeskTicketDetail (S2/S3/S7 gating)', () => {
     expect(screen.queryByRole('button', { name: 'Duyệt đóng' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Từ chối' })).not.toBeInTheDocument();
   });
+
+  it('M31-FE-S18-G1: a Lead on an Assigned ticket sees "Chuyển phòng khác" (redirect)', async () => {
+    mockTicket(ticket({ internalStatus: 'Assigned', routedDepartment: { id: 'dep-csvc', code: 'CSVC', name: 'CSVC' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskLead' });
+    expect(await screen.findByRole('button', { name: 'Chuyển phòng khác' })).toBeInTheDocument();
+  });
+
+  it('M31-FE-S18-G2: redirect is hidden on a Pending ticket (use Forward for first routing)', async () => {
+    mockTicket(ticket({ internalStatus: 'Pending' }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskLead' });
+    await screen.findByText('Wifi chậm');
+    expect(screen.queryByRole('button', { name: 'Chuyển phòng khác' })).not.toBeInTheDocument();
+  });
+
+  it('M31-FE-S19-G3: a Lead on a RedirectRequested ticket sees "Duyệt chuyển" + "Từ chối"', async () => {
+    mockTicket(ticket({ internalStatus: 'RedirectRequested', helpdeskAssignee: { id: 'u-hda', displayName: 'Agent' }, routedDepartment: { id: 'dep-csvc', code: 'CSVC', name: 'CSVC' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskLead' });
+    expect(await screen.findByRole('button', { name: 'Duyệt chuyển' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Từ chối' })).toBeInTheDocument();
+    // Direct redirect + close are hidden in this paused state.
+    expect(screen.queryByRole('button', { name: 'Chuyển phòng khác' })).not.toBeInTheDocument();
+  });
+
+  it('M31-FE-S19-G4: a non-assignee Agent sees no redirect-review controls', async () => {
+    mockTicket(ticket({ internalStatus: 'RedirectRequested', helpdeskAssignee: { id: 'u-hda2', displayName: 'Other' } }));
+    renderWithProviders(<HelpdeskTicketDetail id="tk-1" />, { role: 'HelpdeskAgent' });
+    await screen.findByText('Wifi chậm');
+    expect(screen.queryByRole('button', { name: 'Duyệt chuyển' })).not.toBeInTheDocument();
+  });
 });

@@ -260,6 +260,25 @@ DeptStaff who did the work can request a close with proof; the owning Agent/Lead
 - [x] MSW `request-close` / `approve-close` / `refuse-close` handlers + `NotificationItem` copy.
 - **Tests:** `RequestCloseDialog` (`S17-H1/E1`), `ReviewCloseDialog` (`S17-H2/H3/E2`), `StaffTicketDetail` (`S17-G1..G3`), `HelpdeskTicketDetail` (`S17-G4..G6`).
 
+### Phase 18 — Agent/Lead direct redirect  *(S18 — new, 2026-06-11)*
+
+Re-route an already-assigned ticket to another dept. New 7th status `RedirectRequested` added to the FE maps here (label "Chờ duyệt chuyển", orange badge) so the app handles it before the request UI lands in Phase 19.
+
+- [x] `domain.ts` + `status.ts` — `RedirectRequested` status + `Redirected`/`RedirectRequested`/`RedirectRefused` event & notification copy. `transitions.ts` — `canRedirectFrom` (Assigned/InProgress).
+- [x] `rbac.ts` — `canRedirect` + `canRedirectTicket` (Lead any / Agent assigned).
+- [x] `lib/api/tickets.ts` + `lib/queries/helpdesk.ts` — `redirectTicket` + `useRedirectTicket`.
+- [x] `components/helpdesk/redirect-dialog.tsx` (dept picker excluding current + reason) on the Helpdesk detail toolbar, owner × Assigned/InProgress gated. MSW `POST /redirect`.
+- **Tests:** `RedirectDialog` gating + `redirectTicket` payload/422 (`S18-G1/H1/E1`), `HelpdeskTicketDetail` (`S18-G1/G2`).
+
+### Phase 19 — DeptStaff redirect request workflow  *(S19 — new, 2026-06-11)*
+
+The handling dept asks Helpdesk to move the ticket; the reviewer picks the destination.
+
+- [x] `rbac.ts` — `canRequestRedirect` / `canRequestRedirectTicket` (dept match) + `canReviewRedirectRequest` (= redirect ownership). `transitions.ts` — `canRequestRedirectFrom` (Assigned/InProgress) / `canReviewRedirectFrom` (RedirectRequested).
+- [x] `lib/api/tickets.ts` + `lib/queries/helpdesk.ts` — `requestRedirect` / `approveRedirect` / `refuseRedirect` + matching hooks.
+- [x] `components/staff/request-redirect-dialog.tsx` (reason only) on the staff detail (Assigned/InProgress → button; RedirectRequested → banner). `components/helpdesk/review-redirect-dialog.tsx` (Duyệt chuyển → dept picker; Từ chối → reason) on the helpdesk detail, owner × RedirectRequested gated. MSW request/approve/refuse handlers.
+- **Tests:** `RequestRedirectDialog` (`S19-H1/E1`), `ReviewRedirectDialog` (`S19-H2/H3/E2/G5`), `StaffTicketDetail` (`S19-G1/G2`), `HelpdeskTicketDetail` (`S19-G3/G4`).
+
 ---
 
 ## D. Cross-cutting / shared-code risks
@@ -305,6 +324,8 @@ DeptStaff who did the work can request a close with proof; the owning Agent/Lead
 | 15 | S15 | `S15-H1/H2/H3/X1..X6` + credential-helper `S15-S5..S8` (Admin create — scope exception) |
 | 16 | S16 | `S16-H1..H5/X1..X5` (Admin edit + soft delete — scope exception) + ghost-user `ApiClient` cases |
 | 17 | S17 | `S17-H1/H2/H3/E1/E2` (request + review dialogs) + `S17-G1..G6` (detail gating) |
+| 18 | S18 | `S18-G1/H1/E1` (direct redirect dialog + API) + `S18-G1/G2` (detail gating) |
+| 19 | S19 | `S19-H1/H2/H3/E1/E2/G5` (request + review dialogs) + `S19-G1..G4` (detail gating) |
 
 ---
 

@@ -32,6 +32,16 @@ export function useForwardTicket(id: string) {
   });
 }
 
+/** Agent/Lead direct redirect to another department. */
+export function useRedirectTicket(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { departmentId: string; reason: string }) =>
+      ticketsApi.redirectTicket(id, vars.departmentId, vars.reason),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
 export function useOverrideSeverity(id: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -90,6 +100,34 @@ export function useRefuseClose(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reason: string) => ticketsApi.refuseClose(id, reason),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
+/** DeptStaff submits a redirect request (reason only). */
+export function useRequestRedirect(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) => ticketsApi.requestRedirect(id, reason),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
+/** Owning Agent/Lead approves a redirect request — picks the target dept. */
+export function useApproveRedirect(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { departmentId: string; note?: string }) =>
+      ticketsApi.approveRedirect(id, vars.departmentId, vars.note),
+    onSuccess: () => invalidateTicket(qc, id),
+  });
+}
+
+/** Owning Agent/Lead refuses a redirect request (reason required). */
+export function useRefuseRedirect(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) => ticketsApi.refuseRedirect(id, reason),
     onSuccess: () => invalidateTicket(qc, id),
   });
 }

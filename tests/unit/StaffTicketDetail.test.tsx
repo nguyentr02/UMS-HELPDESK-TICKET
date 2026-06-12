@@ -89,4 +89,16 @@ describe('StaffTicketDetail (S6 gating)', () => {
     renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
     expect(await screen.findByText(/đang chờ Helpdesk duyệt/i)).toBeInTheDocument();
   });
+
+  it('M31-FE-S19-G1: DeptStaff (routed dept) on an Assigned ticket sees "Xin chuyển phòng ban"', async () => {
+    mockTicket(ticket({ internalStatus: 'Assigned' }));
+    renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
+    expect(await screen.findByRole('button', { name: 'Xin chuyển phòng ban' })).toBeInTheDocument();
+  });
+
+  it('M31-FE-S19-G2: a pending redirect request shows the "chờ Helpdesk duyệt" banner', async () => {
+    mockTicket(ticket({ internalStatus: 'RedirectRequested' }));
+    renderWithProviders(<StaffTicketDetail id="tk-1" />, { role: 'DeptStaff' });
+    expect(await screen.findByText(/yêu cầu chuyển phòng ban/i)).toBeInTheDocument();
+  });
 });

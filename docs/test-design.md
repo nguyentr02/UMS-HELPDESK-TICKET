@@ -188,6 +188,15 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **G1** — DeptStaff (routed dept) on `InProgress` sees "Yêu cầu đóng"; **G2** — hidden before In Progress; **G3** — `CloseRequested` shows the "chờ Helpdesk duyệt" banner.
 - **G4** — Lead on `CloseRequested` sees "Duyệt đóng" + "Từ chối" (direct-close hidden in this paused state); **G5** — the assigned Agent sees them; **G6** — a non-assignee Agent does not.
 
+### S18 — Agent/Lead direct redirect  *(new, 2026-06-11)*
+- **G1** — `RedirectDialog` opens with no dept preselected + confirm disabled. **H1** — `redirectTicket` API sends `departmentId` + `reason`. **E1** — a 422 (same dept) surfaces as `ApiError`.
+- **G1** — a Lead on an `Assigned` ticket sees "Chuyển phòng khác"; **G2** — hidden on `Pending` (use Forward).
+
+### S19 — DeptStaff redirect request workflow  *(new, 2026-06-11)*
+- **H1** — `RequestRedirectDialog`: reason → POST `/request-redirect`. **E1** — empty reason → inline error, no request.
+- **H3** — `ReviewRedirectDialog`: refuse with a reason → POST `/refuse-redirect`. **E2** — refuse with no reason → error. **G5** — Approve dialog confirm disabled until a dept is picked. **H2** — `approveRedirect` API sends `departmentId` + `note`.
+- **G1** — DeptStaff on `Assigned` sees "Xin chuyển phòng ban"; **G2** — `RedirectRequested` shows the "chờ duyệt" banner. **G3** — Lead on `RedirectRequested` sees "Duyệt chuyển" + "Từ chối"; **G4** — a non-assignee Agent does not.
+
 ---
 
 ## 4. RBAC visibility grid (S2 expansion — derived from `role-permission-matrix.md`)
@@ -233,9 +242,11 @@ This grid is realized as a **parametrized test** (one row per role) at the unit 
 | S15 | 3 | 1 | 6 | — | ✅ |
 | S16 | 4 | 1 | 4 | — | ✅ |
 | S17 | 5 | — | 6 | — | ✅ |
+| S18 | 2 | — | 3 | — | ✅ |
+| S19 | 4 | — | 6 | — | ✅ |
 
 **Totals (v1, S1…S11):** 12 Happy · 27 Edge · 26 Error · 11 Integration = **76 FE test cases**.
-**User-management + close-request additions (S14/S15/S16/S17, 2026-06):** ~41 more cases (6 S14 + 10 S15 + 10 S16 + 11 S17 + credential-helper/ghost-user), in the same Vitest suite. Full FE suite green at the latest sync (**236 passing**).
+**User-management + close/redirect additions (S14…S19, 2026-06):** ~60 more cases (6 S14 + 10 S15 + 10 S16 + 11 S17 + 5 S18 + 10 S19 + credential-helper/ghost-user), in the same Vitest suite. Full FE suite green at the latest sync (**252 passing**).
 
 ---
 

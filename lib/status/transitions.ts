@@ -17,6 +17,10 @@ export const canForwardFrom = (s: TicketStatus): boolean => s === 'Pending';
 // Start progress: ASSIGNED→IN_PROGRESS.
 export const canProgressFrom = (s: TicketStatus): boolean => s === 'Assigned';
 
+// Direct redirect: re-route an already-routed ticket (Assigned or InProgress).
+export const canRedirectFrom = (s: TicketStatus): boolean =>
+  s === 'Assigned' || s === 'InProgress';
+
 // Assign owner / override severity / re-categorise / direct close: any active
 // status (not Closed, not CloseRequested).
 export const canAssignFrom = isActive;
@@ -29,3 +33,10 @@ export const canRequestCloseFrom = (s: TicketStatus): boolean => s === 'InProgre
 
 // Agent/Lead reviews (approve/refuse) a pending close request.
 export const canReviewCloseFrom = (s: TicketStatus): boolean => s === 'CloseRequested';
+
+// DeptStaff requests a redirect: while Assigned or InProgress.
+export const canRequestRedirectFrom = (s: TicketStatus): boolean =>
+  s === 'Assigned' || s === 'InProgress';
+
+// Agent/Lead reviews (approve/refuse) a pending redirect request.
+export const canReviewRedirectFrom = (s: TicketStatus): boolean => s === 'RedirectRequested';

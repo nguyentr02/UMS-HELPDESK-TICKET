@@ -719,6 +719,8 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | S15 — Admin create user *(scope exception)* | `/admin/users/new`; institutional email + letters-only name; **Phòng ban shown only for DeptStaff**; optional password (blank ⇒ SSO-only); 409 dup → inline error; success → detail. Created users surface (identity-only) on the `/login` helper |
 | S16 — Admin edit + soft delete *(scope exception)* | `/admin/users/[id]/edit` (email read-only, only-changed-fields PATCH); **Xóa** with confirm dialog, disabled on self; soft-deleted users vanish from the list + are blocked from SSO; re-creating their email revives the row |
 | S17 — DeptStaff close request *(2026-06-11)* | DeptStaff (routed dept) on an InProgress ticket sees **Yêu cầu đóng** → dialog (comment required + optional images) → `CloseRequested`; the owning Agent/Lead sees **Duyệt đóng** / **Từ chối** (reason required, → InProgress). New internal status `Chờ duyệt đóng` (external still Processing); each step notifies the relevant party. Direct close by Agent/Lead unchanged |
+| S18 — Direct redirect *(2026-06-11)* | Agent/Lead on an Assigned/InProgress ticket sees **Chuyển phòng khác** → dialog (dept picker excluding current + reason) → ticket re-routes, resets to Assigned, assignee kept |
+| S19 — DeptStaff redirect request *(2026-06-11)* | DeptStaff (routed dept) sees **Xin chuyển phòng ban** → dialog (reason only) → `RedirectRequested`; the owning Agent/Lead sees **Duyệt chuyển** (picks the target dept) / **Từ chối** (reason → prior status). New internal status `Chờ duyệt chuyển` (external still Processing); each step notifies the relevant party |
 
 ---
 
@@ -743,6 +745,10 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | `POST /tickets/:id/forward` | `{departmentId}` | Helpdesk | Pending→Assigned (or Redirected→Assigned) |
 | `POST /tickets/:id/redirect` | `{departmentId, reason}` | Helpdesk | Assigned/InProgress→Assigned (new dept) |
 | `POST /tickets/:id/progress` | start | DeptStaff(dept)/Helpdesk | Assigned→InProgress |
+| `POST /tickets/:id/redirect` | `{departmentId, reason}` | Lead or assigned Agent | Assigned/InProgress→Assigned (new dept) |
+| `POST /tickets/:id/request-redirect` | `{reason}` (no target) | DeptStaff(dept) | Assigned/InProgress→RedirectRequested |
+| `POST /tickets/:id/approve-redirect` | `{departmentId, note?}` | Lead or assigned Agent | RedirectRequested→Assigned (new dept) |
+| `POST /tickets/:id/refuse-redirect` | `{reason}` | Lead or assigned Agent | RedirectRequested→prior status |
 | `POST /tickets/:id/request-close` | proof `{note}` + images (multipart) | DeptStaff(dept) | InProgress→CloseRequested |
 | `POST /tickets/:id/approve-close` | `{reason?}` | Lead or assigned Agent | CloseRequested→Closed |
 | `POST /tickets/:id/refuse-close` | `{reason}` | Lead or assigned Agent | CloseRequested→InProgress |
@@ -802,15 +808,22 @@ Close    { note? }
 | `Assigned` | Đã tiếp nhận | Forwarded to a phòng ban |
 | `InProgress` | **Đang xử lý** | Phòng ban is working on it |
 | `CloseRequested` | **Đang xử lý** | DeptStaff asked to close (with proof); awaiting Agent/Lead review *(S17, 2026-06-11)* |
+| `RedirectRequested` | **Đang xử lý** | DeptStaff asked to move depts; awaiting Agent/Lead review *(S19, 2026-06-11)* |
 | `Closed` | **Hoàn tất** | Helpdesk confirmed completion (terminal) |
 
-> `Redirected` was dropped from the enum (migration `drop_redirected`); re-routing reuses `Assigned`. The current internal set is **Pending / Assigned / InProgress / CloseRequested / Closed**.
+> The old transient `Redirected` was dropped (migration `drop_redirected`); re-routing now lands in `Assigned`. The current internal set is **Pending / Assigned / InProgress / CloseRequested / RedirectRequested / Closed**.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Pending: create (SV/GV/NV)
   Pending --> Assigned: forward (Helpdesk)
   Assigned --> InProgress: progress (DeptStaff/Helpdesk)
+  Assigned --> Assigned: redirect (Agent/Lead)
+  InProgress --> Assigned: redirect (Agent/Lead)
+  Assigned --> RedirectRequested: request-redirect (DeptStaff)
+  InProgress --> RedirectRequested: request-redirect (DeptStaff)
+  RedirectRequested --> Assigned: approve-redirect (Agent/Lead, new dept)
+  RedirectRequested --> InProgress: refuse-redirect (Agent/Lead)
   InProgress --> CloseRequested: request-close (DeptStaff)
   CloseRequested --> Closed: approve-close (Agent/Lead)
   CloseRequested --> InProgress: refuse-close (Agent/Lead)

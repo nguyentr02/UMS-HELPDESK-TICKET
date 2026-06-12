@@ -7,6 +7,8 @@ export const INTERNAL_TO_EXTERNAL: Record<TicketStatus, ExternalStatus> = {
   InProgress: 'Processing',
   // A pending close request is internal-only; requesters keep seeing "Processing".
   CloseRequested: 'Processing',
+  // A pending redirect request is also internal-only.
+  RedirectRequested: 'Processing',
   Closed: 'Finished',
 };
 
@@ -27,6 +29,7 @@ export const INTERNAL_STATUS_VI: Record<TicketStatus, string> = {
   Assigned: 'Đã giao phòng ban',
   InProgress: 'Đang xử lý',
   CloseRequested: 'Chờ duyệt đóng',
+  RedirectRequested: 'Chờ duyệt chuyển',
   Closed: 'Đã đóng',
 };
 
@@ -35,11 +38,14 @@ export const EVENT_VI: Record<EventType, string> = {
   Created: 'Tạo yêu cầu',
   AgentAssigned: 'Gán nhân viên Helpdesk',
   Forwarded: 'Chuyển đến phòng ban',
+  Redirected: 'Chuyển phòng ban',
   Started: 'Bắt đầu xử lý',
   SeverityChanged: 'Điều chỉnh mức độ',
   Commented: 'Bình luận',
   CloseRequested: 'Yêu cầu đóng',
   CloseRefused: 'Từ chối đóng',
+  RedirectRequested: 'Xin chuyển phòng ban',
+  RedirectRefused: 'Từ chối chuyển',
   Closed: 'Đóng yêu cầu',
 };
 
@@ -48,11 +54,18 @@ export const ALL_STATUSES: TicketStatus[] = [
   'Assigned',
   'InProgress',
   'CloseRequested',
+  'RedirectRequested',
   'Closed',
 ];
 
 // "open" / unsolved = every non-Closed state (drives the status=open filter).
-export const OPEN_STATUSES: TicketStatus[] = ['Pending', 'Assigned', 'InProgress', 'CloseRequested'];
+export const OPEN_STATUSES: TicketStatus[] = [
+  'Pending',
+  'Assigned',
+  'InProgress',
+  'CloseRequested',
+  'RedirectRequested',
+];
 
 export function isOpen(status: TicketStatus): boolean {
   return status !== 'Closed';

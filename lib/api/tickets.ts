@@ -78,6 +78,13 @@ export const forwardTicket = (id: string, departmentId: string) =>
     body: JSON.stringify({ departmentId }),
   });
 
+/** Agent/Lead re-routes an already-assigned ticket to another dept (reason required). */
+export const redirectTicket = (id: string, departmentId: string, reason: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/redirect`, {
+    method: 'POST',
+    body: JSON.stringify({ departmentId, reason }),
+  });
+
 export const startProgress = (id: string) =>
   apiFetch<Ticket>(`/tickets/${id}/progress`, { method: 'POST' });
 
@@ -115,6 +122,27 @@ export const approveClose = (id: string, reason?: string) =>
 /** Owning Agent/Lead refuses (reason required) → back to InProgress. */
 export const refuseClose = (id: string, reason: string) =>
   apiFetch<Ticket>(`/tickets/${id}/refuse-close`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+
+/** DeptStaff asks to move the ticket to another dept (reason only; no target). */
+export const requestRedirect = (id: string, reason: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/request-redirect`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+
+/** Owning Agent/Lead approves a redirect request — picks the target dept. */
+export const approveRedirect = (id: string, departmentId: string, note?: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/approve-redirect`, {
+    method: 'POST',
+    body: JSON.stringify({ departmentId, note }),
+  });
+
+/** Owning Agent/Lead refuses a redirect request (reason required). */
+export const refuseRedirect = (id: string, reason: string) =>
+  apiFetch<Ticket>(`/tickets/${id}/refuse-redirect`, {
     method: 'POST',
     body: JSON.stringify({ reason }),
   });

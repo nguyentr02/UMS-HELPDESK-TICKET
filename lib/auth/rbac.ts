@@ -53,6 +53,8 @@ export function canComment(
 }
 export const canAssign = (r: Role): boolean => r === 'HelpdeskLead';
 export const canForward = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
+/** Direct redirect (re-route an already-assigned ticket). Role gate; ownership in canRedirectTicket. */
+export const canRedirect = (r: Role): boolean => ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canCategorize = (r: Role): boolean =>
   ['HelpdeskAgent', 'HelpdeskLead'].includes(r);
 export const canOverrideSeverity = (r: Role): boolean =>
@@ -91,6 +93,20 @@ export function canCloseTicket(
   return ticket.helpdeskAssignee?.id === userId;
 }
 
+/**
+ * Direct redirect ownership: a Lead may re-route any ticket, an Agent only the
+ * one assigned to them (same rule as close).
+ */
+export function canRedirectTicket(
+  role: Role,
+  userId: string,
+  ticket: { helpdeskAssignee: UserRef | null },
+): boolean {
+  if (!canRedirect(role)) return false;
+  if (role === 'HelpdeskLead') return true;
+  return ticket.helpdeskAssignee?.id === userId;
+}
+
 /** DeptStaff may request a close (with proof). Role gate; the component also
  *  checks the ticket is InProgress and routed to the staffer's department. */
 export const canRequestClose = (r: Role): boolean => r === 'DeptStaff';
@@ -115,4 +131,27 @@ export function canReviewCloseRequest(
   ticket: { helpdeskAssignee: UserRef | null },
 ): boolean {
   return canCloseTicket(role, userId, ticket);
+}
+
+/** DeptStaff may request a redirect. Role gate; component also checks the ticket
+ *  is Assigned/InProgress and routed to the staffer's department. */
+export const canRequestRedirect = (r: Role): boolean => r === 'DeptStaff';
+
+/** Per-ticket gate for requesting a redirect: DeptStaff of the routed dept only. */
+export function canRequestRedirectTicket(
+  role: Role,
+  userDepartmentId: string | null,
+  ticket: { routedDepartment: { id: string } | null },
+): boolean {
+  if (!canRequestRedirect(role)) return false;
+  return !!userDepartmentId && ticket.routedDepartment?.id === userDepartmentId;
+}
+
+/** Review (approve/refuse) a redirect request — same ownership rule as redirect. */
+export function canReviewRedirectRequest(
+  role: Role,
+  userId: string,
+  ticket: { helpdeskAssignee: UserRef | null },
+): boolean {
+  return canRedirectTicket(role, userId, ticket);
 }

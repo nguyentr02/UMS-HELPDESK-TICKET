@@ -48,6 +48,9 @@ function caller(request: Request): Caller {
 
 /** ticketId → the DeptStaff who submitted the pending close request (S17). */
 const closeRequesters = new Map<string, string>();
+
+/** ticketId → who asked for a redirect + the status to restore on refuse (S19). */
+const redirectRequesters = new Map<string, { staffId: string; fromStatus: 'Assigned' | 'InProgress' }>();
 const isRequesterRole = (r: string) => ['SV', 'GV', 'NV'].includes(r);
 
 /** MSW handlers implementing the M31 API contract (feature-plan App. A) + the §2 state machine. */
@@ -330,6 +333,40 @@ export const handlers = [
     return ok(t);
   }),
 
+  // S18 — Agent/Lead re-routes an already-assigned ticket to another dept.
+  http.post(`${base}/tickets/:id/redirect`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus !== 'Assigned' && t.internalStatus !== 'InProgress') {
+      return fail(409, 'conflict', 'Không thể chuyển ở trạng thái hiện tại.');
+    }
+    const { departmentId, reason } = (await request.json()) as { departmentId?: string; reason?: string };
+    if (!reason || String(reason).trim().length < 1) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { reason: 'Cần lý do chuyển phòng ban' });
+    }
+    const dept = departments.find((d) => d.id === departmentId);
+    if (!dept) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
+    }
+    if (t.routedDepartment?.id === departmentId) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Ticket đã thuộc phòng ban này' });
+    }
+    const fromStatus = t.internalStatus;
+    const fromDeptId = t.routedDepartment?.id ?? null;
+    t.routedDepartment = dept;
+    setStatus(t, 'Assigned');
+    appendEvent(t.id, {
+      type: 'Redirected',
+      actor: HELPDESK_ACTOR,
+      fromStatus,
+      toStatus: 'Assigned',
+      fromDepartmentId: fromDeptId,
+      toDepartmentId: dept.id,
+      note: String(reason).trim(),
+    });
+    return ok(t);
+  }),
+
   http.post(`${base}/tickets/:id/progress`, ({ params, request }) => {
     const t = tickets.find((x) => x.id === params.id);
     if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
@@ -467,6 +504,107 @@ export const handlers = [
     return ok(t);
   }),
 
+  // S19 — DeptStaff requests a redirect (reason only). Status → RedirectRequested.
+  http.post(`${base}/tickets/:id/request-redirect`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    const c = caller(request);
+    if (c.role !== 'DeptStaff' || t.routedDepartment?.id !== c.deptId) {
+      return fail(403, 'forbidden', 'Yêu cầu không thuộc phòng ban của bạn');
+    }
+    if (t.internalStatus !== 'Assigned' && t.internalStatus !== 'InProgress') {
+      return fail(409, 'conflict', 'Không thể xin chuyển ở trạng thái hiện tại.');
+    }
+    const body = (await request.json().catch(() => ({}))) as { reason?: string };
+    const reason = body?.reason ? String(body.reason) : '';
+    if (reason.trim().length < 1) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { reason: 'Cần lý do xin chuyển phòng ban' });
+    }
+    const fromStatus = t.internalStatus;
+    redirectRequesters.set(t.id, { staffId: c.id, fromStatus });
+    appendEvent(t.id, { type: 'RedirectRequested', actor: USERS[c.id] ?? t.requester, fromStatus, toStatus: 'RedirectRequested', note: reason.trim() });
+    setStatus(t, 'RedirectRequested');
+    if (t.helpdeskAssignee) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId: t.helpdeskAssignee.id,
+        type: 'RedirectRequested',
+        ticketId: t.id,
+        payload: { code: t.code, reason: reason.trim() },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
+  // S19 — owning Agent/Lead approves a redirect request, picking the target dept.
+  http.post(`${base}/tickets/:id/approve-redirect`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus !== 'RedirectRequested') {
+      return fail(409, 'conflict', 'Yêu cầu không ở trạng thái chờ duyệt chuyển.');
+    }
+    const { departmentId, note } = (await request.json().catch(() => ({}))) as { departmentId?: string; note?: string };
+    const dept = departments.find((d) => d.id === departmentId);
+    if (!dept) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Phòng ban không hợp lệ' });
+    }
+    if (t.routedDepartment?.id === departmentId) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { departmentId: 'Ticket đã thuộc phòng ban này' });
+    }
+    const fromDeptId = t.routedDepartment?.id ?? null;
+    t.routedDepartment = dept;
+    setStatus(t, 'Assigned');
+    appendEvent(t.id, { type: 'Redirected', actor: HELPDESK_ACTOR, fromStatus: 'RedirectRequested', toStatus: 'Assigned', fromDepartmentId: fromDeptId, toDepartmentId: dept.id, note: note ? String(note) : null });
+    const rec = redirectRequesters.get(t.id);
+    redirectRequesters.delete(t.id);
+    // Tell the staffer who asked that their request was approved + moved.
+    if (rec?.staffId) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId: rec.staffId,
+        type: 'StatusChanged',
+        ticketId: t.id,
+        payload: { code: t.code, departmentId: dept.id },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
+  // S19 — owning Agent/Lead refuses a redirect request (reason required).
+  http.post(`${base}/tickets/:id/refuse-redirect`, async ({ params, request }) => {
+    const t = tickets.find((x) => x.id === params.id);
+    if (!t) return fail(404, 'not_found', 'Không tìm thấy yêu cầu');
+    if (t.internalStatus !== 'RedirectRequested') {
+      return fail(409, 'conflict', 'Yêu cầu không ở trạng thái chờ duyệt chuyển.');
+    }
+    const body = (await request.json().catch(() => ({}))) as { reason?: string };
+    const reason = body?.reason ? String(body.reason) : '';
+    if (reason.trim().length < 1) {
+      return fail(422, 'validation_error', 'Dữ liệu không hợp lệ', { reason: 'Cần lý do từ chối' });
+    }
+    const rec = redirectRequesters.get(t.id);
+    redirectRequesters.delete(t.id);
+    const prior = rec?.fromStatus === 'Assigned' ? 'Assigned' : 'InProgress';
+    appendEvent(t.id, { type: 'RedirectRefused', actor: HELPDESK_ACTOR, fromStatus: 'RedirectRequested', toStatus: prior, note: reason.trim() });
+    setStatus(t, prior);
+    if (rec?.staffId) {
+      notifications.unshift({
+        id: nextId('nt'),
+        userId: rec.staffId,
+        type: 'RedirectRefused',
+        ticketId: t.id,
+        payload: { code: t.code, reason: reason.trim() },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    return ok(t);
+  }),
+
   http.get(`${base}/notifications`, ({ request }) => {
     const c = caller(request);
     const mine = notifications
@@ -489,7 +627,7 @@ export const handlers = [
 
   http.get(`${base}/analytics/summary`, () => {
     const bySeverity = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<Severity, number>;
-    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, CloseRequested: 0, Closed: 0 };
+    const byStatus = { Pending: 0, Assigned: 0, InProgress: 0, CloseRequested: 0, RedirectRequested: 0, Closed: 0 };
     const deptCounts = new Map<string, number>();
     const catCounts = new Map<string, number>();
     let closed = 0;

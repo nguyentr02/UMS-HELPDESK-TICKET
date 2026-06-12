@@ -6,10 +6,11 @@ import { useSession } from '@/lib/auth/session';
 import {
   canComment,
   canRequestCloseTicket,
+  canRequestRedirectTicket,
   canUpdateProgress,
   canViewDeptQueue,
 } from '@/lib/auth/rbac';
-import { canProgressFrom } from '@/lib/status/transitions';
+import { canProgressFrom, canRequestRedirectFrom } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,7 @@ import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
 import { ProgressButton } from './progress-button';
 import { RequestCloseDialog } from './request-close-dialog';
+import { RequestRedirectDialog } from './request-redirect-dialog';
 
 /**
  * Dept Staff ticket detail (S6) — internal status + the single "Bắt đầu xử lý"
@@ -78,25 +80,40 @@ export function StaffTicketDetail({ id }: { id: string }) {
         </p>
       </header>
 
-      {/* DeptStaff actions: Mark-In-Progress (Assigned→InProgress) and, once
-          in progress, request a close with proof. */}
-      {(canUpdateProgress(role) && canProgressFrom(s)) ||
-      (canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'InProgress') ? (
-        <div className="flex flex-wrap gap-2">
-          {canUpdateProgress(role) && canProgressFrom(s) ? <ProgressButton ticket={ticket} /> : null}
-          {canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'InProgress' ? (
-            <RequestCloseDialog ticket={ticket} />
-          ) : null}
-        </div>
-      ) : null}
+      {/* DeptStaff actions: Mark-In-Progress (Assigned→InProgress); once in
+          progress, request a close with proof; and (Assigned/InProgress) ask
+          Helpdesk to redirect the ticket to another department. */}
+      {(() => {
+        const showProgress = canUpdateProgress(role) && canProgressFrom(s);
+        const showRequestClose =
+          canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'InProgress';
+        const showRequestRedirect =
+          canRequestRedirectTicket(role, session.user.departmentId, ticket) &&
+          canRequestRedirectFrom(s);
+        return showProgress || showRequestClose || showRequestRedirect ? (
+          <div className="flex flex-wrap gap-2">
+            {showProgress ? <ProgressButton ticket={ticket} /> : null}
+            {showRequestClose ? <RequestCloseDialog ticket={ticket} /> : null}
+            {showRequestRedirect ? <RequestRedirectDialog ticket={ticket} /> : null}
+          </div>
+        ) : null;
+      })()}
 
-      {/* While the close request is pending, show the staffer it's awaiting review. */}
-      {s === 'CloseRequested' && canRequestCloseTicket(role, session.user.departmentId, ticket) ? (
+      {/* Pending-review banners for the staffer who asked. */}
+      {canRequestCloseTicket(role, session.user.departmentId, ticket) && s === 'CloseRequested' ? (
         <p
           role="status"
           className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-900"
         >
           Đã gửi yêu cầu đóng — đang chờ Helpdesk duyệt.
+        </p>
+      ) : null}
+      {canRequestRedirectTicket(role, session.user.departmentId, ticket) && s === 'RedirectRequested' ? (
+        <p
+          role="status"
+          className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900"
+        >
+          Đã gửi yêu cầu chuyển phòng ban — đang chờ Helpdesk duyệt.
         </p>
       ) : null}
 

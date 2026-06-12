@@ -10,7 +10,9 @@ import {
   canComment,
   canForward,
   canOverrideSeverity,
+  canRedirectTicket,
   canReviewCloseRequest,
+  canReviewRedirectRequest,
   canViewQueue,
 } from '@/lib/auth/rbac';
 import {
@@ -19,7 +21,9 @@ import {
   canCloseFrom,
   canForwardFrom,
   canOverrideSeverityFrom,
+  canRedirectFrom,
   canReviewCloseFrom,
+  canReviewRedirectFrom,
 } from '@/lib/status/transitions';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
@@ -31,10 +35,12 @@ import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
 import { AssignDialog } from './assign-dialog';
 import { ForwardDialog } from './forward-dialog';
+import { RedirectDialog } from './redirect-dialog';
 import { CategoryAssignDialog } from './category-assign-dialog';
 import { SeverityOverrideDialog } from './severity-override-dialog';
 import { CloseDialog } from './close-dialog';
 import { ReviewCloseDialog } from './review-close-dialog';
+import { ReviewRedirectDialog } from './review-redirect-dialog';
 
 /** Helpdesk console ticket detail — internal status + role×status-gated actions. */
 export function HelpdeskTicketDetail({ id }: { id: string }) {
@@ -119,6 +125,9 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
       <div className="flex flex-wrap gap-2">
         {canAssign(role) && canAssignFrom(s) ? <AssignDialog ticket={ticket} /> : null}
         {canForward(role) && canForwardFrom(s) ? <ForwardDialog ticket={ticket} /> : null}
+        {canRedirectTicket(role, user.id, ticket) && canRedirectFrom(s) ? (
+          <RedirectDialog ticket={ticket} />
+        ) : null}
         {canCategorize(role) && canCategorizeFrom(s) ? (
           <CategoryAssignDialog ticket={ticket} />
         ) : null}
@@ -131,6 +140,9 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
         {canReviewCloseRequest(role, user.id, ticket) && canReviewCloseFrom(s) ? (
           <ReviewCloseDialog ticket={ticket} />
         ) : null}
+        {canReviewRedirectRequest(role, user.id, ticket) && canReviewRedirectFrom(s) ? (
+          <ReviewRedirectDialog ticket={ticket} />
+        ) : null}
       </div>
 
       {/* When a close request is pending, point the reviewer at the proof below. */}
@@ -140,6 +152,15 @@ export function HelpdeskTicketDetail({ id }: { id: string }) {
           className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-900"
         >
           Phòng ban đã yêu cầu đóng — xem minh chứng trong phần bình luận bên dưới rồi duyệt hoặc từ chối.
+        </p>
+      ) : null}
+      {/* When a redirect request is pending, point the reviewer at the reason. */}
+      {canReviewRedirectRequest(role, user.id, ticket) && canReviewRedirectFrom(s) ? (
+        <p
+          role="status"
+          className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900"
+        >
+          Phòng ban xin chuyển ticket — xem lý do trong lịch sử rồi chọn phòng ban mới (Duyệt) hoặc Từ chối.
         </p>
       ) : null}
 

@@ -18,6 +18,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   TicketCommented: 'Bình luận mới',
   CloseRequested: 'Yêu cầu đóng',
   CloseRefused: 'Từ chối đóng',
+  RedirectRequested: 'Xin chuyển phòng ban',
+  RedirectRefused: 'Từ chối chuyển',
 };
 
 interface BacklogEntry {
@@ -45,6 +47,10 @@ function messageFor(type: NotificationType, code: string): string {
       return `Có yêu cầu đóng cần duyệt trên ${code}.`;
     case 'CloseRefused':
       return `Yêu cầu đóng ${code} bị từ chối. Vui lòng kiểm tra và xử lý lại.`;
+    case 'RedirectRequested':
+      return `Có yêu cầu chuyển phòng ban cần duyệt trên ${code}.`;
+    case 'RedirectRefused':
+      return `Yêu cầu chuyển phòng ban ${code} bị từ chối.`;
     default:
       return '';
   }
