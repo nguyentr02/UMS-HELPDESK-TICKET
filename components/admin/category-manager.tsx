@@ -1,21 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
 import { Trash2 } from 'lucide-react';
+import { type FormEvent,useState } from 'react';
 import { toast } from 'sonner';
-import { useRole } from '@/lib/auth/session';
-import { canManageCategories } from '@/lib/auth/rbac';
-import { useCategories, useCreateCategory, useDeleteCategory } from '@/lib/queries/catalog';
-import { categorySchema } from '@/lib/validation/schemas';
-import { handleMutationError } from '@/lib/api/errors';
-import type { Category } from '@/lib/types/domain';
+
 import { AccessDenied } from '@/components/ui/access-denied';
-import { DataState } from '@/components/ui/data-state';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DataState } from '@/components/ui/data-state';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { handleMutationError } from '@/lib/api/errors';
+import { canManageCategories } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
+import { useCategories, useCreateCategory, useDeleteCategory } from '@/lib/queries/catalog';
+import type { Category } from '@/lib/types/domain';
+import { categorySchema } from '@/lib/validation/schemas';
 
 function CategoryRow({
   cat,

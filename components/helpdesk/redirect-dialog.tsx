@@ -1,15 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { useDepartments } from '@/lib/queries/catalog';
-import { invalidateTicket, useRedirectTicket } from '@/lib/queries/helpdesk';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +15,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Combobox } from '@/components/ui/combobox';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { handleMutationError } from '@/lib/api/errors';
+import { useDepartments } from '@/lib/queries/catalog';
+import { invalidateTicket, useRedirectTicket } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 /**
  * S18 — Agent/Lead re-routes an already-assigned ticket to a different

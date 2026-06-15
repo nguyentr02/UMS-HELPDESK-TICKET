@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { useAgents } from '@/lib/queries/catalog';
-import { invalidateTicket, useAssignAgent } from '@/lib/queries/helpdesk';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +15,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Combobox } from '@/components/ui/combobox';
+import { handleMutationError } from '@/lib/api/errors';
+import { useAgents } from '@/lib/queries/catalog';
+import { invalidateTicket, useAssignAgent } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 /** S3 — Helpdesk Lead assigns/reassigns the owning agent (no status change). */
 export function AssignDialog({ ticket }: { ticket: Ticket }) {

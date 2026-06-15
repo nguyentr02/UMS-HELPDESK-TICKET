@@ -1,20 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { ChevronRight, Plus } from 'lucide-react';
-import { useRole } from '@/lib/auth/session';
-import { canCreateUsers, canViewUsers } from '@/lib/auth/rbac';
-import { Button } from '@/components/ui/button';
-import { ROLE_VI } from '@/lib/auth/nav';
-import { useUsers } from '@/lib/queries/users';
-import { useDepartments } from '@/lib/queries/catalog';
-import type { ListUsersQuery } from '@/lib/types/domain';
+import Link from 'next/link';
+import { useState } from 'react';
+
 import { AccessDenied } from '@/components/ui/access-denied';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -23,11 +19,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
+import { ROLE_VI } from '@/lib/auth/nav';
+import { canCreateUsers, canViewUsers } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
+import { useDepartments } from '@/lib/queries/catalog';
+import { useUsers } from '@/lib/queries/users';
+import type { ListUsersQuery } from '@/lib/types/domain';
+
 import {
-  UserFilters,
-  EMPTY_USER_FILTERS,
   countActiveUserFilters,
+  EMPTY_USER_FILTERS,
+  UserFilters,
   type UserListFilters,
 } from './user-filters';
 

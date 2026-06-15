@@ -1,8 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { Role } from '@/lib/types/domain';
+
 import { useRole } from '@/lib/auth/session';
+import type { Role } from '@/lib/types/domain';
 
 /**
  * Renders `children` only when the current role satisfies `allow`.

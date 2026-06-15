@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { createTicketSchema, type CreateTicketInput } from '@/lib/validation/schemas';
-import { useCreateTicket } from '@/lib/queries/tickets';
-import { useCategories } from '@/lib/queries/catalog';
-import { handleMutationError } from '@/lib/api/errors';
+
+import { Button } from '@/components/ui/button';
+import { FileUpload } from '@/components/ui/file-upload';
 import {
   Form,
   FormControl,
@@ -18,9 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { FileUpload } from '@/components/ui/file-upload';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -28,6 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { handleMutationError } from '@/lib/api/errors';
+import { useCategories } from '@/lib/queries/catalog';
+import { useCreateTicket } from '@/lib/queries/tickets';
+import { type CreateTicketInput,createTicketSchema } from '@/lib/validation/schemas';
 
 const NO_CATEGORY = '__none__'; // Radix Select forbids empty-string item values.
 

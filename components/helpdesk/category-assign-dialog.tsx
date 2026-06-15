@@ -1,12 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { invalidateTicket, useAssignCategory } from '@/lib/queries/helpdesk';
-import { useCategories } from '@/lib/queries/catalog';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { handleMutationError } from '@/lib/api/errors';
+import { useCategories } from '@/lib/queries/catalog';
+import { invalidateTicket, useAssignCategory } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 // Radix Select forbids empty-string item values; this sentinel maps to "no category".
 const NO_CATEGORY = '__none__';

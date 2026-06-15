@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import type { Role, UserRef } from '@/lib/types/domain';
+import { createContext, type ReactNode,useContext, useMemo } from 'react';
+
 import { useMeQuery } from '@/lib/queries/auth';
+import type { Role, UserRef } from '@/lib/types/domain';
 
 export interface SessionUser extends UserRef {
   role: Role;

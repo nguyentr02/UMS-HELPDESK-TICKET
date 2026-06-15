@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
 import { Menu } from 'lucide-react';
-import { Sidebar, SidebarContent } from './sidebar';
-import { NotificationBell } from '@/components/notifications/notification-bell';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
+import { type ReactNode,useState } from 'react';
+
 import { LogoutButton } from '@/components/auth/logout-button';
+import { NotificationBell } from '@/components/notifications/notification-bell';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useSessionOptional } from '@/lib/auth/session';
+
+import { Sidebar, SidebarContent } from './sidebar';
 
 /**
  * App frame — responsive (memory: ship mobile + desktop):

@@ -1,14 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { invalidateTicket, useCloseTicket } from '@/lib/queries/helpdesk';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { handleMutationError } from '@/lib/api/errors';
+import { invalidateTicket, useCloseTicket } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 /** S7 — Helpdesk closes (Lead or assigned Agent); terminal, optional resolution note. */
 export function CloseDialog({ ticket }: { ticket: Ticket }) {

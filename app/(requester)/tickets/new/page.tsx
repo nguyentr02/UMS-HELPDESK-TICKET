@@ -1,5 +1,5 @@
-import { TicketForm } from '@/components/tickets/ticket-form';
 import { CreateTicketGuide } from '@/components/tickets/create-ticket-guide';
+import { TicketForm } from '@/components/tickets/ticket-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function NewTicketPage() {

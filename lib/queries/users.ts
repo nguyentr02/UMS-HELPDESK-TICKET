@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery,useQueryClient } from '@tanstack/react-query';
+
 import { createUser, deactivateUser, fetchUser, listUsers, updateUser } from '@/lib/api/users';
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput, User } from '@/lib/types/domain';
 

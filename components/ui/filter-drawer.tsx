@@ -1,10 +1,11 @@
 'use client';
 
-import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Filter, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import * as React from 'react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 /**

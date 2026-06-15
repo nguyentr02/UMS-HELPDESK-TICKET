@@ -1,6 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { listAgents } from '@/lib/api/agents';
 import {
   createCategory,
   deleteCategory,
@@ -8,7 +10,6 @@ import {
   updateCategory,
 } from '@/lib/api/categories';
 import { listDepartments } from '@/lib/api/departments';
-import { listAgents } from '@/lib/api/agents';
 
 export const catalogKeys = {
   categories: ['categories'] as const,

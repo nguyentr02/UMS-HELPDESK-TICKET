@@ -1,4 +1,5 @@
 import { upload } from '@vercel/blob/client';
+
 import { BASE_URL } from './client';
 
 export interface UploadedAttachment {

@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+
 import { CredentialHelperNote } from '@/components/auth/credential-helper-note';
 import { LoginForm, type LoginFormHandle } from '@/components/auth/login-form';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 /**
  * Map BE callback error codes (`/login?error=<code>`) to user-facing messages.

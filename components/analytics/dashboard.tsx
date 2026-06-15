@@ -1,16 +1,17 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-import { useRole } from '@/lib/auth/session';
+import { AccessDenied } from '@/components/ui/access-denied';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { canViewDashboard } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
 import { useAnalyticsSummary } from '@/lib/queries/analytics';
 import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
 import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
-import { AccessDenied } from '@/components/ui/access-denied';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
 import { StatCard } from './stat-card';
 
 function Bar({

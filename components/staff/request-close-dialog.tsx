@@ -1,15 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { invalidateTicket, useRequestClose } from '@/lib/queries/helpdesk';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { FileUpload } from '@/components/ui/file-upload';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { FileUpload } from '@/components/ui/file-upload';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { handleMutationError } from '@/lib/api/errors';
+import { invalidateTicket, useRequestClose } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 /**
  * S17 — DeptStaff submits a close request with proof: a comment (required)

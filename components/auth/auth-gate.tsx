@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSessionOptional } from '@/lib/auth/session';
-import { safeNextForRole } from '@/lib/auth/nav';
+import { type ReactNode,useEffect } from 'react';
+
 import { LoadingSplash } from '@/components/layout/loading-splash';
+import { safeNextForRole } from '@/lib/auth/nav';
+import { useSessionOptional } from '@/lib/auth/session';
 
 /** Routes that anyone can reach without a session. */
 const PUBLIC_PATHS = new Set<string>(['/', '/login']);

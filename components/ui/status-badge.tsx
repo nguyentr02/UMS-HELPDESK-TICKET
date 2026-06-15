@@ -1,6 +1,6 @@
-import type { ExternalStatus } from '@/lib/types/domain';
-import { EXTERNAL_STATUS_VI } from '@/lib/status/status';
 import { Badge } from '@/components/ui/badge';
+import { EXTERNAL_STATUS_VI } from '@/lib/status/status';
+import type { ExternalStatus } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
 const COLOR: Record<ExternalStatus, string> = {

@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Ticket } from '@/lib/types/domain';
-import { useDepartments } from '@/lib/queries/catalog';
-import { invalidateTicket, useForwardTicket } from '@/lib/queries/helpdesk';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +15,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Combobox } from '@/components/ui/combobox';
+import { handleMutationError } from '@/lib/api/errors';
+import { useDepartments } from '@/lib/queries/catalog';
+import { invalidateTicket, useForwardTicket } from '@/lib/queries/helpdesk';
+import type { Ticket } from '@/lib/types/domain';
 
 /** Forward to a phòng ban. No auto-preselect — Agent/Lead picks per ticket
  *  (routing rules were removed for being too rigid for cross-domain tickets). */

@@ -1,4 +1,5 @@
 import type { Role } from '@/lib/types/domain';
+
 import {
   canManageCategories,
   canViewDashboard,

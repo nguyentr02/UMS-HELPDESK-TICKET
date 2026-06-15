@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -17,7 +19,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -25,16 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ApiError } from '@/lib/api/client';
+import { handleMutationError } from '@/lib/api/errors';
+import { addCreatedPersona } from '@/lib/auth/created-personas';
+import { ROLE_VI } from '@/lib/auth/nav';
 import { useDepartments } from '@/lib/queries/catalog';
 import { useCreateUser } from '@/lib/queries/users';
-import { ROLE_VI } from '@/lib/auth/nav';
-import { handleMutationError } from '@/lib/api/errors';
-import { ApiError } from '@/lib/api/client';
-import { addCreatedPersona } from '@/lib/auth/created-personas';
-import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
-import { isAllowedEmailDomain, EMAIL_DOMAIN_ERROR } from '@/lib/validation/email-domains';
 import type { Role } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
+import { EMAIL_DOMAIN_ERROR,isAllowedEmailDomain } from '@/lib/validation/email-domains';
+import { NAME_ERROR,NAME_REGEX } from '@/lib/validation/user-name';
 
 const NO_DEPT = '__none__'; // Radix Select forbids empty string item values.
 

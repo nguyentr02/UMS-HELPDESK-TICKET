@@ -1,5 +1,5 @@
-import { TicketDetail } from '@/components/tickets/ticket-detail';
 import { RelatedTickets } from '@/components/tickets/related-tickets';
+import { TicketDetail } from '@/components/tickets/ticket-detail';
 
 export default function TicketDetailPage({ params }: { params: { id: string } }) {
   return (

@@ -1,10 +1,12 @@
 'use client';
 
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { type QueryClient,useMutation, useQueryClient } from '@tanstack/react-query';
+
 import * as ticketsApi from '@/lib/api/tickets';
 import type { Severity } from '@/lib/types/domain';
-import { ticketKeys } from './tickets';
+
 import { analyticsKeys } from './analytics';
+import { ticketKeys } from './tickets';
 
 /** Refetch everything a transition can touch: the ticket, its history, all
  *  lists, AND the dashboard summary (status/severity counts shift on every

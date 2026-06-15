@@ -1,15 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { Paperclip, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   ALLOWED_DOC_TYPES,
   ALLOWED_IMAGE_TYPES,
-  MAX_FILES,
   attachmentError,
+  MAX_FILES,
 } from '@/lib/validation/schemas';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 const ACCEPT = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES].join(',');
 

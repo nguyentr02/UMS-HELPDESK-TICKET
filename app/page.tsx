@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ArrowRight, BookOpen, KeyRound, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { LoadingSplash } from '@/components/layout/loading-splash';
-import { useSessionOptional } from '@/lib/auth/session';
+import { Button } from '@/components/ui/button';
 import { homeRouteFor } from '@/lib/auth/nav';
+import { useSessionOptional } from '@/lib/auth/session';
 
 const ENTER_DELAY_MS = 2000;
 // Last 500 ms of the splash plays the scale-up + fade-out exit animation

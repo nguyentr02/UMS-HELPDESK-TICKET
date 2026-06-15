@@ -1,10 +1,9 @@
 'use client';
 
-import { useId, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useId, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -13,6 +12,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export interface ComboboxOption {
   value: string;

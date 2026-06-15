@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   Bell,
   Building2,
@@ -9,16 +7,19 @@ import {
   Headset,
   Inbox,
   LayoutDashboard,
+  type LucideIcon,
   Plus,
   Tags,
   Users,
-  type LucideIcon,
 } from 'lucide-react';
-import { useSessionOptional } from '@/lib/auth/session';
-import { navSectionsFor, ROLE_VI, type NavIcon } from '@/lib/auth/nav';
-import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
 import { LogoutButton } from '@/components/auth/logout-button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { type NavIcon,navSectionsFor, ROLE_VI } from '@/lib/auth/nav';
+import { useSessionOptional } from '@/lib/auth/session';
+import { cn } from '@/lib/utils';
 
 const ICONS: Record<NavIcon, LucideIcon> = {
   create: Plus,

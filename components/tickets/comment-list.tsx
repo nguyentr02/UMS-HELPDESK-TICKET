@@ -1,7 +1,8 @@
 'use client';
 
-import { useTicketComments } from '@/lib/queries/tickets';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTicketComments } from '@/lib/queries/tickets';
+
 import { AttachmentList } from './attachment-list';
 
 /**

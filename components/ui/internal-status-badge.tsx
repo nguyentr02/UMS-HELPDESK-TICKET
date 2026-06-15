@@ -1,6 +1,6 @@
-import type { TicketStatus } from '@/lib/types/domain';
-import { INTERNAL_STATUS_VI } from '@/lib/status/status';
 import { Badge } from '@/components/ui/badge';
+import { INTERNAL_STATUS_VI } from '@/lib/status/status';
+import type { TicketStatus } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
 const COLOR: Record<TicketStatus, string> = {

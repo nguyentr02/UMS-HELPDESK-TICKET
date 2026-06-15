@@ -1,8 +1,14 @@
 'use client';
 
-import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
+import { AttachmentList } from '@/components/tickets/attachment-list';
+import { CommentBox } from '@/components/tickets/comment-box';
+import { CommentList } from '@/components/tickets/comment-list';
+import { Timeline } from '@/components/tickets/timeline';
+import { AccessDenied } from '@/components/ui/access-denied';
+import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
+import { SeverityBadge } from '@/components/ui/severity-badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/client';
-import { useSession } from '@/lib/auth/session';
 import {
   canComment,
   canRequestCloseTicket,
@@ -10,15 +16,10 @@ import {
   canUpdateProgress,
   canViewDeptQueue,
 } from '@/lib/auth/rbac';
+import { useSession } from '@/lib/auth/session';
+import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import { canProgressFrom, canRequestRedirectFrom } from '@/lib/status/transitions';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AccessDenied } from '@/components/ui/access-denied';
-import { Timeline } from '@/components/tickets/timeline';
-import { AttachmentList } from '@/components/tickets/attachment-list';
-import { CommentBox } from '@/components/tickets/comment-box';
-import { CommentList } from '@/components/tickets/comment-list';
+
 import { ProgressButton } from './progress-button';
 import { RequestCloseDialog } from './request-close-dialog';
 import { RequestRedirectDialog } from './request-redirect-dialog';

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { type FormEvent,useState } from 'react';
 import { toast } from 'sonner';
-import { useAddComment } from '@/lib/queries/tickets';
-import { handleMutationError } from '@/lib/api/errors';
-import { Textarea } from '@/components/ui/textarea';
+
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { handleMutationError } from '@/lib/api/errors';
+import { useAddComment } from '@/lib/queries/tickets';
 
 /** Add a comment (matrix: every role can comment). */
 export function CommentBox({ ticketId }: { ticketId: string }) {

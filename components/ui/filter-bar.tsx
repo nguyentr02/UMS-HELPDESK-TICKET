@@ -1,9 +1,8 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { type ReactNode,useId, useState } from 'react';
+
 import {
   Select,
   SelectContent,
@@ -11,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 
 // Shared building blocks for the persona filter bars (requester list + helpdesk/staff
 // queues) so every surface gets the same shadcn look: a filled, clearly-bordered panel

@@ -1,16 +1,17 @@
 'use client';
 
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode,useEffect, useState } from 'react';
+
+import { AuthGate } from '@/components/auth/auth-gate';
+import { AppBootGate } from '@/components/layout/app-boot-gate';
+import { NavigationLoadingProvider } from '@/components/layout/navigation-loading';
+import { MswReady } from '@/components/providers/msw-ready';
+import { Toaster } from '@/components/ui/sonner';
 import { SessionProvider } from '@/lib/auth/session';
 import { authKeys } from '@/lib/queries/auth';
-import { NavigationLoadingProvider } from '@/components/layout/navigation-loading';
-import { Toaster } from '@/components/ui/sonner';
-import { MswReady } from '@/components/providers/msw-ready';
-import { AppBootGate } from '@/components/layout/app-boot-gate';
-import { AuthGate } from '@/components/auth/auth-gate';
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const FIVE_MIN = 5 * 60 * 1000;

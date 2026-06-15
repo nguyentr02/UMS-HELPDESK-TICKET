@@ -1,5 +1,6 @@
-import { apiFetch } from './client';
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput, User, UserListResponse } from '@/lib/types/domain';
+
+import { apiFetch } from './client';
 
 function buildQuery(q: ListUsersQuery): string {
   const params = new URLSearchParams();

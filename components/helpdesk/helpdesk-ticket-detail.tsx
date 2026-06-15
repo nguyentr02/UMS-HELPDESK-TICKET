@@ -1,8 +1,14 @@
 'use client';
 
-import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
+import { AttachmentList } from '@/components/tickets/attachment-list';
+import { CommentBox } from '@/components/tickets/comment-box';
+import { CommentList } from '@/components/tickets/comment-list';
+import { Timeline } from '@/components/tickets/timeline';
+import { AccessDenied } from '@/components/ui/access-denied';
+import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
+import { SeverityBadge } from '@/components/ui/severity-badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/client';
-import { useSession } from '@/lib/auth/session';
 import {
   canAssign,
   canCategorize,
@@ -15,6 +21,8 @@ import {
   canReviewRedirectRequest,
   canViewQueue,
 } from '@/lib/auth/rbac';
+import { useSession } from '@/lib/auth/session';
+import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import {
   canAssignFrom,
   canCategorizeFrom,
@@ -25,22 +33,15 @@ import {
   canReviewCloseFrom,
   canReviewRedirectFrom,
 } from '@/lib/status/transitions';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AccessDenied } from '@/components/ui/access-denied';
-import { Timeline } from '@/components/tickets/timeline';
-import { AttachmentList } from '@/components/tickets/attachment-list';
-import { CommentBox } from '@/components/tickets/comment-box';
-import { CommentList } from '@/components/tickets/comment-list';
+
 import { AssignDialog } from './assign-dialog';
+import { CategoryAssignDialog } from './category-assign-dialog';
+import { CloseDialog } from './close-dialog';
 import { ForwardDialog } from './forward-dialog';
 import { RedirectDialog } from './redirect-dialog';
-import { CategoryAssignDialog } from './category-assign-dialog';
-import { SeverityOverrideDialog } from './severity-override-dialog';
-import { CloseDialog } from './close-dialog';
 import { ReviewCloseDialog } from './review-close-dialog';
 import { ReviewRedirectDialog } from './review-redirect-dialog';
+import { SeverityOverrideDialog } from './severity-override-dialog';
 
 /** Helpdesk console ticket detail — internal status + role×status-gated actions. */
 export function HelpdeskTicketDetail({ id }: { id: string }) {

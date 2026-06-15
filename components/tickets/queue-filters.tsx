@@ -1,12 +1,13 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
-import type { Category, Severity, TicketStatus, UserRef } from '@/lib/types/domain';
-import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
-import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import { FilterChipGroup, FilterPanel, FilterRow, FilterSelect } from '@/components/ui/filter-bar';
+import { Input } from '@/components/ui/input';
+import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
+import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
+import type { Category, Severity, TicketStatus, UserRef } from '@/lib/types/domain';
 
 export interface QueueFiltersState {
   q: string;

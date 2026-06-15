@@ -1,11 +1,12 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
-import { ROLE_VI } from '@/lib/auth/nav';
-import type { Department, Role } from '@/lib/types/domain';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/filter-bar';
+import { Input } from '@/components/ui/input';
+import { ROLE_VI } from '@/lib/auth/nav';
+import type { Department, Role } from '@/lib/types/domain';
 
 const ROLE_OPTIONS: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead', 'DeptStaff', 'Admin'];
 

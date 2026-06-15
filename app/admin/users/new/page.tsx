@@ -1,11 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { useRole } from '@/lib/auth/session';
-import { canCreateUsers } from '@/lib/auth/rbac';
-import { AccessDenied } from '@/components/ui/access-denied';
+import Link from 'next/link';
+
 import { UserCreateForm } from '@/components/admin/user-create-form';
+import { AccessDenied } from '@/components/ui/access-denied';
+import { canCreateUsers } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
 
 export default function AdminUserCreatePage() {
   const role = useRole();

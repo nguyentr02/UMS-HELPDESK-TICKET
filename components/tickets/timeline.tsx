@@ -1,5 +1,5 @@
-import type { TicketEvent } from '@/lib/types/domain';
 import { EVENT_VI } from '@/lib/status/status';
+import type { TicketEvent } from '@/lib/types/domain';
 
 /** Audit trail (S10) — chronological events with actor + timestamp. */
 export function Timeline({ events }: { events: TicketEvent[] }) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import * as ticketsApi from '@/lib/api/tickets';
 import type { ListTicketsQuery } from '@/lib/types/domain';
 

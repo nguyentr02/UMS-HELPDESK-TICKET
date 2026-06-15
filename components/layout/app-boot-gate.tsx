@@ -1,9 +1,11 @@
 'use client';
 
-import { type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
 import { useIsRestoring } from '@tanstack/react-query';
+import { usePathname } from 'next/navigation';
+import { type ReactNode } from 'react';
+
 import { useSessionOptional } from '@/lib/auth/session';
+
 import { LoadingSplash } from './loading-splash';
 
 /**

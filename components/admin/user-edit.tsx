@@ -1,13 +1,15 @@
 'use client';
 
-import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { useRole } from '@/lib/auth/session';
-import { canUpdateUsers } from '@/lib/auth/rbac';
-import { useUser } from '@/lib/queries/users';
+import Link from 'next/link';
+
 import { AccessDenied } from '@/components/ui/access-denied';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { canUpdateUsers } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
+import { useUser } from '@/lib/queries/users';
+
 import { UserEditForm } from './user-edit-form';
 
 /**

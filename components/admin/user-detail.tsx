@@ -1,19 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { useRole, useSession } from '@/lib/auth/session';
-import { canDeleteUsers, canUpdateUsers, canViewUsers } from '@/lib/auth/rbac';
-import { ROLE_VI } from '@/lib/auth/nav';
-import { useDeactivateUser, useUser } from '@/lib/queries/users';
-import { ApiError } from '@/lib/api/client';
-import { handleMutationError } from '@/lib/api/errors';
-import { removeCreatedPersona } from '@/lib/auth/created-personas';
+
 import { AccessDenied } from '@/components/ui/access-denied';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +18,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ApiError } from '@/lib/api/client';
+import { handleMutationError } from '@/lib/api/errors';
+import { removeCreatedPersona } from '@/lib/auth/created-personas';
+import { ROLE_VI } from '@/lib/auth/nav';
+import { canDeleteUsers, canUpdateUsers, canViewUsers } from '@/lib/auth/rbac';
+import { useRole, useSession } from '@/lib/auth/session';
+import { useDeactivateUser, useUser } from '@/lib/queries/users';
 
 /**
  * Admin per-user detail page. Shows the bare-minimum identity / role / dept

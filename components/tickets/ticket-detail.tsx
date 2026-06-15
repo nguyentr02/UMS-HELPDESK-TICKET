@@ -1,16 +1,17 @@
 'use client';
 
-import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
-import { ApiError } from '@/lib/api/client';
-import { useSession } from '@/lib/auth/session';
-import { canComment } from '@/lib/auth/rbac';
 import { SeverityBadge } from '@/components/ui/severity-badge';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Timeline } from './timeline';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { ApiError } from '@/lib/api/client';
+import { canComment } from '@/lib/auth/rbac';
+import { useSession } from '@/lib/auth/session';
+import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
+
 import { AttachmentList } from './attachment-list';
 import { CommentBox } from './comment-box';
 import { CommentList } from './comment-list';
+import { Timeline } from './timeline';
 
 /** Requester ticket detail — external status + timeline (read-only, no reopen). */
 export function TicketDetail({ id }: { id: string }) {

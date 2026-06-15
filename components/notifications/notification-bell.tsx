@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell, Loader2 } from 'lucide-react';
-import { notificationKeys, useNotifications } from '@/lib/queries/notifications';
-import { useSession } from '@/lib/auth/session';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSession } from '@/lib/auth/session';
+import { notificationKeys, useNotifications } from '@/lib/queries/notifications';
+
 import { NotificationList } from './notification-list';
 
 const BADGE_SPINNER_MS = 1000;

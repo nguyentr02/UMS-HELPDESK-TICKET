@@ -1,7 +1,7 @@
-import type { Severity } from '@/lib/types/domain';
-import { SEVERITIES_BY_PRIORITY } from '@/lib/status/severity';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SeverityBadge } from '@/components/ui/severity-badge';
+import { SEVERITIES_BY_PRIORITY } from '@/lib/status/severity';
+import type { Severity } from '@/lib/types/domain';
 
 const SEVERITY_WHEN: Record<Severity, string> = {
   Critical: 'Gián đoạn diện rộng, nhiều người bị ảnh hưởng (mất điện toà nhà, hệ thống sập).',

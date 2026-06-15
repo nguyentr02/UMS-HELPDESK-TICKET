@@ -1,9 +1,12 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-import { Inter } from 'next/font/google';
 import './globals.css';
-import { Providers } from './providers';
+
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import type { ReactNode } from 'react';
+
 import { AppShell } from '@/components/layout/app-shell';
+
+import { Providers } from './providers';
 
 // Inter is the project font (feature-plan §7.2); `vietnamese` subset for VN glyphs.
 // Exposed as `--font-sans`, which Tailwind's `font-sans` resolves to (tailwind.config.ts).

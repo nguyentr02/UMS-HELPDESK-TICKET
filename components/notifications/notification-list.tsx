@@ -1,8 +1,9 @@
 'use client';
 
-import { useNotifications } from '@/lib/queries/notifications';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useNotifications } from '@/lib/queries/notifications';
+
 import { NotificationItem } from './notification-item';
 
 /** Newest-first notification list. `limit` powers the compact bell panel. */

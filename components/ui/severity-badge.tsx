@@ -1,6 +1,6 @@
-import type { Severity } from '@/lib/types/domain';
-import { SEVERITY_META } from '@/lib/status/severity';
 import { Badge } from '@/components/ui/badge';
+import { SEVERITY_META } from '@/lib/status/severity';
+import type { Severity } from '@/lib/types/domain';
 import { cn } from '@/lib/utils';
 
 // Soft-tinted badges (UI design: docs/ui-design/helpdesk-console.html), aligned to the

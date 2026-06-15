@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useTickets } from '@/lib/queries/tickets';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { Skeleton } from '@/components/ui/skeleton';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SeverityBadge } from '@/components/ui/severity-badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { useTickets } from '@/lib/queries/tickets';
 
 /** Side panel on the ticket detail — the user's other open (non-finished) tickets. */
 export function RelatedTickets({ currentId }: { currentId: string }) {

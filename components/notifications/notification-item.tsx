@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { toast } from 'sonner';
-import type { NotificationItem as Notification, NotificationType, Severity } from '@/lib/types/domain';
-import { useRole } from '@/lib/auth/session';
+
 import { ticketDetailHref } from '@/lib/auth/nav';
+import { useRole } from '@/lib/auth/session';
 import { useMarkNotificationRead } from '@/lib/queries/notifications';
 import { SEVERITY_META } from '@/lib/status/severity';
+import type { NotificationItem as Notification, NotificationType, Severity } from '@/lib/types/domain';
 
 const TYPE_LABEL: Record<NotificationType, string> = {
   TicketClosed: 'Yêu cầu đã đóng',

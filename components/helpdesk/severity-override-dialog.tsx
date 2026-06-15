@@ -1,16 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import type { Severity, Ticket } from '@/lib/types/domain';
-import { invalidateTicket, useOverrideSeverity } from '@/lib/queries/helpdesk';
-import { SEVERITIES } from '@/lib/validation/schemas';
-import { SEVERITY_META } from '@/lib/status/severity';
-import { handleMutationError } from '@/lib/api/errors';
+
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { handleMutationError } from '@/lib/api/errors';
+import { invalidateTicket, useOverrideSeverity } from '@/lib/queries/helpdesk';
+import { SEVERITY_META } from '@/lib/status/severity';
+import type { Severity, Ticket } from '@/lib/types/domain';
+import { SEVERITIES } from '@/lib/validation/schemas';
 
 /** Helpdesk overrides a mis-declared severity (Brief §5; TICKET_MOD). */
 export function SeverityOverrideDialog({ ticket }: { ticket: Ticket }) {

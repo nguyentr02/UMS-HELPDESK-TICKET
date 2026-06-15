@@ -1,10 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { useIsRestoring } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { ReactNode } from 'react';
+
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Renders the four interaction states uniformly (feature-plan §8).

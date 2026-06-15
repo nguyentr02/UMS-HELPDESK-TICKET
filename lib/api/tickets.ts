@@ -1,5 +1,3 @@
-import { apiFetch } from './client';
-import { uploadFilesToBlob } from './uploads';
 import type {
   ListTicketsQuery,
   Paginated,
@@ -8,6 +6,9 @@ import type {
   TicketComment,
   TicketEvent,
 } from '@/lib/types/domain';
+
+import { apiFetch } from './client';
+import { uploadFilesToBlob } from './uploads';
 
 /**
  * Pull form fields + the `attachments` File[] out of a FormData, upload the

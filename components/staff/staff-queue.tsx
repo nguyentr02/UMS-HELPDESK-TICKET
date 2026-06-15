@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { useTickets } from '@/lib/queries/tickets';
-import { useCategories } from '@/lib/queries/catalog';
-import { useRole } from '@/lib/auth/session';
-import { canViewDeptQueue } from '@/lib/auth/rbac';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
-import { Pagination } from '@/components/ui/pagination';
+import { useState } from 'react';
+
+import {
+  countActiveQueueFilters,
+  DEFAULT_QUEUE_FILTERS,
+  QueueFilters,
+  type QueueFiltersState,
+} from '@/components/tickets/queue-filters';
+import { AccessDenied } from '@/components/ui/access-denied';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AccessDenied } from '@/components/ui/access-denied';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
+import { Pagination } from '@/components/ui/pagination';
+import { SeverityBadge } from '@/components/ui/severity-badge';
 import {
   Table,
   TableBody,
@@ -20,13 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FilterDrawer } from '@/components/ui/filter-drawer';
-import {
-  QueueFilters,
-  DEFAULT_QUEUE_FILTERS,
-  countActiveQueueFilters,
-  type QueueFiltersState,
-} from '@/components/tickets/queue-filters';
+import { canViewDeptQueue } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
+import { useCategories } from '@/lib/queries/catalog';
+import { useTickets } from '@/lib/queries/tickets';
 
 const PAGE_SIZE = 12;
 

@@ -1,5 +1,6 @@
-import { apiFetch } from './client';
 import type { NotificationItem } from '@/lib/types/domain';
+
+import { apiFetch } from './client';
 
 export const listNotifications = () => apiFetch<NotificationItem[]>('/notifications');
 

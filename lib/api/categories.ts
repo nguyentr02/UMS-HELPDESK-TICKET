@@ -1,5 +1,6 @@
-import { apiFetch } from './client';
 import type { Category } from '@/lib/types/domain';
+
+import { apiFetch } from './client';
 
 export const listCategories = () => apiFetch<Category[]>('/categories');
 

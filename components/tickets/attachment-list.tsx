@@ -1,6 +1,7 @@
 import { Paperclip } from 'lucide-react';
-import type { Attachment } from '@/lib/types/domain';
+
 import { BASE_URL } from '@/lib/api/client';
+import type { Attachment } from '@/lib/types/domain';
 
 /**
  * Prefer the direct Blob URL (`a.url`) — the BE proxy at /attachments/:id
