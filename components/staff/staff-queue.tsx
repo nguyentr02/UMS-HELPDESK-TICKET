@@ -29,7 +29,7 @@ import { useRole } from '@/lib/auth/session';
 import { useCategories } from '@/lib/queries/catalog';
 import { useTickets } from '@/lib/queries/tickets';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 /**
  * Dept Staff queue (S6) — the tickets routed to the staff's own department.
@@ -40,6 +40,7 @@ export function StaffQueue() {
   const role = useRole();
   const [filters, setFilters] = useState<QueueFiltersState>(DEFAULT_QUEUE_FILTERS);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { data: categories } = useCategories();
 
   const { data, isLoading, isError } = useTickets({
@@ -48,12 +49,17 @@ export function StaffQueue() {
     severity: filters.severities.length ? filters.severities : undefined,
     categoryId: filters.categoryId || undefined,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     sort: filters.sort,
   });
 
   const onFilters = (next: QueueFiltersState) => {
     setFilters(next);
+    setPage(1);
+  };
+
+  const onPageSize = (size: number) => {
+    setPageSize(size);
     setPage(1);
   };
 
@@ -151,6 +157,9 @@ export function StaffQueue() {
               pageSize={data.page.pageSize}
               total={data.page.total}
               onPage={setPage}
+              onPageSize={onPageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              itemNoun="yêu cầu"
             />
           </>
         ) : null}
