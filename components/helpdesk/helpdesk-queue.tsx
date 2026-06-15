@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { useTickets } from '@/lib/queries/tickets';
-import { useAgents, useCategories } from '@/lib/queries/catalog';
-import { useRole } from '@/lib/auth/session';
-import { canViewQueue } from '@/lib/auth/rbac';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
-import { Pagination } from '@/components/ui/pagination';
+import { useState } from 'react';
+
+import {
+  countActiveQueueFilters,
+  DEFAULT_QUEUE_FILTERS,
+  QueueFilters,
+  type QueueFiltersState,
+} from '@/components/tickets/queue-filters';
+import { AccessDenied } from '@/components/ui/access-denied';
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AccessDenied } from '@/components/ui/access-denied';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
+import { Pagination } from '@/components/ui/pagination';
+import { SeverityBadge } from '@/components/ui/severity-badge';
 import {
   Table,
   TableBody,
@@ -20,21 +24,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FilterDrawer } from '@/components/ui/filter-drawer';
-import {
-  QueueFilters,
-  DEFAULT_QUEUE_FILTERS,
-  countActiveQueueFilters,
-  type QueueFiltersState,
-} from '@/components/tickets/queue-filters';
+import { canViewQueue } from '@/lib/auth/rbac';
+import { useRole } from '@/lib/auth/session';
+import { useAgents, useCategories } from '@/lib/queries/catalog';
+import { useTickets } from '@/lib/queries/tickets';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 /** Helpdesk intake queue (S3/S4 entry point): search / status / severity / category / assignee filters. */
 export function HelpdeskQueue() {
   const role = useRole();
   const [filters, setFilters] = useState<QueueFiltersState>(DEFAULT_QUEUE_FILTERS);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { data: agents } = useAgents();
   const { data: categories } = useCategories();
 
@@ -45,12 +47,17 @@ export function HelpdeskQueue() {
     categoryId: filters.categoryId || undefined,
     assigneeId: filters.assigneeId || undefined,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     sort: filters.sort,
   });
 
   const onFilters = (next: QueueFiltersState) => {
     setFilters(next);
+    setPage(1);
+  };
+
+  const onPageSize = (size: number) => {
+    setPageSize(size);
     setPage(1);
   };
 
@@ -148,6 +155,9 @@ export function HelpdeskQueue() {
               pageSize={data.page.pageSize}
               total={data.page.total}
               onPage={setPage}
+              onPageSize={onPageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              itemNoun="yêu cầu"
             />
           </>
         ) : null}

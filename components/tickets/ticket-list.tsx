@@ -1,15 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { useTickets } from '@/lib/queries/tickets';
-import { useCategories } from '@/lib/queries/catalog';
-import type { ExternalStatus, TicketStatus } from '@/lib/types/domain';
-import { SeverityBadge } from '@/components/ui/severity-badge';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { Pagination } from '@/components/ui/pagination';
+import { useState } from 'react';
+
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { Pagination } from '@/components/ui/pagination';
+import { SeverityBadge } from '@/components/ui/severity-badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Table,
   TableBody,
@@ -18,15 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FilterDrawer } from '@/components/ui/filter-drawer';
+import { useCategories } from '@/lib/queries/catalog';
+import { useTickets } from '@/lib/queries/tickets';
+import type { ExternalStatus, TicketStatus } from '@/lib/types/domain';
+
 import {
-  TicketFilters,
-  EMPTY_FILTERS,
   countActiveFilters,
+  EMPTY_FILTERS,
   type RequesterFilters,
+  TicketFilters,
 } from './ticket-filters';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 // Requesters filter by the 3 external statuses; the API speaks the 4 internal ones.
 const EXTERNAL_TO_INTERNAL: Record<ExternalStatus, TicketStatus[]> = {
@@ -39,6 +41,7 @@ const EXTERNAL_TO_INTERNAL: Record<ExternalStatus, TicketStatus[]> = {
 export function TicketList() {
   const [filters, setFilters] = useState<RequesterFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { data: categories } = useCategories();
 
   const status = filters.statuses.length
@@ -51,12 +54,17 @@ export function TicketList() {
     severity: filters.severities.length ? filters.severities : undefined,
     categoryId: filters.categoryId || undefined,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     sort: filters.sort,
   });
 
   const onFilters = (next: RequesterFilters) => {
     setFilters(next);
+    setPage(1);
+  };
+
+  const onPageSize = (size: number) => {
+    setPageSize(size);
     setPage(1);
   };
 
@@ -147,6 +155,9 @@ export function TicketList() {
               pageSize={data.page.pageSize}
               total={data.page.total}
               onPage={setPage}
+              onPageSize={onPageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              itemNoun="yêu cầu"
             />
           </>
         ) : null}
