@@ -24,7 +24,10 @@ describe('UserDirectory — Admin user directory page (FE-S14)', () => {
   });
 
   it('M31-FE-S14-H2: search input filters the visible rows', async () => {
-    const user = userEvent.setup();
+    // delay:null => type synchronously; the live search fires a query per
+    // keystroke and the default per-char delay blows the 5s budget under
+    // coverage instrumentation.
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<UserDirectory />, { role: 'Admin' });
     await screen.findAllByText('SV Nguyễn Văn A');
 
@@ -39,7 +42,7 @@ describe('UserDirectory — Admin user directory page (FE-S14)', () => {
   });
 
   it('M31-FE-S14-E1: empty results render the EmptyState copy', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<UserDirectory />, { role: 'Admin' });
     await screen.findAllByText('SV Nguyễn Văn A');
 
