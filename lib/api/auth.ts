@@ -37,6 +37,15 @@ export function fetchMe(): Promise<AuthEnvelope> {
 }
 
 /**
+ * GET /auth/realtime-token — a short-lived (60 s) JWT for the Socket.IO
+ * handshake. Rides the session cookie (via the proxy); throws ApiError(401)
+ * when not signed in.
+ */
+export function fetchRealtimeToken(): Promise<{ token: string }> {
+  return apiFetch<{ token: string }>('/auth/realtime-token');
+}
+
+/**
  * Build the absolute URL to start a Google OAuth flow — used by
  * `window.location.href = …` (not `fetch`). The BE handles the round-trip
  * and the final redirect back to this FE.

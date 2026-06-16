@@ -5,56 +5,19 @@ import { toast } from 'sonner';
 
 import { ticketDetailHref } from '@/lib/auth/nav';
 import { useRole } from '@/lib/auth/session';
+import {
+  NOTIFICATION_TYPE_LABEL as TYPE_LABEL,
+  notificationMessage as messageFor,
+} from '@/lib/notifications/labels';
 import { useMarkNotificationRead } from '@/lib/queries/notifications';
 import { SEVERITY_META } from '@/lib/status/severity';
-import type { NotificationItem as Notification, NotificationType, Severity } from '@/lib/types/domain';
-
-const TYPE_LABEL: Record<NotificationType, string> = {
-  TicketClosed: 'Yêu cầu đã đóng',
-  DailyReminder: 'Nhắc việc tồn đọng',
-  TicketAssigned: 'Được giao yêu cầu',
-  TicketForwarded: 'Chuyển phòng ban',
-  StatusChanged: 'Cập nhật trạng thái',
-  TicketCreated: 'Yêu cầu mới',
-  TicketCommented: 'Bình luận mới',
-  CloseRequested: 'Yêu cầu đóng',
-  CloseRefused: 'Từ chối đóng',
-  RedirectRequested: 'Xin chuyển phòng ban',
-  RedirectRefused: 'Từ chối chuyển',
-};
+import type { NotificationItem as Notification, Severity } from '@/lib/types/domain';
 
 interface BacklogEntry {
   ticketId: string;
   code: string;
   severity: Severity;
   backlogAgeDays: number;
-}
-
-function messageFor(type: NotificationType, code: string): string {
-  switch (type) {
-    case 'TicketClosed':
-      return `Yêu cầu ${code} đã được xử lý xong.`;
-    case 'TicketAssigned':
-      return `Bạn được giao yêu cầu ${code}.`;
-    case 'TicketForwarded':
-      return `Yêu cầu ${code} đã được chuyển phòng ban.`;
-    case 'StatusChanged':
-      return `Yêu cầu ${code} đã cập nhật trạng thái.`;
-    case 'TicketCreated':
-      return `Có yêu cầu mới: ${code}.`;
-    case 'TicketCommented':
-      return `Có bình luận mới trên ${code}.`;
-    case 'CloseRequested':
-      return `Có yêu cầu đóng cần duyệt trên ${code}.`;
-    case 'CloseRefused':
-      return `Yêu cầu đóng ${code} bị từ chối. Vui lòng kiểm tra và xử lý lại.`;
-    case 'RedirectRequested':
-      return `Có yêu cầu chuyển phòng ban cần duyệt trên ${code}.`;
-    case 'RedirectRefused':
-      return `Yêu cầu chuyển phòng ban ${code} bị từ chối.`;
-    default:
-      return '';
-  }
 }
 
 /** One notification row — type-specific copy, an unread marker, and mark-as-read (with retry). */

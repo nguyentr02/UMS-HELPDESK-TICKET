@@ -9,6 +9,7 @@ import { AuthGate } from '@/components/auth/auth-gate';
 import { AppBootGate } from '@/components/layout/app-boot-gate';
 import { NavigationLoadingProvider } from '@/components/layout/navigation-loading';
 import { MswReady } from '@/components/providers/msw-ready';
+import { SocketProvider } from '@/components/providers/socket-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { SessionProvider } from '@/lib/auth/session';
 import { authKeys } from '@/lib/queries/auth';
@@ -80,7 +81,9 @@ export function Providers({ children }: { children: ReactNode }) {
         <SessionProvider>
           <NavigationLoadingProvider>
             <AppBootGate>
-              <AuthGate>{children}</AuthGate>
+              <AuthGate>
+                <SocketProvider>{children}</SocketProvider>
+              </AuthGate>
             </AppBootGate>
           </NavigationLoadingProvider>
         </SessionProvider>

@@ -159,6 +159,8 @@ Component (e.g. TicketList)
 
 **RBAC + state machine (UI gating):** `session role` → `lib/auth/rbac.ts` predicates → `navSectionsFor` (sidebar) and per-control visibility; `lib/status/transitions.ts` gates status-dependent controls. The BE's `409`/`403` is the server-side backstop.
 
+**Realtime notification bell (Socket.IO):** `SocketProvider` (mounted inside `AuthGate`) opens a Socket.IO connection to `NEXT_PUBLIC_REALTIME_URL` when a user is signed in, authenticated with a short-lived token from `GET /auth/realtime-token`. On `notification:new` it optimistically prepends to the `['notifications']` cache (`lib/realtime/notifications-cache.ts`, deduped by id) so the bell badge bumps instantly, and fires a `sonner` toast (copy from `lib/notifications/labels.ts`). Every (re)connect invalidates the cache to reconcile missed events; `connect_error` refreshes the token. **Fallback:** the 30s poll in `useNotifications` always runs, and the whole provider is a no-op when `NEXT_PUBLIC_REALTIME_URL` is unset (so dev/tests/mock-mode are unaffected). The socket server is a separate always-on service (`feat-helpdesk-realtime`, on Render) because Vercel serverless can't hold WebSockets; the BE pushes events to it via an internal `POST /emit`.
+
 ---
 
 ## 4. Conventions
