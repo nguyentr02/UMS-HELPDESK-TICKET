@@ -8,7 +8,9 @@ import { toast } from 'sonner';
 import { fetchRealtimeToken } from '@/lib/api/auth';
 import { useSessionOptional } from '@/lib/auth/session';
 import { NOTIFICATION_TYPE_LABEL, notificationMessage } from '@/lib/notifications/labels';
+import { catalogKeys } from '@/lib/queries/catalog';
 import { notificationKeys } from '@/lib/queries/notifications';
+import { ticketKeys } from '@/lib/queries/tickets';
 import { prependNotification } from '@/lib/realtime/notifications-cache';
 import type { NotificationItem } from '@/lib/types/domain';
 
@@ -53,10 +55,22 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         qc.setQueryData<NotificationItem[]>(notificationKeys.all, (old) =>
           prependNotification(old, n),
         );
+        // A notification means this ticket changed for me → refresh the open
+        // detail/comments/history live (key prefix matches all three). This is
+        // the "see the new comment without reloading" path.
+        if (n.ticketId) {
+          void qc.invalidateQueries({ queryKey: ticketKeys.detail(n.ticketId) });
+        }
         const code = typeof n.payload?.ticketCode === 'string' ? n.payload.ticketCode : '';
         toast(NOTIFICATION_TYPE_LABEL[n.type] ?? 'Thông báo mới', {
           description: notificationMessage(n.type, code) || undefined,
         });
+      });
+
+      // Reference data changed (admin edited a category) → refetch live so every
+      // client's filters/forms update without a reload.
+      socket.on('categories:changed', () => {
+        void qc.invalidateQueries({ queryKey: catalogKeys.categories });
       });
 
       // Reconcile on (re)connect — covers events missed while disconnected.
