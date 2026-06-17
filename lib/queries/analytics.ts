@@ -7,14 +7,16 @@ import { getAnalyticsSummary } from '@/lib/api/analytics';
 export const analyticsKeys = { summary: ['analytics', 'summary'] as const };
 
 export function useAnalyticsSummary() {
-  // Dashboard counts are volatile aggregates — always refetch on mount so
-  // navigating to /analytics shows live numbers, never a stale value served
-  // from the 24h-persisted query cache. (Transitions also invalidate this key
-  // via `invalidateTicket`, but that only helps an already-open dashboard.)
+  // Dashboard counts are volatile aggregates, but analytics has no realtime
+  // push — so instead of refetching on every visit, treat the cache as fresh
+  // for 60s: re-visiting/reloading /analytics within the window serves the
+  // cache (no call), and it refetches once when older. Same-session ticket
+  // actions still refresh it live via `invalidateTicket`. Trade-off: a change
+  // made by someone else can lag up to ~60s on revisit (acceptable for a
+  // dashboard); a future `analytics:changed` broadcast would make it live.
   return useQuery({
     queryKey: analyticsKeys.summary,
     queryFn: getAnalyticsSummary,
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 60_000,
   });
 }
