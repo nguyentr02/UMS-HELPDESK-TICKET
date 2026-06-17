@@ -159,7 +159,15 @@ Component (e.g. TicketList)
 
 **RBAC + state machine (UI gating):** `session role` → `lib/auth/rbac.ts` predicates → `navSectionsFor` (sidebar) and per-control visibility; `lib/status/transitions.ts` gates status-dependent controls. The BE's `409`/`403` is the server-side backstop.
 
-**Realtime notification bell (Socket.IO):** `SocketProvider` (mounted inside `AuthGate`) opens a Socket.IO connection to `NEXT_PUBLIC_REALTIME_URL` when a user is signed in, authenticated with a short-lived token from `GET /auth/realtime-token`. On `notification:new` it optimistically prepends to the `['notifications']` cache (`lib/realtime/notifications-cache.ts`, deduped by id) so the bell badge bumps instantly, and fires a `sonner` toast (copy from `lib/notifications/labels.ts`). Every (re)connect invalidates the cache to reconcile missed events; `connect_error` refreshes the token. **Fallback:** the 30s poll in `useNotifications` always runs, and the whole provider is a no-op when `NEXT_PUBLIC_REALTIME_URL` is unset (so dev/tests/mock-mode are unaffected). The socket server is a separate always-on service (`feat-helpdesk-realtime`, on Render) because Vercel serverless can't hold WebSockets; the BE pushes events to it via an internal `POST /emit`.
+**Realtime (Socket.IO) — live updates via cache invalidation:** `SocketProvider` (mounted inside `AuthGate`) opens a Socket.IO connection to `NEXT_PUBLIC_REALTIME_URL` when a user is signed in, authenticated with a short-lived token from `GET /auth/realtime-token`. It maps server events → TanStack Query cache so the UI updates live without reloads:
+
+| Event | Handler |
+|---|---|
+| `notification:new` | optimistic prepend to `['notifications']` (`lib/realtime/notifications-cache.ts`, deduped) → instant badge + `sonner` toast (`lib/notifications/labels.ts`); plus `invalidate(['ticket', ticketId])` so the open ticket detail/comments/history refresh live |
+| `tickets:changed` | `invalidate(['tickets'])` (all queues/lists) + analytics summary → live queues + dashboard |
+| `categories:changed` | `invalidate(['categories'])` → live category filters/forms |
+
+Every (re)connect invalidates `['notifications']` to reconcile missed events; `connect_error` refreshes the token **only on an auth rejection** (`unauthorized`) — network errors just let socket.io back off (no token spam while offline). **Fallback:** the `useNotifications` poll + per-query `staleTime` always run, and the whole provider is a no-op when `NEXT_PUBLIC_REALTIME_URL` is unset (dev/tests/mock-mode unaffected). The socket server is a separate always-on service (`feat-helpdesk-realtime`, on Render) because Vercel serverless can't hold WebSockets; the BE pushes via an internal `POST /emit` (targeted `user:<id>` rooms or `broadcast`). See BE `feature-plan §G.1` for the producer side.
 
 ---
 

@@ -86,15 +86,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         void qc.invalidateQueries({ queryKey: notificationKeys.all });
       });
 
-      // The handshake token is short-lived; on a later reconnect it may have
-      // expired. Refresh it so socket.io's next retry authenticates.
-      socket.on('connect_error', async () => {
-        if (cancelled || !socket) return;
+      // Refresh the short-lived handshake token ONLY on an auth rejection
+      // (expired token → the server's io.use rejects with Error('unauthorized')).
+      // Network errors (offline, Render cold-start) must NOT trigger a token
+      // fetch — that just spams /auth/realtime-token while disconnected. Let
+      // socket.io back off and retry with the existing token instead.
+      socket.on('connect_error', async (err: Error) => {
+        if (cancelled || !socket || err.message !== 'unauthorized') return;
         try {
           const fresh = await fetchRealtimeToken();
           socket.auth = { token: fresh.token };
         } catch {
-          /* logged out / offline — socket.io keeps retrying with backoff */
+          /* logged out — socket.io keeps retrying with backoff */
         }
       });
     })();
