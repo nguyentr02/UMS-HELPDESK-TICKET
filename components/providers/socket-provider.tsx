@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { fetchRealtimeToken } from '@/lib/api/auth';
 import { useSessionOptional } from '@/lib/auth/session';
 import { NOTIFICATION_TYPE_LABEL, notificationMessage } from '@/lib/notifications/labels';
+import { analyticsKeys } from '@/lib/queries/analytics';
 import { catalogKeys } from '@/lib/queries/catalog';
 import { notificationKeys } from '@/lib/queries/notifications';
 import { ticketKeys } from '@/lib/queries/tickets';
@@ -71,6 +72,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       // client's filters/forms update without a reload.
       socket.on('categories:changed', () => {
         void qc.invalidateQueries({ queryKey: catalogKeys.categories });
+      });
+
+      // Any ticket was created/changed (by anyone) → refetch open queues/lists
+      // and the dashboard counts live, so they don't wait for a reload/poll.
+      socket.on('tickets:changed', () => {
+        void qc.invalidateQueries({ queryKey: ticketKeys.all });
+        void qc.invalidateQueries({ queryKey: analyticsKeys.summary });
       });
 
       // Reconcile on (re)connect — covers events missed while disconnected.
