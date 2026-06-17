@@ -27,6 +27,21 @@ export function useTicket(id: string) {
   return useQuery({ queryKey: ticketKeys.detail(id), queryFn: () => ticketsApi.getTicket(id) });
 }
 
+/**
+ * Returns a prefetch fn to warm a ticket's detail cache — call it on row hover
+ * so opening the ticket renders instantly from cache. `staleTime` dedupes
+ * repeated hovers; no-op if already cached & fresh.
+ */
+export function useTicketPrefetch() {
+  const qc = useQueryClient();
+  return (id: string) =>
+    qc.prefetchQuery({
+      queryKey: ticketKeys.detail(id),
+      queryFn: () => ticketsApi.getTicket(id),
+      staleTime: 30_000,
+    });
+}
+
 export function useTicketHistory(id: string) {
   return useQuery({
     queryKey: ticketKeys.history(id),

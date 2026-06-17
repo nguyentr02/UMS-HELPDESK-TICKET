@@ -15,20 +15,33 @@ export const notificationKeys = { all: ['notifications'] as const };
 /** Snapshot the list for optimistic rollback. */
 type Ctx = { prev?: NotificationItem[] };
 
+// Shared base options so `useNotifications` and `useUnreadCount` subscribe to
+// the SAME cache entry (one fetch, one poll) — they differ only in `select`.
+// Notifications feel near-real-time via a short stale window + 30s background
+// poll (the bell stays mounted, so refetchOnMount alone would drift).
+const NOTIFICATIONS_QUERY = {
+  queryKey: notificationKeys.all,
+  queryFn: listNotifications,
+  staleTime: 15_000,
+  refetchOnMount: 'always',
+  refetchInterval: 30_000,
+} as const;
+
 export function useNotifications() {
-  // Notifications need to feel near-real-time. The header bell stays mounted
-  // for the whole session, so `refetchOnMount` alone would only fire once at
-  // app boot and the badge would drift. Pair a short stale window with a
-  // 30 s background poll: every subscriber (bell + dropdown + /notifications
-  // page) sees the same fresh count, even if the user never reloads or
-  // navigates.
-  return useQuery({
-    queryKey: notificationKeys.all,
-    queryFn: listNotifications,
-    staleTime: 15_000,
-    refetchOnMount: 'always',
-    refetchInterval: 30_000,
+  return useQuery(NOTIFICATIONS_QUERY);
+}
+
+/**
+ * Just the unread count, via `select`. The bell re-renders only when the
+ * *number* changes — not on every list mutation (mark-read of an already-read
+ * item, reordering, etc.) — because select output is compared structurally.
+ */
+export function useUnreadCount(): number {
+  const { data } = useQuery({
+    ...NOTIFICATIONS_QUERY,
+    select: (items: NotificationItem[]) => items.filter((n) => !n.readAt).length,
   });
+  return data ?? 0;
 }
 
 /**

@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNotifications } from '@/lib/queries/notifications';
+import { useUnreadCount } from '@/lib/queries/notifications';
 
 import { NotificationList } from './notification-list';
 
@@ -22,8 +22,7 @@ import { NotificationList } from './notification-list';
  * `useNotifications` poll as fallback — so the bell just renders state.
  */
 export function NotificationBell() {
-  const { data } = useNotifications();
-  const unread = (data ?? []).filter((n) => !n.readAt).length;
+  const unread = useUnreadCount();
 
   // Controlled `open` so the dropdown can close itself when the user clicks a
   // notification — the inner `<Link>`s aren't wrapped in DropdownMenuItem

@@ -27,7 +27,7 @@ import {
 import { canViewQueue } from '@/lib/auth/rbac';
 import { useRole } from '@/lib/auth/session';
 import { useAgents, useCategories } from '@/lib/queries/catalog';
-import { useTickets } from '@/lib/queries/tickets';
+import { useTicketPrefetch, useTickets } from '@/lib/queries/tickets';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
@@ -39,6 +39,7 @@ export function HelpdeskQueue() {
   const [pageSize, setPageSize] = useState(20);
   const { data: agents } = useAgents();
   const { data: categories } = useCategories();
+  const prefetchTicket = useTicketPrefetch();
 
   const { data, isLoading, isError } = useTickets({
     q: filters.q.trim() || undefined,
@@ -101,7 +102,7 @@ export function HelpdeskQueue() {
               </TableHeader>
               <TableBody>
                 {data.items.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow key={t.id} onMouseEnter={() => prefetchTicket(t.id)}>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       <Link href={`/helpdesk/tickets/${t.id}`} className="hover:underline">
                         {t.code}
@@ -132,6 +133,7 @@ export function HelpdeskQueue() {
                 <li key={t.id}>
                   <Link
                     href={`/helpdesk/tickets/${t.id}`}
+                    onMouseEnter={() => prefetchTicket(t.id)}
                     className="block rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent"
                   >
                     <div className="flex items-center justify-between gap-2">

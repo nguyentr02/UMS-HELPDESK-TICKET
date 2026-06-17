@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCategories } from '@/lib/queries/catalog';
-import { useTickets } from '@/lib/queries/tickets';
+import { useTicketPrefetch, useTickets } from '@/lib/queries/tickets';
 import type { ExternalStatus, TicketStatus } from '@/lib/types/domain';
 
 import {
@@ -43,6 +43,7 @@ export function TicketList() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const { data: categories } = useCategories();
+  const prefetchTicket = useTicketPrefetch();
 
   const status = filters.statuses.length
     ? filters.statuses.flatMap((s) => EXTERNAL_TO_INTERNAL[s])
@@ -107,7 +108,7 @@ export function TicketList() {
               </TableHeader>
               <TableBody>
                 {data.items.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow key={t.id} onMouseEnter={() => prefetchTicket(t.id)}>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       <Link href={`/tickets/${t.id}`} className="hover:underline">
                         {t.code}
@@ -135,6 +136,7 @@ export function TicketList() {
                 <li key={t.id}>
                   <Link
                     href={`/tickets/${t.id}`}
+                    onMouseEnter={() => prefetchTicket(t.id)}
                     className="block rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent"
                   >
                     <div className="flex items-center justify-between gap-2">
