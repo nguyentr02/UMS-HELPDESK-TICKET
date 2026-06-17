@@ -17,20 +17,34 @@ export const catalogKeys = {
   agents: ['agents'] as const,
 };
 
+// Reference data (categories/departments/agents) changes rarely, so treat it as
+// fresh for a long window: reloads/navigation serve from the persisted cache
+// with NO network call. Freshness on change comes from the mutations below
+// (which invalidate on success) — and can be made live cross-client via a
+// `categories:changed` socket event. Previously `useCategories` used
+// `refetchOnMount: 'always'`, which re-hit /categories on EVERY mount/reload.
+const REFERENCE_DATA_STALE_TIME = 30 * 60 * 1000; // 30 min
+
 export const useCategories = () =>
-  // Refetch on every mount so admin edits (rename, add, delete, or the "Khác"
-  // pin from CategoryService.list) propagate immediately instead of waiting
-  // for the global 5-min staleTime to expire on the persisted cache.
   useQuery({
     queryKey: catalogKeys.categories,
     queryFn: listCategories,
-    refetchOnMount: 'always',
+    staleTime: REFERENCE_DATA_STALE_TIME,
   });
 
 export const useDepartments = () =>
-  useQuery({ queryKey: catalogKeys.departments, queryFn: listDepartments });
+  useQuery({
+    queryKey: catalogKeys.departments,
+    queryFn: listDepartments,
+    staleTime: REFERENCE_DATA_STALE_TIME,
+  });
 
-export const useAgents = () => useQuery({ queryKey: catalogKeys.agents, queryFn: listAgents });
+export const useAgents = () =>
+  useQuery({
+    queryKey: catalogKeys.agents,
+    queryFn: listAgents,
+    staleTime: REFERENCE_DATA_STALE_TIME,
+  });
 
 // ---- Admin mutations (S8) — categories are now the only Admin-managed
 // resource here. Routing rules were removed; agents/leads pick the dept

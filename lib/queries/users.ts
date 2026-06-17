@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery,useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { createUser, deactivateUser, fetchUser, listUsers, updateUser } from '@/lib/api/users';
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput, User } from '@/lib/types/domain';
@@ -21,6 +21,9 @@ export const useUsers = (query: ListUsersQuery = {}) =>
   useQuery({
     queryKey: userKeys.list(query),
     queryFn: () => listUsers(query),
+    // Keep the current page on screen while the next page/filter loads — no
+    // loading flash when paging through or tweaking a filter.
+    placeholderData: keepPreviousData,
   });
 
 export const useUser = (id: string) =>

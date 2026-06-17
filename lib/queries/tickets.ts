@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import * as ticketsApi from '@/lib/api/tickets';
 import type { ListTicketsQuery } from '@/lib/types/domain';
@@ -17,6 +17,9 @@ export function useTickets(query?: ListTicketsQuery) {
   return useQuery({
     queryKey: ticketKeys.list(query),
     queryFn: () => ticketsApi.listTickets(query),
+    // Keep the current page/filter results on screen while the next ones load,
+    // instead of flashing the loading state on every page change or filter tweak.
+    placeholderData: keepPreviousData,
   });
 }
 
