@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
+import { describe, expect,it } from 'vitest';
+
 import { TicketDetail } from '@/components/tickets/ticket-detail';
 import type { Ticket, TicketEvent } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
@@ -58,7 +59,7 @@ describe('TicketDetail', () => {
     expect(screen.getByText('Đang xử lý')).toBeInTheDocument();
   });
 
-  it('S2-X2: shows a not-authorized message on a 403, no ticket data', async () => {
+  it('S2-X2: shows a graceful out-of-scope state on a 403, with a way back', async () => {
     server.use(
       http.get(`${base}/tickets/tk-x`, () =>
         HttpResponse.json(
@@ -71,6 +72,12 @@ describe('TicketDetail', () => {
       ),
     );
     renderWithProviders(<TicketDetail id="tk-x" />, { role: 'SV' });
-    expect(await screen.findByText('Bạn không có quyền xem yêu cầu này.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Yêu cầu không còn trong phạm vi của bạn'),
+    ).toBeInTheDocument();
+    // A 403 offers a way back to the list, but NOT a retry (refetch can't fix it).
+    const back = screen.getByRole('link', { name: 'Quay lại danh sách yêu cầu' });
+    expect(back).toHaveAttribute('href', '/tickets');
+    expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument();
   });
 });

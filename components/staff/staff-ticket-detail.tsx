@@ -3,12 +3,12 @@
 import { AttachmentList } from '@/components/tickets/attachment-list';
 import { CommentBox } from '@/components/tickets/comment-box';
 import { CommentList } from '@/components/tickets/comment-list';
+import { TicketErrorState } from '@/components/tickets/ticket-error-state';
 import { Timeline } from '@/components/tickets/timeline';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ApiError } from '@/lib/api/client';
 import {
   canComment,
   canRequestCloseTicket,
@@ -32,7 +32,7 @@ import { RequestRedirectDialog } from './request-redirect-dialog';
 export function StaffTicketDetail({ id }: { id: string }) {
   const session = useSession();
   const role = session.role;
-  const { data: ticket, isLoading, error } = useTicket(id);
+  const { data: ticket, isLoading, error, refetch } = useTicket(id);
   const history = useTicketHistory(id);
 
   if (!canViewDeptQueue(role)) return <AccessDenied />;
@@ -47,17 +47,13 @@ export function StaffTicketDetail({ id }: { id: string }) {
   }
 
   if (error) {
-    const status = error instanceof ApiError ? error.status : 0;
-    const message =
-      status === 403
-        ? 'Bạn không có quyền xem yêu cầu này.'
-        : status === 404
-          ? 'Không tìm thấy yêu cầu.'
-          : 'Đã xảy ra lỗi khi tải yêu cầu.';
     return (
-      <p role="alert" className="text-sm font-medium text-destructive">
-        {message}
-      </p>
+      <TicketErrorState
+        error={error}
+        backHref="/staff/queue"
+        backLabel="Quay lại hàng đợi"
+        onRetry={() => void refetch()}
+      />
     );
   }
 

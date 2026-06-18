@@ -3,7 +3,6 @@
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ApiError } from '@/lib/api/client';
 import { canComment } from '@/lib/auth/rbac';
 import { useSession } from '@/lib/auth/session';
 import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
@@ -11,13 +10,14 @@ import { useTicket, useTicketHistory } from '@/lib/queries/tickets';
 import { AttachmentList } from './attachment-list';
 import { CommentBox } from './comment-box';
 import { CommentList } from './comment-list';
+import { TicketErrorState } from './ticket-error-state';
 import { Timeline } from './timeline';
 
 /** Requester ticket detail — external status + timeline (read-only, no reopen). */
 export function TicketDetail({ id }: { id: string }) {
   const session = useSession();
   const role = session.role;
-  const { data: ticket, isLoading, error } = useTicket(id);
+  const { data: ticket, isLoading, error, refetch } = useTicket(id);
   const history = useTicketHistory(id);
 
   if (isLoading) {
@@ -30,17 +30,13 @@ export function TicketDetail({ id }: { id: string }) {
   }
 
   if (error) {
-    const status = error instanceof ApiError ? error.status : 0;
-    const message =
-      status === 403
-        ? 'Bạn không có quyền xem yêu cầu này.'
-        : status === 404
-          ? 'Không tìm thấy yêu cầu.'
-          : 'Đã xảy ra lỗi khi tải yêu cầu.';
     return (
-      <p role="alert" className="text-sm font-medium text-destructive">
-        {message}
-      </p>
+      <TicketErrorState
+        error={error}
+        backHref="/tickets"
+        backLabel="Quay lại danh sách yêu cầu"
+        onRetry={() => void refetch()}
+      />
     );
   }
 
