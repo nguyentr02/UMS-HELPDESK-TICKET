@@ -71,7 +71,16 @@ export function Providers({ children }: { children: ReactNode }) {
         // user while the BE returned 401 (cookie expired overnight).
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
-            if (query.queryKey[0] === 'auth' && query.queryKey[1] === 'me') return false;
+            const k0 = query.queryKey[0];
+            // Identity comes live from /auth/me on every load (ghost-user fix).
+            if (k0 === 'auth' && query.queryKey[1] === 'me') return false;
+            // Ticket detail/history/comments (`['ticket', …]`) are access-scoped:
+            // a persisted rehydrate could keep showing a ticket the viewer has
+            // since lost access to (redirected/closed out of scope) without ever
+            // re-hitting the BE. Skip persisting them so a reload re-fetches and
+            // the BE's 403 surfaces (→ the graceful out-of-scope card). Lists
+            // (`['tickets', …]`) still persist for instant queue paint.
+            if (k0 === 'ticket') return false;
             return query.state.status === 'success';
           },
         },
