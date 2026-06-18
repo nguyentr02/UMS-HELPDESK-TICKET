@@ -16,16 +16,17 @@ export const notificationKeys = { all: ['notifications'] as const };
 type Ctx = { prev?: NotificationItem[] };
 
 // Shared base options so `useNotifications` and `useUnreadCount` subscribe to
-// the SAME cache entry (one fetch, one poll) — they differ only in `select`.
-// Freshness comes from the socket (notification:new pushes live) + optimistic
-// mutations + a 60s background poll as fallback, so we DON'T force a refetch on
-// every mount: opening the bell/`/notifications` within staleTime serves the
-// cache instead of re-hitting /notifications each time.
+// the SAME cache entry — they differ only in `select`. Notifications are
+// **socket-driven** (no background poll): `notification:new` pushes live, the
+// socket reconnect-invalidate catches up on anything missed while disconnected,
+// optimistic mutations cover the user's own read/clear, and the mount fetch
+// (gated by `staleTime`) loads history. Trade-off: if the socket is fully down
+// (e.g. Render asleep), new items only surface on the next reconnect or mount —
+// so keep the realtime server warm.
 const NOTIFICATIONS_QUERY = {
   queryKey: notificationKeys.all,
   queryFn: listNotifications,
   staleTime: 30_000,
-  refetchInterval: 60_000,
 } as const;
 
 export function useNotifications() {
