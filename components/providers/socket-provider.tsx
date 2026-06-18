@@ -74,10 +74,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         void qc.invalidateQueries({ queryKey: catalogKeys.categories });
       });
 
-      // Any ticket was created/changed (by anyone) → refetch open queues/lists
-      // and the dashboard counts live, so they don't wait for a reload/poll.
+      // Any ticket was created/changed (by anyone) → refetch open queues/lists,
+      // the dashboard counts, AND any open ticket detail, so they don't wait for
+      // a reload/poll. `['ticket']` prefix-matches ['ticket', id] (+history/
+      // comments) → whatever detail the user is viewing refreshes live (e.g. a
+      // Lead finishing a ticket updates the DeptStaff's open detail). Applies to
+      // every persona since this provider is mounted app-wide.
       socket.on('tickets:changed', () => {
         void qc.invalidateQueries({ queryKey: ticketKeys.all });
+        void qc.invalidateQueries({ queryKey: ['ticket'] });
         void qc.invalidateQueries({ queryKey: analyticsKeys.summary });
       });
 
