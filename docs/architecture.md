@@ -174,6 +174,7 @@ Every (re)connect invalidates `['notifications']` to reconcile missed events; `c
 ## 4. Conventions
 
 - **Path alias:** `@/*` → repo root.
+- **Data fetching = TanStack Query.** All server *state* (anything read, cached, shared, or refetched) goes through `useQuery`/`useMutation` in `lib/queries/*` (fetchers in `lib/api/*`). Never hand-roll `fetch + useState + useEffect` for server data. **Documented exceptions** (not server state → don't force into a query): (1) **socket streams + the realtime handshake token** `fetchRealtimeToken` — live data comes over the socket, see the Realtime section; (2) **one-shot imperative side-effects** that aren't cached/rendered state — e.g. the **attachment download** (`components/tickets/attachment-list.tsx`), a binary blob fetched on click; (3) **fire-and-forget** (e.g. the BE's `waitUntil` emit) — N/A on the FE. Rule of thumb: *server **state** → TanStack Query; one-shot actions / streams → not required.*
 - **Component files:** kebab-case (`ticket-form.tsx`); exports PascalCase.
 - **`"use client"`** on anything with hooks/interactivity; Server Components stay shells.
 - **i18n:** Vietnamese copy co-located with components; canonical label maps in `lib/status/status.ts`.
