@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useCategories } from '@/lib/queries/catalog';
 import { useTicketPrefetch, useTickets } from '@/lib/queries/tickets';
 import type { ExternalStatus, TicketStatus } from '@/lib/types/domain';
@@ -44,13 +45,15 @@ export function TicketList() {
   const [pageSize, setPageSize] = useState(20);
   const { data: categories } = useCategories();
   const prefetchTicket = useTicketPrefetch();
+  // Debounce only the free-text search (see HelpdeskQueue for rationale).
+  const debouncedQ = useDebouncedValue(filters.q, 300);
 
   const status = filters.statuses.length
     ? filters.statuses.flatMap((s) => EXTERNAL_TO_INTERNAL[s])
     : undefined;
 
   const { data, isLoading, isError } = useTickets({
-    q: filters.q.trim() || undefined,
+    q: debouncedQ.trim() || undefined,
     status,
     severity: filters.severities.length ? filters.severities : undefined,
     categoryId: filters.categoryId || undefined,

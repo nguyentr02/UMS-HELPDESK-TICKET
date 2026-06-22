@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { canViewDeptQueue } from '@/lib/auth/rbac';
 import { useRole } from '@/lib/auth/session';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useCategories } from '@/lib/queries/catalog';
 import { useTicketPrefetch, useTickets } from '@/lib/queries/tickets';
 
@@ -43,9 +44,11 @@ export function StaffQueue() {
   const [pageSize, setPageSize] = useState(20);
   const { data: categories } = useCategories();
   const prefetchTicket = useTicketPrefetch();
+  // Debounce only the free-text search (see HelpdeskQueue for rationale).
+  const debouncedQ = useDebouncedValue(filters.q, 300);
 
   const { data, isLoading, isError } = useTickets({
-    q: filters.q.trim() || undefined,
+    q: debouncedQ.trim() || undefined,
     status: filters.statuses.length ? filters.statuses : undefined,
     severity: filters.severities.length ? filters.severities : undefined,
     categoryId: filters.categoryId || undefined,

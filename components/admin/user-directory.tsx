@@ -22,6 +22,7 @@ import {
 import { ROLE_VI } from '@/lib/auth/nav';
 import { canCreateUsers, canViewUsers } from '@/lib/auth/rbac';
 import { useRole } from '@/lib/auth/session';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useDepartments } from '@/lib/queries/catalog';
 import { useUsers } from '@/lib/queries/users';
 import type { ListUsersQuery } from '@/lib/types/domain';
@@ -49,11 +50,13 @@ export function UserDirectory() {
   const [page, setPage] = useState(1);
 
   const departments = useDepartments();
+  // Debounce only the free-text search (see HelpdeskQueue for rationale).
+  const debouncedQ = useDebouncedValue(filters.q, 300);
 
   const query: ListUsersQuery = {
     role: filters.role || undefined,
     departmentId: filters.departmentId || undefined,
-    search: filters.q.trim() || undefined,
+    search: debouncedQ.trim() || undefined,
     page,
     pageSize: PAGE_SIZE,
   };
