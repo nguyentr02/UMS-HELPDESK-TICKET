@@ -50,12 +50,14 @@ const eslintConfig = [
       'import/first': 'error',
       'import/newline-after-import': 'error',
       'import/no-duplicates': 'error',
-      // React Compiler rules newly enabled by eslint-config-next 16. They flag
-      // pre-existing, runtime-correct patterns (effect setState, react-hook-form
-      // `watch()`) the prior config never enforced. Kept off to make this a 1:1
-      // tooling migration; adopting + fixing them is a separate code-quality pass.
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/incompatible-library': 'off',
+      // React Compiler rules (new in eslint-config-next 16). `incompatible-library`
+      // is enforced — react-hook-form subscriptions use `useWatch` (memoizable)
+      // rather than `watch()`. `set-state-in-effect` is a warning: two remaining
+      // sites (login error-param handling, credential-note localStorage refresh)
+      // are deliberate external-system syncs whose documented behaviour we don't
+      // want to churn — visible as a reminder, non-blocking.
+      'react-hooks/incompatible-library': 'error',
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
 

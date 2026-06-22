@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -101,7 +101,7 @@ export function UserCreateForm() {
     defaultValues: { email: '', displayName: '', role: 'SV', departmentId: '', password: '' },
   });
 
-  const selectedRole = form.watch('role');
+  const selectedRole = useWatch({ control: form.control, name: 'role' });
   const deptRequired = selectedRole === 'DeptStaff';
 
   const onSubmit = form.handleSubmit(async (values) => {
