@@ -4,12 +4,14 @@ import { BASE_URL } from '@/lib/api/client';
 import type { Attachment } from '@/lib/types/domain';
 
 /**
- * Prefer the direct Blob URL (`a.url`) — the BE proxy at /attachments/:id
- * requires SSO headers which a plain `<a href>` doesn't send (would 401).
- * Fall back to the proxy for legacy memory/disk-stored attachments.
+ * Always download through the auth'd BE proxy at /attachments/:id. It's
+ * same-origin (via the /api/v1 rewrite), so the browser sends the first-party
+ * session cookie on a plain `<a href>` navigation — the proxy then enforces
+ * per-ticket access (assertCanViewTicket) and forces a safe `attachment`
+ * disposition. We never link the raw public Blob URL (that would bypass authz).
  */
 function downloadHrefFor(a: Attachment): string {
-  return a.url ?? `${BASE_URL}/attachments/${a.id}`;
+  return `${BASE_URL}/attachments/${a.id}`;
 }
 
 export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
