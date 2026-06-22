@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { describe, expect,it } from 'vitest';
+
 import { FileUpload } from '@/components/ui/file-upload';
 
 function Harness() {

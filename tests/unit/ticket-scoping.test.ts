@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect,it } from 'vitest';
+
 import { getTicket, listTickets } from '@/lib/api/tickets';
 
 // Drives the real MSW seed handlers (no per-test override) to verify server-derived scoping.

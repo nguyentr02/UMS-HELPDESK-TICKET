@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect,test } from '@playwright/test';
+
 import { setRole } from './helpers';
 
 // S2-I1 — log in as each role group (via the mock role switcher) and assert the

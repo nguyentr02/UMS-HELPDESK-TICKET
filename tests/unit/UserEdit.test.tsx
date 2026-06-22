@@ -1,11 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toaster } from 'sonner';
-import { UserEdit } from '@/components/admin/user-edit';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { UserDetail } from '@/components/admin/user-detail';
-import { __resetCreatedUsers, __getDeactivatedUserIds } from '@/mocks/handlers';
+import { UserEdit } from '@/components/admin/user-edit';
 import { createUser, deactivateUser, listUsers } from '@/lib/api/users';
+import { __getDeactivatedUserIds,__resetCreatedUsers } from '@/mocks/handlers';
+
 import { renderWithProviders } from '../helpers/render';
 
 const pushMock = vi.fn();

@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { describe, expect, it, vi } from 'vitest';
+
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { server } from '@/mocks/server';
 

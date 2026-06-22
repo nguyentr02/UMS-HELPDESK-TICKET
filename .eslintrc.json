@@ -21,5 +21,13 @@
     "import/newline-after-import": "error",
     "import/no-duplicates": "error"
   },
-  "ignorePatterns": ["node_modules/", "dist/", ".next/", ".turbo/", "coverage/", "**/next-env.d.ts"]
+  "ignorePatterns": ["node_modules/", "dist/", ".next/", ".turbo/", "coverage/", "**/next-env.d.ts"],
+  "overrides": [
+    {
+      "files": ["tests/**"],
+      "rules": {
+        "@next/next/no-html-link-for-pages": "off"
+      }
+    }
+  ]
 }

@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect,it } from 'vitest';
+
 import {
-  toExternalStatus,
+  backlogAgeDays,
   EXTERNAL_STATUS_VI,
   INTERNAL_STATUS_VI,
   isOpen,
   OPEN_STATUSES,
-  backlogAgeDays,
+  toExternalStatus,
 } from '@/lib/status/status';
 
 describe('status mappers', () => {

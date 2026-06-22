@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { SEVERITY_META, SEVERITIES_BY_PRIORITY } from '@/lib/status/severity';
+import { describe, expect,it } from 'vitest';
+
+import { SEVERITIES_BY_PRIORITY,SEVERITY_META } from '@/lib/status/severity';
 
 describe('severity meta', () => {
   it('orders Critical → Low', () => {
