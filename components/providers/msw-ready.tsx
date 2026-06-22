@@ -50,7 +50,6 @@ export function MswReady({ children }: { children: ReactNode }) {
 
         if (active) setReady(true);
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error(
           '[MSW] worker.start failed — requests will fall through to the dev server',
           err,
