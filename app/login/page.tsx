@@ -1,6 +1,7 @@
 'use client';
 
 import { Info } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -73,10 +74,15 @@ export default function LoginPage() {
       <div className="flex min-h-screen flex-col lg:flex-row">
         {/* Left — brand visual (lg:+ only): blurred landing watermark + DAU logo. */}
         <aside className="relative hidden overflow-hidden lg:flex lg:w-1/2 lg:items-center lg:justify-center lg:px-10 lg:py-10">
-          <div
+          {/* next/image auto-serves a resized webp/avif (the source PNG is ~1.1MB);
+              decorative + heavily blurred, so quality is a non-issue. */}
+          <Image
+            src="/landing-bg.png"
+            alt=""
             aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10 scale-110 bg-cover bg-center bg-no-repeat blur-sm"
-            style={{ backgroundImage: "url('/landing-bg.png')" }}
+            fill
+            sizes="50vw"
+            className="pointer-events-none -z-10 scale-110 object-cover blur-sm"
           />
           <div className="flex flex-col items-center gap-5 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
