@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { canViewQueue } from '@/lib/auth/rbac';
 import { useRole } from '@/lib/auth/session';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { useAgents, useCategories } from '@/lib/queries/catalog';
 import { useTicketPrefetch, useTickets } from '@/lib/queries/tickets';
 
@@ -40,9 +41,12 @@ export function HelpdeskQueue() {
   const { data: agents } = useAgents();
   const { data: categories } = useCategories();
   const prefetchTicket = useTicketPrefetch();
+  // Debounce only the free-text search so typing doesn't fire a request per
+  // keystroke; the discrete filters (status/severity/…) still apply instantly.
+  const debouncedQ = useDebouncedValue(filters.q, 300);
 
   const { data, isLoading, isError } = useTickets({
-    q: filters.q.trim() || undefined,
+    q: debouncedQ.trim() || undefined,
     status: filters.statuses.length ? filters.statuses : undefined,
     severity: filters.severities.length ? filters.severities : undefined,
     categoryId: filters.categoryId || undefined,
