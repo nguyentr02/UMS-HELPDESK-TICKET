@@ -31,25 +31,22 @@ const OVERLAY_MAX_MS = 1500;
  */
 export function NavigationLoadingProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [isNavigating, setIsNavigating] = useState(false);
   const [fromPath, setFromPath] = useState<string | null>(null);
   const safetyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // `isNavigating` is derived, not stored: a navigation is in-flight while we
+  // have a recorded origin path and the route hasn't moved off it yet. Deriving
+  // it (rather than clearing state in a `pathname` effect) hides the overlay the
+  // instant the route changes — and avoids a setState-in-effect.
+  const isNavigating = fromPath !== null && pathname === fromPath;
+
   function clearOverlay() {
-    setIsNavigating(false);
     setFromPath(null);
     if (safetyTimer.current) {
       clearTimeout(safetyTimer.current);
       safetyTimer.current = null;
     }
   }
-
-  // Primary clear: pathname actually moved.
-  useEffect(() => {
-    if (isNavigating && fromPath !== null && pathname !== fromPath) {
-      clearOverlay();
-    }
-  }, [pathname, isNavigating, fromPath]);
 
   // Cleanup on unmount so we never leak a pending timer.
   useEffect(() => {
@@ -59,13 +56,12 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
   }, []);
 
   function startNavigation(target?: string) {
-    // Same-path navigations don't trigger usePathname to change, so the primary
-    // clear-effect would never fire — skip the overlay entirely. This is the
+    // Same-path navigations don't change usePathname, so `isNavigating` would
+    // never flip back to false — skip the overlay entirely. This is the
     // SV→GV→NV case (all three share /tickets/new as their home).
     if (target && target === pathname) return;
 
     setFromPath(pathname);
-    setIsNavigating(true);
 
     if (safetyTimer.current) clearTimeout(safetyTimer.current);
     safetyTimer.current = setTimeout(() => {
