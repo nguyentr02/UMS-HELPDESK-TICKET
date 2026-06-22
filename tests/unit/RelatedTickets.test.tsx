@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
+import type { ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+
 import { RelatedTickets } from '@/components/tickets/related-tickets';
 import type { Ticket } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,

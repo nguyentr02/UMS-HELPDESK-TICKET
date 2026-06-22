@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
+import type { ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import type { NotificationItem } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, onClick }: { href: string; children: ReactNode; onClick?: () => void }) => (

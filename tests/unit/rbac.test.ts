@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import type { Role } from '@/lib/types/domain';
+import { describe, expect,it } from 'vitest';
+
 import * as rbac from '@/lib/auth/rbac';
+import type { Role } from '@/lib/types/domain';
 
 const ROLES: Role[] = ['SV', 'GV', 'NV', 'HelpdeskAgent', 'HelpdeskLead', 'DeptStaff', 'Admin'];
 

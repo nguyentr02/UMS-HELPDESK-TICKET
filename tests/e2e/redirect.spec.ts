@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page,test } from '@playwright/test';
 
 /**
  * S18/S19 — redirect dialogs in a REAL browser. jsdom can't drive the Radix

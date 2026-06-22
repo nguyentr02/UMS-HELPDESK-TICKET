@@ -1,24 +1,26 @@
 import { http, HttpResponse } from 'msw';
-import type { AnalyticsSummary, Severity, TicketComment } from '@/lib/types/domain';
+
 import { SEVERITY_META } from '@/lib/status/severity';
-import { NAME_REGEX, NAME_ERROR } from '@/lib/validation/user-name';
-import { isAllowedEmailDomain, EMAIL_DOMAIN_ERROR } from '@/lib/validation/email-domains';
-import { PERSONAS } from './personas';
+import type { AnalyticsSummary, Severity, TicketComment } from '@/lib/types/domain';
+import { EMAIL_DOMAIN_ERROR,isAllowedEmailDomain } from '@/lib/validation/email-domains';
+import { NAME_ERROR,NAME_REGEX } from '@/lib/validation/user-name';
+
 import {
-  HELPDESK_ACTOR,
-  USERS,
   agents,
   appendEvent,
   categories,
   comments,
   departments,
   events,
+  HELPDESK_ACTOR,
   makeTicket,
   nextId,
   notifications,
   setStatus,
   tickets,
+  USERS,
 } from './data';
+import { PERSONAS } from './personas';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
 const SEVERITIES: Severity[] = ['Critical', 'High', 'Medium', 'Low'];

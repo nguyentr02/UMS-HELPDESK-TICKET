@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect,test } from '@playwright/test';
+
 import { setRole } from './helpers';
 
 // S1-I1 — a requester creates a ticket with a severity and lands on "My tickets"

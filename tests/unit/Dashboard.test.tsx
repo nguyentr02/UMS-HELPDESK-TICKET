@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
+import { describe, expect,it } from 'vitest';
+
 import { Dashboard } from '@/components/analytics/dashboard';
 import type { AnalyticsSummary } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { renderWithProviders } from '@/tests/helpers/render';
+import { describe, expect, it, vi } from 'vitest';
+
 import { Sidebar } from '@/components/layout/sidebar';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,

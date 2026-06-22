@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect,test } from '@playwright/test';
+
 import { setRole } from './helpers';
 
 // S3-I1 — assign an agent through the shadcn Combobox (Radix Popover + cmdk), which can't

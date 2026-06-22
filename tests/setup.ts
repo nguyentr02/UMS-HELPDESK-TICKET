@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom/vitest';
-import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+
 import { cleanup } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+
 import { server } from '@/mocks/server';
 
 // --- Radix / jsdom polyfills (test-design §1.1) ---

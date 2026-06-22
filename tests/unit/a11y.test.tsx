@@ -1,17 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { axe } from 'vitest-axe';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
-import type { AnalyticsSummary, NotificationItem, Ticket } from '@/lib/types/domain';
+import type { ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { CategoryManager } from '@/components/admin/category-manager';
+import { Dashboard } from '@/components/analytics/dashboard';
+import { HelpdeskQueue } from '@/components/helpdesk/helpdesk-queue';
+import { NotificationList } from '@/components/notifications/notification-list';
 import { TicketForm } from '@/components/tickets/ticket-form';
 import { TicketList } from '@/components/tickets/ticket-list';
-import { HelpdeskQueue } from '@/components/helpdesk/helpdesk-queue';
-import { Dashboard } from '@/components/analytics/dashboard';
-import { NotificationList } from '@/components/notifications/notification-list';
-import { CategoryManager } from '@/components/admin/category-manager';
+import type { AnalyticsSummary, NotificationItem, Ticket } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('next/link', () => ({

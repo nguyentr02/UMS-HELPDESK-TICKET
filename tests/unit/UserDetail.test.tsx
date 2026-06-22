@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
 import { UserDetail } from '@/components/admin/user-detail';
+
 import { renderWithProviders } from '../helpers/render';
 
 // UserDetail uses useRouter for the post-delete navigation; mock so the hook

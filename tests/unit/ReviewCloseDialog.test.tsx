@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { server } from '@/mocks/server';
-import { renderWithProviders } from '@/tests/helpers/render';
+import { describe, expect, it, vi } from 'vitest';
+
 import { ReviewCloseDialog } from '@/components/helpdesk/review-close-dialog';
 import type { Ticket } from '@/lib/types/domain';
+import { server } from '@/mocks/server';
+import { renderWithProviders } from '@/tests/helpers/render';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 

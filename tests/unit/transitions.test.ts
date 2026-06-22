@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect,it } from 'vitest';
+
 import {
-  canForwardFrom,
-  canProgressFrom,
-  canCloseFrom,
   canAssignFrom,
+  canCloseFrom,
+  canForwardFrom,
   canOverrideSeverityFrom,
+  canProgressFrom,
 } from '@/lib/status/transitions';
 
 describe('status transition guards (state machine)', () => {

@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+
 import { UserDirectory } from '@/components/admin/user-directory';
+
 import { renderWithProviders } from '../helpers/render';
 
 describe('UserDirectory — Admin user directory page (FE-S14)', () => {

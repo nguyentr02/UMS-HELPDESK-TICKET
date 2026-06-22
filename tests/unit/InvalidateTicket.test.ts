@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { invalidateTicket } from '@/lib/queries/helpdesk';
+import { describe, expect, it, vi } from 'vitest';
+
 import { analyticsKeys } from '@/lib/queries/analytics';
+import { invalidateTicket } from '@/lib/queries/helpdesk';
 import { ticketKeys } from '@/lib/queries/tickets';
 
 describe('invalidateTicket — refreshes the dashboard too (S17 follow-up)', () => {

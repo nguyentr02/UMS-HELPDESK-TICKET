@@ -1,11 +1,12 @@
-import type { ReactElement, ReactNode } from 'react';
-import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render } from '@testing-library/react';
+import type { ReactElement, ReactNode } from 'react';
+
 import { SessionProvider } from '@/lib/auth/session';
 import { authKeys } from '@/lib/queries/auth';
-import { PERSONAS, defaultPersonaForRole } from '@/mocks/personas';
-import { departments as mockDepartments } from '@/mocks/data';
 import type { Role } from '@/lib/types/domain';
+import { departments as mockDepartments } from '@/mocks/data';
+import { defaultPersonaForRole,PERSONAS } from '@/mocks/personas';
 
 /**
  * Map a persona's dept CODE → the mock dept CUID used by `mocks/data.ts`.

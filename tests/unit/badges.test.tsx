@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, expect,it } from 'vitest';
+
+import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { InternalStatusBadge } from '@/components/ui/internal-status-badge';
 
 describe('badge wrappers', () => {
   it('SeverityBadge exposes label + accessible name (three channels)', () => {

@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toaster } from 'sonner';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { UserCreateForm } from '@/components/admin/user-create-form';
 import { UserDirectory } from '@/components/admin/user-directory';
 import { __resetCreatedUsers } from '@/mocks/handlers';
+
 import { renderWithProviders } from '../helpers/render';
 
 const pushMock = vi.fn();

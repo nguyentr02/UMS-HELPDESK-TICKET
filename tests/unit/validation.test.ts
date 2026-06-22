@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { createTicketSchema, attachmentError, MAX_FILE_BYTES } from '@/lib/validation/schemas';
+import { describe, expect,it } from 'vitest';
+
+import { attachmentError, createTicketSchema, MAX_FILE_BYTES } from '@/lib/validation/schemas';
 
 describe('zod schemas', () => {
   it('createTicket requires title ≥ 3 chars; severity is no longer collected', () => {

@@ -1,3 +1,4 @@
+import { backlogAgeDays, toExternalStatus } from '@/lib/status/status';
 import type {
   Category,
   Department,
@@ -10,7 +11,6 @@ import type {
   TicketStatus,
   UserRef,
 } from '@/lib/types/domain';
-import { backlogAgeDays, toExternalStatus } from '@/lib/status/status';
 
 let idSeq = 1000;
 export const nextId = (prefix = 'id'): string => `${prefix}-${++idSeq}`;

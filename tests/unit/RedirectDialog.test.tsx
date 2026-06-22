@@ -1,13 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { describe, expect, it, vi } from 'vitest';
+
+import { RedirectDialog } from '@/components/helpdesk/redirect-dialog';
+import { ApiError } from '@/lib/api/client';
+import { redirectTicket } from '@/lib/api/tickets';
+import type { Ticket } from '@/lib/types/domain';
 import { server } from '@/mocks/server';
 import { renderWithProviders } from '@/tests/helpers/render';
-import { RedirectDialog } from '@/components/helpdesk/redirect-dialog';
-import { redirectTicket } from '@/lib/api/tickets';
-import { ApiError } from '@/lib/api/client';
-import type { Ticket } from '@/lib/types/domain';
 
 const base = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
