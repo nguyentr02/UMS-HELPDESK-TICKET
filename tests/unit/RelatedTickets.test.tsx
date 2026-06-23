@@ -55,6 +55,28 @@ describe('RelatedTickets', () => {
     expect(screen.queryByText('Yêu cầu hiện tại')).not.toBeInTheDocument();
   });
 
+  it('caps the list at 5 and shows a "see all" link when there are more', async () => {
+    const items = [
+      ticket({ id: 'tk-1', title: 'Yêu cầu hiện tại' }),
+      ...Array.from({ length: 6 }, (_, i) => ticket({ id: `tk-${i + 2}`, title: `Khác ${i + 1}` })),
+    ];
+    server.use(
+      http.get(`${base}/tickets`, () =>
+        HttpResponse.json({
+          data: { items, page: { page: 1, pageSize: 6, total: 7 } },
+          error: null,
+          requestId: 'r',
+        }),
+      ),
+    );
+    renderWithProviders(<RelatedTickets currentId="tk-1" />, { role: 'SV' });
+    expect(await screen.findByText('Khác 1')).toBeInTheDocument();
+    expect(screen.getByText('Khác 5')).toBeInTheDocument();
+    // 6th (and beyond) is hidden behind the "see all" link.
+    expect(screen.queryByText('Khác 6')).not.toBeInTheDocument();
+    expect(screen.getByText('Xem tất cả →')).toBeInTheDocument();
+  });
+
   it('shows the empty message when there are no other open tickets', async () => {
     server.use(
       http.get(`${base}/tickets`, () =>
