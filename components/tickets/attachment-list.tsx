@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Paperclip } from 'lucide-react';
+import { Download, ImageOff, Paperclip } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -35,7 +35,13 @@ function formatBytes(bytes: number): string {
 
 export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
   const [preview, setPreview] = useState<Attachment | null>(null);
+  const [imgError, setImgError] = useState(false);
   if (attachments.length === 0) return null;
+
+  function openPreview(a: Attachment) {
+    setImgError(false); // reset for the newly-opened image
+    setPreview(a);
+  }
 
   return (
     <>
@@ -47,7 +53,7 @@ export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
               // Images preview in a lightbox (no navigation away from the ticket).
               <button
                 type="button"
-                onClick={() => setPreview(a)}
+                onClick={() => openPreview(a)}
                 className="text-left text-primary hover:underline"
               >
                 {a.filename}
@@ -77,14 +83,24 @@ export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
           </DialogHeader>
           {preview ? (
             <div className="flex flex-col items-center gap-3">
-              {/* Plain <img>, not next/image: the source is the auth'd proxy, which
-                  the Next image optimizer can't reach with the user's cookie. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={hrefFor(preview)}
-                alt={preview.filename}
-                className="max-h-[70vh] w-auto rounded-md object-contain"
-              />
+              {imgError ? (
+                // The proxy couldn't return the file (e.g. the Blob is missing).
+                // Show a clean state instead of a broken-image icon.
+                <div className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+                  <ImageOff className="h-10 w-10" aria-hidden />
+                  <p className="text-sm">Không tải được hình ảnh.</p>
+                </div>
+              ) : (
+                // Plain <img>, not next/image: the source is the auth'd proxy, which
+                // the Next image optimizer can't reach with the user's cookie.
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={hrefFor(preview)}
+                  alt={preview.filename}
+                  onError={() => setImgError(true)}
+                  className="max-h-[70vh] w-auto rounded-md object-contain"
+                />
+              )}
               <a
                 href={hrefFor(preview)}
                 download={preview.filename}
