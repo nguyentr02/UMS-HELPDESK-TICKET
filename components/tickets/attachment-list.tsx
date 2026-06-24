@@ -74,7 +74,7 @@ export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
       </ul>
 
       <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="grid-cols-[minmax(0,1fr)] max-w-3xl">
           <DialogHeader>
             <DialogTitle className="truncate pr-6">{preview?.filename}</DialogTitle>
             <DialogDescription>
