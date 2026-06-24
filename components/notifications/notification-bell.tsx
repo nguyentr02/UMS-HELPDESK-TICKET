@@ -47,7 +47,7 @@ export function NotificationBell() {
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))] p-0 pb-3">
+      <DropdownMenuContent align="end" collisionPadding={8} className="w-[calc(100vw-2rem)] sm:w-80 p-0 pb-3">
         <div className="max-h-[70vh] overflow-auto px-3 pt-3">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-xl font-semibold">Thông báo</span>
