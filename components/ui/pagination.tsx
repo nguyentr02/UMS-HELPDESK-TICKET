@@ -57,7 +57,7 @@ export function Pagination({
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3 sm:ml-auto">
+      <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
         {onPageSize ? (
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap">Số dòng</span>
