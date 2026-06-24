@@ -145,7 +145,7 @@ export function CredentialHelperNote({
           </div>
 
           <div
-            className="mt-4 -mx-1 flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-1"
+            className="mt-4 flex flex-wrap items-center gap-1.5"
             role="tablist"
             aria-label="Vai trò"
           >
