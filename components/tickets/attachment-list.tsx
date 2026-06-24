@@ -98,7 +98,7 @@ export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
                   src={hrefFor(preview)}
                   alt={preview.filename}
                   onError={() => setImgError(true)}
-                  className="max-h-[70vh] w-auto rounded-md object-contain"
+                  className="max-h-[70vh] max-w-full rounded-md object-contain"
                 />
               )}
               <a
