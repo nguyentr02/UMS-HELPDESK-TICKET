@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="h-[calc(100vh-1.5rem)] w-64 p-0">
               <SheetTitle className="sr-only">Điều hướng</SheetTitle>
               <SidebarContent onNavigate={() => setOpen(false)} />
             </SheetContent>
