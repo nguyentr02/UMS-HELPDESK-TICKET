@@ -8,39 +8,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { canViewDashboard } from "@/lib/auth/rbac";
 import { useRole } from "@/lib/auth/session";
 import { useAnalyticsSummary } from "@/lib/queries/analytics";
-import { ALL_STATUSES, INTERNAL_STATUS_VI } from "@/lib/status/status";
-import { cn } from "@/lib/utils";
+import {
+  ALL_STATUSES,
+  INTERNAL_STATUS_VI,
+  STATUS_COLOR,
+} from "@/lib/status/status";
 
+import { BarBreakdown } from "./bar-breakdown";
+import { RankedBars } from "./ranked-bars";
 import { SeverityDonut } from "./severity-donut";
 import { StatCard } from "./stat-card";
-
-function Bar({
-  label,
-  value,
-  max,
-  colorClass = "bg-red-500",
-}: {
-  label: string;
-  value: number;
-  max: number;
-  colorClass?: string;
-}) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-32 shrink-0 truncate text-sm">{label}</span>
-      <div className="h-3 flex-1 overflow-hidden rounded bg-muted">
-        <div
-          className={cn("h-full rounded", colorClass)}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="w-8 shrink-0 text-right text-sm tabular-nums">
-        {value}
-      </span>
-    </div>
-  );
-}
 
 /** S10 — module dashboard (Lead/Admin only): headline counts + severity/status/dept/category breakdowns. */
 export function Dashboard() {
@@ -74,8 +51,6 @@ export function Dashboard() {
       </div>
     );
   }
-
-  const maxStatus = Math.max(1, ...ALL_STATUSES.map((s) => data.byStatus[s]));
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,15 +86,15 @@ export function Dashboard() {
             <CardHeader>
               <CardTitle className="text-base">Theo trạng thái</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {ALL_STATUSES.map((s) => (
-                <Bar
-                  key={s}
-                  label={INTERNAL_STATUS_VI[s]}
-                  value={data.byStatus[s]}
-                  max={maxStatus}
-                />
-              ))}
+            <CardContent>
+              <BarBreakdown
+                rows={ALL_STATUSES.map((s) => ({
+                  key: s,
+                  label: INTERNAL_STATUS_VI[s],
+                  value: data.byStatus[s],
+                  color: STATUS_COLOR[s],
+                }))}
+              />
             </CardContent>
           </Card>
 
@@ -127,18 +102,15 @@ export function Dashboard() {
             <CardHeader>
               <CardTitle className="text-base">Theo phòng ban</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-1.5">
-              {data.byDepartment.map((d) => (
-                <div
-                  key={d.departmentId}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="truncate">{d.name}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {d.count}
-                  </span>
-                </div>
-              ))}
+            <CardContent>
+              <RankedBars
+                indicatorClassName="[&>div]:bg-[hsl(var(--chart-1))]"
+                rows={data.byDepartment.map((d) => ({
+                  key: d.departmentId,
+                  label: d.name,
+                  value: d.count,
+                }))}
+              />
             </CardContent>
           </Card>
 
@@ -146,18 +118,16 @@ export function Dashboard() {
             <CardHeader>
               <CardTitle className="text-base">Theo danh mục</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-1.5">
-              {data.byCategory.map((c) => (
-                <div
-                  key={c.categoryId}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="truncate">{c.name}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {c.count}
-                  </span>
-                </div>
-              ))}
+            <CardContent>
+              <RankedBars
+                columns={2}
+                indicatorClassName="[&>div]:bg-[hsl(var(--chart-2))]"
+                rows={data.byCategory.map((c) => ({
+                  key: c.categoryId,
+                  label: c.name,
+                  value: c.count,
+                }))}
+              />
             </CardContent>
           </Card>
         </div>
