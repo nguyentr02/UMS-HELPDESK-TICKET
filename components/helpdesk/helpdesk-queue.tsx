@@ -97,6 +97,7 @@ export function HelpdeskQueue() {
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-16 pr-6">STT</TableHead>
                   <TableHead>Mã</TableHead>
                   <TableHead>Tiêu đề</TableHead>
                   <TableHead>Mức độ</TableHead>
@@ -105,8 +106,11 @@ export function HelpdeskQueue() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.items.map((t) => (
+                {data.items.map((t, i) => (
                   <TableRow key={t.id} onMouseEnter={() => prefetchTicket(t.id)}>
+                    <TableCell className="pr-6 text-sm text-muted-foreground">
+                      {(data.page.page - 1) * data.page.pageSize + i + 1}
+                    </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       <Link href={`/helpdesk/tickets/${t.id}`} className="hover:underline">
                         {t.code}

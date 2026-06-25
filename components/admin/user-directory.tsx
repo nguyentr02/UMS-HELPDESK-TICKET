@@ -112,6 +112,7 @@ export function UserDirectory() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16 pr-6">STT</TableHead>
                 <TableHead>Họ tên</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Vai trò</TableHead>
@@ -120,8 +121,11 @@ export function UserDirectory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((u) => (
+              {items.map((u, i) => (
                 <TableRow key={u.id}>
+                  <TableCell className="pr-6 text-sm text-muted-foreground">
+                    {(page - 1) * PAGE_SIZE + i + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/admin/users/${u.id}`}

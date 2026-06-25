@@ -46,6 +46,12 @@ export function Pagination({
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
+  // Progressive disclosure: only render controls that can actually do something.
+  // The page-size selector only matters when a smaller size could split the
+  // results across pages; the nav cluster only matters with more than one page.
+  const showPageSize = Boolean(onPageSize) && total > Math.min(...pageSizeOptions);
+  const showNav = totalPages > 1;
+
   return (
     <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
       {itemNoun ? (
@@ -57,76 +63,82 @@ export function Pagination({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-        {onPageSize ? (
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap">Số dòng</span>
-            <Select value={String(pageSize)} onValueChange={(v) => onPageSize(Number(v))}>
-              <SelectTrigger className="h-8 w-[4.5rem]" aria-label="Số dòng mỗi trang">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map((opt) => (
-                  <SelectItem key={opt} value={String(opt)}>
-                    {opt}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
+      {showPageSize || showNav ? (
+        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+          {showPageSize ? (
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap">Số dòng</span>
+              <Select value={String(pageSize)} onValueChange={(v) => onPageSize!(Number(v))}>
+                <SelectTrigger className="h-8 w-[4.5rem]" aria-label="Số dòng mỗi trang">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((opt) => (
+                    <SelectItem key={opt} value={String(opt)}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
 
-        <span className="whitespace-nowrap">
-          Trang {page}/{totalPages}
-        </span>
+          {showNav ? (
+            <>
+              <span className="whitespace-nowrap">
+                Trang {page}/{totalPages}
+              </span>
 
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            disabled={page <= 1}
-            onClick={() => onPage(1)}
-            aria-label="Trang đầu"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            disabled={page <= 1}
-            onClick={() => onPage(page - 1)}
-            aria-label="Trang trước"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            disabled={page >= totalPages}
-            onClick={() => onPage(page + 1)}
-            aria-label="Trang sau"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            disabled={page >= totalPages}
-            onClick={() => onPage(totalPages)}
-            aria-label="Trang cuối"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={page <= 1}
+                  onClick={() => onPage(1)}
+                  aria-label="Trang đầu"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={page <= 1}
+                  onClick={() => onPage(page - 1)}
+                  aria-label="Trang trước"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={page >= totalPages}
+                  onClick={() => onPage(page + 1)}
+                  aria-label="Trang sau"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={page >= totalPages}
+                  onClick={() => onPage(totalPages)}
+                  aria-label="Trang cuối"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          ) : null}
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
