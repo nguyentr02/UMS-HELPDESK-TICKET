@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Design — M31 Helpdesk Console</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f5;
+    --color-background-tertiary: #efefef;
+    --color-text-primary: #111111;
+    --color-text-secondary: #555555;
+    --color-text-tertiary: #999999;
+    --color-border-primary: #d0d0d0;
+    --color-border-secondary: #e0e0e0;
+    --color-border-tertiary: #ebebeb;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --border-radius-sm: 4px;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: #e8e8e8; min-height: 100vh; }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: #1a1a2e; color: #fff;
+    padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-title { font-size: 13px; font-weight: 500; }
+  .topbar-meta { font-size: 11px; color: #aaa; }
+  .topbar-badge { font-size: 10px; background: #185FA5; padding: 2px 8px; border-radius: 99px; margin-left: 8px; }
+
+  /* ── Role switcher ── */
+  .rs {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    border-bottom: 0.5px solid #d0d0d0;
+    background: #fff;
+    flex-wrap: wrap;
+  }
+  .rl { font-size: 11px; color: #888; white-space: nowrap; margin-right: 4px; }
+  .rb {
+    font-size: 11px; padding: 4px 12px;
+    border-radius: 99px;
+    border: 0.5px solid #d0d0d0;
+    background: #fff;
+    color: #555;
+    cursor: pointer; transition: all .15s;
+    white-space: nowrap;
+  }
+  .rb:hover { background: #f5f5f5; }
+  .rb.on { background: #185FA5; border-color: #185FA5; color: #fff; }
+
+  /* ── Fake navbar (to simulate being inside UMS) ── */
+  .fake-nav {
+    background: #fff;
+    border-bottom: 0.5px solid #e0e0e0;
+    padding: 0 20px;
+    display: flex; align-items: center; gap: 24px; height: 44px;
+  }
+  .fake-logo { font-size: 13px; font-weight: 600; color: #185FA5; letter-spacing: -0.02em; }
+  .fake-nav-links { display: flex; gap: 16px; }
+  .fake-nav-link { font-size: 12px; color: #888; cursor: pointer; }
+  .fake-nav-link.active { color: #185FA5; font-weight: 500; border-bottom: 2px solid #185FA5; padding-bottom: 2px; }
+  .fake-nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .bell-icon { position: relative; cursor: pointer; }
+  .bell-icon i { font-size: 18px; color: #888; }
+  .bell-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #E24B4A; border-radius: 50%; border: 1.5px solid #fff; }
+
+  /* ── Main console frame ── */
+  .console-wrap { padding: 14px 20px; }
+  .frame {
+    display: flex; height: 560px;
+    border: 0.5px solid #ddd;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    background: var(--color-background-primary);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  }
+
+  /* ── Sidebar ── */
+  .sb {
+    width: 214px; min-width: 214px;
+    border-right: 0.5px solid var(--color-border-tertiary);
+    display: flex; flex-direction: column;
+    background: var(--color-background-primary);
+  }
+  .sbh { padding: 14px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .sbh .mn { font-size: 13px; font-weight: 500; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
+  .sbh .mn i { font-size: 16px; color: #185FA5; }
+  .rbadge { margin-top: 5px; display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #E6F1FB; color: #185FA5; font-weight: 500; }
+  .sec-lbl { font-size: 10px; font-weight: 500; letter-spacing: .08em; color: var(--color-text-tertiary); padding: 8px 14px 3px; text-transform: uppercase; }
+  .ni { display: flex; align-items: center; gap: 9px; padding: 7px 14px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; border-left: 2px solid transparent; transition: all .12s; }
+  .ni i { font-size: 15px; width: 17px; flex-shrink: 0; }
+  .ni:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .ni.on { background: #E6F1FB; color: #185FA5; border-left-color: #185FA5; font-weight: 500; }
+  .ni.on i { color: #185FA5; }
+  .nbadge { margin-left: auto; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 99px; min-width: 18px; text-align: center; }
+  .nbadge.red { background: #E24B4A; color: #fff; }
+  .nbadge.blue { background: #185FA5; color: #fff; }
+  .sdiv { margin: 4px 14px; border: none; border-top: 0.5px solid var(--color-border-tertiary); }
+  .sbf { margin-top: auto; padding: 10px 14px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .av { width: 28px; height: 28px; border-radius: 50%; background: #B5D4F4; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: #0C447C; flex-shrink: 0; }
+
+  /* ── Main content ── */
+  .mc { flex: 1; display: flex; flex-direction: column; background: var(--color-background-tertiary); overflow: hidden; }
+  .ch { padding: 12px 18px; background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
+  .ct { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .cs { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+  .ha { display: flex; gap: 7px; }
+  .bp { font-size: 11px; padding: 5px 12px; background: #185FA5; color: #fff; border: none; border-radius: var(--border-radius-md); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .bp i { font-size: 13px; }
+  .bg { font-size: 11px; padding: 5px 9px; background: transparent; color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .bg i { font-size: 13px; }
+  .cb { flex: 1; padding: 14px 18px; overflow-y: auto; }
+
+  /* ── Content components ── */
+  .pc { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; margin-bottom: 10px; }
+  .pl { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+  .srow { display: flex; gap: 9px; margin-bottom: 10px; }
+  .sc { flex: 1; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px; }
+  .sv2 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .sl { font-size: 10px; color: var(--color-text-secondary); margin-top: 2px; }
+  .nt { background: #E6F1FB; border: 0.5px solid #B5D4F4; border-radius: var(--border-radius-md); padding: 9px 12px; font-size: 11px; color: #185FA5; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+  .nt i { font-size: 14px; flex-shrink: 0; }
+  .trow { display: flex; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--color-border-tertiary); gap: 10px; cursor: pointer; }
+  .trow:last-child { border-bottom: none; }
+  .trow:hover .ttitle { color: #185FA5; }
+  .ttitle { font-size: 12px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .tsub { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .tbadge { font-size: 10px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .sev-c { background: #FCEBEB; color: #A32D2D; }
+  .sev-h { background: #FAEEDA; color: #854F0B; }
+  .sev-m { background: #E6F1FB; color: #185FA5; }
+  .sev-l { background: #EAF3DE; color: #3B6D11; }
+  .stat-requested { background: #E6F1FB; color: #185FA5; }
+  .stat-processing { background: #FAEEDA; color: #854F0B; }
+  .stat-finished { background: #EAF3DE; color: #3B6D11; }
+  .form-row { margin-bottom: 12px; }
+  .form-lbl { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 5px; }
+  .form-lbl .req { color: #E24B4A; }
+  .fi { width: 100%; padding: 7px 10px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); outline: none; }
+  .fi:focus { border-color: #185FA5; }
+  .sev-opts { display: flex; gap: 7px; }
+  .sev-opt { flex: 1; padding: 6px 8px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-tertiary); cursor: pointer; text-align: center; font-size: 11px; font-weight: 500; }
+  .sev-opt.sel { box-shadow: 0 0 0 2px #185FA5; }
+  .upl { border: 1px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 14px; text-align: center; font-size: 11px; color: var(--color-text-secondary); cursor: pointer; }
+  .upl i { font-size: 20px; display: block; margin-bottom: 4px; color: var(--color-text-tertiary); }
+  .cat-item { padding: 7px 12px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; background: var(--color-background-primary); }
+  .cat-item i.cat-icon { font-size: 14px; color: var(--color-text-secondary); }
+  .cat-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .cat-dept { font-size: 11px; color: var(--color-text-secondary); }
+  .cat-actions { display: flex; gap: 5px; }
+  .cat-actions i { font-size: 14px; color: var(--color-text-secondary); cursor: pointer; }
+  .cat-actions i:hover { color: #185FA5; }
+  .notif-item { padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; gap: 10px; }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-icon { width: 32px; height: 32px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .notif-icon i { font-size: 15px; color: #185FA5; }
+  .notif-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .notif-body { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .notif-time { font-size: 10px; color: var(--color-text-tertiary); margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Top annotation bar -->
+<div class="topbar">
+  <div>
+    <span class="topbar-title">UI Design — M31 Helpdesk / Ticket</span>
+    <span class="topbar-badge">Helpdesk Console</span>
+  </div>
+  <span class="topbar-meta">For Claude Code reference · v1.0 · 27/05/2026</span>
+</div>
+
+<!-- Role switcher -->
+<div class="rs">
+  <span class="rl">Preview role:</span>
+  <button class="rb on" onclick="setRole('sv')" id="btn-sv">SV / GV / NV</button>
+  <button class="rb" onclick="setRole('agent')" id="btn-agent">Helpdesk Agent</button>
+  <button class="rb" onclick="setRole('lead')" id="btn-lead">Helpdesk Lead</button>
+  <button class="rb" onclick="setRole('staff')" id="btn-staff">Dept Staff</button>
+  <button class="rb" onclick="setRole('admin')" id="btn-admin">Admin</button>
+</div>
+
+<!-- Fake UMS navbar (existing layout) -->
+<div class="fake-nav">
+  <span class="fake-logo">DAU · UMS</span>
+  <div class="fake-nav-links">
+    <span class="fake-nav-link">Trang chủ</span>
+    <span class="fake-nav-link active">Helpdesk</span>
+    <span class="fake-nav-link">Học vụ</span>
+    <span class="fake-nav-link">Tài chính</span>
+  </div>
+  <div class="fake-nav-right">
+    <div class="bell-icon"><i class="ti ti-bell"></i><div class="bell-dot"></div></div>
+    <div style="width:28px;height:28px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#0C447C;" id="nav-av">NV</div>
+  </div>
+</div>
+
+<!-- Console -->
+<div class="console-wrap">
+  <div class="frame">
+
+    <!-- Sidebar -->
+    <div class="sb">
+      <div class="sbh">
+        <div class="mn"><i class="ti ti-headset"></i>Helpdesk</div>
+        <span class="rbadge" id="role-badge">Sinh viên</span>
+      </div>
+      <div id="nav-menu" style="flex:1;overflow-y:auto;"></div>
+      <div class="sbf">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="av" id="av-init">NV</div>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);" id="u-name">Nguyễn Văn A</div>
+            <div style="font-size:10px;color:var(--color-text-secondary);" id="u-role">Sinh viên</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="mc">
+      <div class="ch">
+        <div>
+          <div class="ct" id="pg-title">Ticket của tôi</div>
+          <div class="cs" id="pg-sub">Theo dõi trạng thái các yêu cầu đã gửi</div>
+        </div>
+        <div class="ha" id="pg-actions"></div>
+      </div>
+      <div class="cb" id="pg-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PAGES = {
+  mine: {
+    title: 'Ticket của tôi',
+    sub: 'Theo dõi trạng thái các yêu cầu đã gửi',
+    actions: `<button class="bp"><i class="ti ti-plus"></i>Tạo mới</button>`,
+    content: () => `
+      <div class="nt"><i class="ti ti-info-circle"></i>Chỉ hiển thị ticket do bạn tạo. Click để xem chi tiết và trao đổi.</div>
+      <div class="pc">
+        <div class="pl">Danh sách ticket</div>
+        ${trow('Không đăng nhập được UMS','Hệ thống báo lỗi 403 khi vào trang chủ','sev-h','High','stat-requested','Đã tiếp nhận')}
+        ${trow('Điều hoà phòng A204 hỏng','Không có gió lạnh từ sáng sớm','sev-m','Medium','stat-processing','Đang xử lý')}
+        ${trow('Xin xác nhận bảng điểm HK1','Cần nộp cho công ty thực tập','sev-l','Low','stat-finished','Hoàn tất')}
+      </div>`
+  },
+  new: {
+    title: 'Tạo ticket mới',
+    sub: 'Gửi yêu cầu hỗ trợ đến Helpdesk',
+    actions: '',
+    content: () => `
+      <div class="pc">
+        <div class="form-row">
+          <div class="form-lbl">Tiêu đề <span class="req">*</span></div>
+          <input class="fi" type="text" placeholder="Mô tả ngắn gọn vấn đề (3–200 ký tự)">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Danh mục <span class="req">*</span></div>
+          <select class="fi">
+            <option>IT / Hệ thống số</option><option>Cơ sở vật chất</option>
+            <option>Học vụ / Đào tạo</option><option>Tài chính</option>
+            <option>Nhân sự (HCNS)</option><option>Khác</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Mức độ ưu tiên <span class="req">*</span></div>
+          <div class="sev-opts">
+            <div class="sev-opt sev-c">🔴 Critical</div>
+            <div class="sev-opt sev-h">🟠 High</div>
+            <div class="sev-opt sev-m sel">🟡 Medium</div>
+            <div class="sev-opt sev-l">🟢 Low</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Mô tả chi tiết <span class="req">*</span></div>
+          <textarea class="fi" rows="3" placeholder="Mô tả vấn đề, bước tái hiện lỗi nếu có... (1–5000 ký tự)"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Đính kèm file <span style="color:var(--color-text-tertiary);font-weight:400;">(tối đa 5 file · mỗi file ≤ 10 MB · ảnh hoặc tài liệu)</span></div>
+          <div class="upl"><i class="ti ti-upload"></i>Kéo thả hoặc click để chọn file</div>
+        </div>
+        <button class="bp" style="width:100%;justify-content:center;">Gửi yêu cầu</button>
+      </div>`
+  },
+  queue: {
+    title: 'Hàng đợi ticket',
+    sub: 'Tất cả ticket đang mở — assign, forward, redirect và đóng',
+    actions: `<button class="bg"><i class="ti ti-filter"></i>Filter</button><button class="bg"><i class="ti ti-arrows-sort"></i>Sort</button>`,
+    content: () => `
+      <div class="srow">
+        <div class="sc"><div class="sv2">12</div><div class="sl">Đang mở</div></div>
+        <div class="sc"><div class="sv2" style="color:#A32D2D">3</div><div class="sl">Critical</div></div>
+        <div class="sc"><div class="sv2" style="color:#854F0B">5</div><div class="sl">High</div></div>
+        <div class="sc"><div class="sv2">5</div><div class="sl">Tồn đọng &gt;1 ngày</div></div>
+      </div>
+      <div class="pc">
+        <div class="pl">Tất cả ticket</div>
+        ${trow('Mất điện toàn toà B','Mất điện từ 8h sáng, ảnh hưởng 12 phòng học','sev-c','Critical','stat-requested','Chờ xử lý')}
+        ${trow('LMS không load được bài giảng','Sinh viên báo lỗi 504 trên trang học','sev-h','High','stat-requested','Chờ xử lý')}
+        ${trow('Máy chiếu B301 hỏng','Không xuất tín hiệu HDMI','sev-m','Medium','stat-processing','Đang xử lý')}
+        ${trow('Xác nhận học bổng HK2','SV cần giấy xác nhận nộp cho ngân hàng','sev-l','Low','stat-processing','Đang xử lý')}
+      </div>`
+  },
+  dash: {
+    title: 'Dashboard',
+    sub: 'Tổng quan tình trạng ticket toàn hệ thống',
+    actions: `<button class="bg"><i class="ti ti-calendar"></i>Tuần này</button>`,
+    content: () => `
+      <div class="srow">
+        <div class="sc"><div class="sv2">47</div><div class="sl">Tổng hôm nay</div></div>
+        <div class="sc"><div class="sv2" style="color:#A32D2D">3</div><div class="sl">Critical</div></div>
+        <div class="sc"><div class="sv2">12</div><div class="sl">Đang mở</div></div>
+        <div class="sc"><div class="sv2">35</div><div class="sl">Đã đóng</div></div>
+      </div>
+      <div class="pc">
+        <div class="pl">Phân bổ theo category</div>
+        <div style="display:flex;gap:6px;align-items:flex-end;height:90px;margin-top:8px;">
+          ${bar('IT',75)}${bar('CSVC',45)}${bar('Học vụ',90)}${bar('Tài chính',30)}${bar('HCNS',55)}
+        </div>
+      </div>
+      <div class="pc">
+        <div class="pl">Phân bổ theo severity</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          ${pill('Critical','#FCEBEB','#A32D2D','8')}
+          ${pill('High','#FAEEDA','#854F0B','15')}
+          ${pill('Medium','#E6F1FB','#185FA5','16')}
+          ${pill('Low','#EAF3DE','#3B6D11','8')}
+        </div>
+      </div>`
+  },
+  notif: {
+    title: 'Thông báo',
+    sub: 'Daily reminder và cập nhật trạng thái ticket',
+    actions: `<button class="bg">Đánh dấu tất cả đã đọc</button>`,
+    content: () => `
+      <div class="pc">
+        <div class="pl">Hôm nay — 09:00</div>
+        <div class="notif-item" style="background:#E6F1FB;border-radius:6px;padding:10px;margin-bottom:8px;">
+          <div class="notif-icon"><i class="ti ti-clock"></i></div>
+          <div>
+            <div class="notif-title">Daily reminder — 5 ticket tồn đọng</div>
+            <div class="notif-body">Bạn có 5 ticket chưa xử lý: 2 Critical · 1 High · 2 Medium</div>
+            <div class="notif-time">09:00 hôm nay</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:#EAF3DE;"><i class="ti ti-check" style="color:#3B6D11;"></i></div>
+          <div>
+            <div class="notif-title">Ticket #1042 đã được đóng</div>
+            <div class="notif-body">Yêu cầu "Xác nhận bảng điểm HK1" đã hoàn tất xử lý</div>
+            <div class="notif-time">Hôm qua · 16:30</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:#FAEEDA;"><i class="ti ti-arrow-right" style="color:#854F0B;"></i></div>
+          <div>
+            <div class="notif-title">Ticket #1039 được chuyển đến bạn</div>
+            <div class="notif-body">Helpdesk đã gán "Điều hoà A204 hỏng" cho bạn xử lý</div>
+            <div class="notif-time">Hôm qua · 10:15</div>
+          </div>
+        </div>
+      </div>`
+  },
+  dept: {
+    title: 'Queue phòng ban',
+    sub: 'Ticket được Helpdesk gán cho phòng ban của bạn',
+    actions: `<button class="bg"><i class="ti ti-filter"></i>Filter</button>`,
+    content: () => `
+      <div class="srow">
+        <div class="sc"><div class="sv2">5</div><div class="sl">Đang xử lý</div></div>
+        <div class="sc"><div class="sv2" style="color:#854F0B">2</div><div class="sl">Tồn đọng &gt;1 ngày</div></div>
+      </div>
+      <div class="pc">
+        <div class="pl">Ticket được gán</div>
+        ${trow('Xin xác nhận học bổng HK2','Sinh viên cần giấy xác nhận nộp ngân hàng','sev-m','Medium','stat-requested','Chờ xử lý')}
+        ${trow('Khiếu nại điểm môn KTGT','Điểm thi lần 2 chưa được cập nhật','sev-h','High','stat-processing','Đang xử lý')}
+        ${trow('Xin miễn giảm học phí HK2','Hộ nghèo, cần xét duyệt học kỳ 2','sev-l','Low','stat-requested','Chờ xử lý')}
+      </div>`
+  },
+  cat: {
+    title: 'Quản lý danh mục',
+    sub: 'Thêm, sửa, xóa category',
+    actions: `<button class="bp"><i class="ti ti-plus"></i>Thêm danh mục</button>`,
+    content: () => `
+      <div class="pc">
+        <div class="pl">Danh sách danh mục</div>
+        ${catItem('IT / Hệ thống số')}
+        ${catItem('Cơ sở vật chất')}
+        ${catItem('Học vụ / Đào tạo')}
+        ${catItem('Tài chính')}
+        ${catItem('Nhân sự (HCNS)')}
+        ${catItem('Khác')}
+      </div>`
+  },
+  users: {
+    title: 'Quản lý người dùng',
+    sub: 'Danh sách người dùng · tạo / sửa / vô hiệu hóa',
+    actions: `<button class="bp"><i class="ti ti-plus"></i>Tạo người dùng</button>`,
+    content: () => `
+      <div class="pc">
+        <div class="pl">Người dùng</div>
+        ${userRow('Nguyễn Văn A','sv01@ums.edu.vn','Sinh viên')}
+        ${userRow('Trần Thị B','agent01@ums.edu.vn','Helpdesk Agent')}
+        ${userRow('Lê Văn C','lead01@ums.edu.vn','Helpdesk Lead')}
+        ${userRow('Phạm Thị D','staff01@ums.edu.vn','Nhân viên phòng ban')}
+        ${userRow('Hoàng Văn E','admin01@ums.edu.vn','Quản trị viên')}
+      </div>`
+  }
+};
+
+function trow(title, sub, sev, sevLbl, stat, statLbl) {
+  return `<div class="trow">
+    <div style="flex:1;">
+      <div class="ttitle">${title}</div>
+      <div class="tsub">${sub}</div>
+    </div>
+    <span class="tbadge ${sev}">${sevLbl}</span>
+    <span class="tbadge ${stat}" style="margin-left:6px;">${statLbl}</span>
+  </div>`;
+}
+
+function bar(label, pct) {
+  return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+    <div style="width:100%;height:${pct * 0.72}px;background:#85B7EB;border-radius:3px 3px 0 0;"></div>
+    <div style="font-size:9px;color:#888;text-align:center;">${label}</div>
+  </div>`;
+}
+
+function pill(lbl, bg, color, count) {
+  return `<div style="flex:1;padding:8px;border-radius:6px;background:${bg};text-align:center;">
+    <div style="font-size:18px;font-weight:500;color:${color};">${count}</div>
+    <div style="font-size:10px;color:${color};margin-top:2px;">${lbl}</div>
+  </div>`;
+}
+
+function catItem(name) {
+  return `<div class="cat-item">
+    <i class="ti ti-tag cat-icon"></i>
+    <span class="cat-name">${name}</span>
+    <div class="cat-actions">
+      <i class="ti ti-edit" title="Sửa"></i>
+      <i class="ti ti-trash" title="Xóa"></i>
+    </div>
+  </div>`;
+}
+
+function userRow(name, email, role) {
+  return `<div class="trow">
+    <div style="flex:1;">
+      <div class="ttitle">${name}</div>
+      <div class="tsub">${email}</div>
+    </div>
+    <span class="tbadge sev-l" style="margin-right:8px;">${role}</span>
+    <i class="ti ti-edit" style="font-size:14px;color:#888;cursor:pointer;margin-right:6px;" title="Sửa"></i>
+    <i class="ti ti-trash" style="font-size:14px;color:#888;cursor:pointer;" title="Xóa"></i>
+  </div>`;
+}
+
+const ROLES = {
+  sv: {
+    badge:'Sinh viên', name:'Nguyễn Văn A', init:'NV', roleText:'Sinh viên',
+    nav:[{s:'Yêu cầu của tôi'},{i:'ti-plus',l:'Tạo ticket mới',p:'new'},{i:'ti-list',l:'Ticket của tôi',p:'mine',active:true}],
+    defaultPage:'mine'
+  },
+  agent: {
+    badge:'Helpdesk Agent', name:'Trần Thị B', init:'TB', roleText:'Helpdesk Agent',
+    nav:[{s:'Yêu cầu của tôi'},{i:'ti-plus',l:'Tạo ticket mới',p:'new'},{i:'ti-list',l:'Ticket của tôi',p:'mine'},{div:true},
+         {s:'Helpdesk'},{i:'ti-inbox',l:'Hàng đợi',p:'queue',active:true,b:'12',bc:'blue'},{i:'ti-bell',l:'Thông báo',p:'notif',b:'3',bc:'red'}],
+    defaultPage:'queue'
+  },
+  lead: {
+    badge:'Helpdesk Lead', name:'Lê Văn C', init:'LC', roleText:'Helpdesk Lead',
+    nav:[{s:'Yêu cầu của tôi'},{i:'ti-plus',l:'Tạo ticket mới',p:'new'},{i:'ti-list',l:'Ticket của tôi',p:'mine'},{div:true},
+         {s:'Helpdesk'},{i:'ti-layout-dashboard',l:'Dashboard',p:'dash',active:true},{i:'ti-inbox',l:'Hàng đợi',p:'queue',b:'12',bc:'blue'},{i:'ti-bell',l:'Thông báo',p:'notif',b:'3',bc:'red'}],
+    defaultPage:'dash'
+  },
+  staff: {
+    badge:'Phòng Đào tạo', name:'Phạm Thị D', init:'PD', roleText:'Dept Staff',
+    nav:[{s:'Yêu cầu của tôi'},{i:'ti-plus',l:'Tạo ticket mới',p:'new'},{i:'ti-list',l:'Ticket của tôi',p:'mine'},{div:true},
+         {s:'Phòng ban'},{i:'ti-building',l:'Queue phòng ban',p:'dept',active:true,b:'5',bc:'blue'},{i:'ti-bell',l:'Thông báo',p:'notif',b:'2',bc:'red'}],
+    defaultPage:'dept'
+  },
+  admin: {
+    badge:'Admin', name:'Hoàng Văn E', init:'HE', roleText:'Admin hệ thống',
+    nav:[{s:'Yêu cầu của tôi'},{i:'ti-plus',l:'Tạo ticket mới',p:'new'},{i:'ti-list',l:'Ticket của tôi',p:'mine'},{div:true},
+         {s:'Helpdesk'},{i:'ti-layout-dashboard',l:'Dashboard',p:'dash',active:true},{i:'ti-inbox',l:'Tất cả ticket',p:'queue',b:'24',bc:'blue'},{div:true},
+         {s:'Cấu hình'},{i:'ti-category',l:'Danh mục',p:'cat'},{i:'ti-users',l:'Người dùng',p:'users'}],
+    defaultPage:'dash'
+  }
+};
+
+function buildNav(role) {
+  return ROLES[role].nav.map(item => {
+    if (item.s) return `<div class="sec-lbl">${item.s}</div>`;
+    if (item.div) return `<hr class="sdiv">`;
+    const badge = item.b ? `<span class="nbadge ${item.bc||''}">${item.b}</span>` : '';
+    return `<div class="ni ${item.active?'on':''}" data-page="${item.p}" onclick="goPage('${item.p}')">
+      <i class="ti ${item.i}"></i><span>${item.l}</span>${badge}
+    </div>`;
+  }).join('');
+}
+
+function goPage(pageId) {
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  const el = document.querySelector(`.ni[data-page="${pageId}"]`);
+  if (el) el.classList.add('on');
+  const p = PAGES[pageId];
+  if (!p) return;
+  document.getElementById('pg-title').textContent = p.title;
+  document.getElementById('pg-sub').textContent = p.sub;
+  document.getElementById('pg-actions').innerHTML = p.actions;
+  document.getElementById('pg-content').innerHTML = p.content();
+}
+
+function setRole(role) {
+  document.querySelectorAll('.rb').forEach(b => b.classList.remove('on'));
+  document.getElementById('btn-' + role).classList.add('on');
+  const r = ROLES[role];
+  document.getElementById('role-badge').textContent = r.badge;
+  document.getElementById('av-init').textContent = r.init;
+  document.getElementById('nav-av').textContent = r.init;
+  document.getElementById('u-name').textContent = r.name;
+  document.getElementById('u-role').textContent = r.roleText;
+  document.getElementById('nav-menu').innerHTML = buildNav(role);
+  goPage(r.defaultPage);
+}
+
+setRole('sv');
+</script>
+</body>
+</html>

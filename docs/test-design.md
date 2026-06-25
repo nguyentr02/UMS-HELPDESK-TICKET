@@ -5,7 +5,7 @@
 | Module | **M31 — Helpdesk / Ticket** — **Front-end only** |
 | Sources | `docs/brief.md`, `docs/feature-plan.md` (§3 personas, §8 states, §11 guards, App. A contract), `docs/role-permission-matrix.md` |
 | Step | Process Step 4 — Test design (`/sc:test --design --persona-qa`) |
-| Stack under test | Next.js 14 · shadcn/ui (Radix) · React Hook Form + Zod · TanStack Query · MSW v2 |
+| Stack under test | Next.js 16 · shadcn/ui (Radix) · React Hook Form + Zod · TanStack Query · MSW v2 |
 | Test stack | **Vitest + RTL + jsdom** (unit/component) · **Playwright + @axe-core/playwright** (e2e/RSC/a11y) · **vitest-axe** (component a11y) |
 | Backend | **Mocked (MSW)** — cases run against the App. A contract; no real BE |
 | Min per Story | ≥1 Happy · ≥2 Edge · ≥2 Error · ≥1 Integration |
@@ -32,13 +32,13 @@ Radix primitives (`Select`, `Combobox`/`cmdk`, `DropdownMenu`, `Popover`) depend
 
 - **Open/pick interactions on `Select` / `Combobox` / `DropdownMenu` are asserted in Playwright** (real browser), not Vitest. Cases that need them are tagged `(e2e)`.
 - Where a Vitest case must touch one (e.g. asserting *options are filtered*), the suite installs the standard polyfills in `tests/setup.ts` (`Element.prototype.scrollIntoView`, `hasPointerCapture`, `ResizeObserver`, `PointerEvent`) and drives the widget by **keyboard** (`userEvent.keyboard`) rather than mouse. Cases relying on polyfills are tagged `(jsdom+polyfill)`.
-- **Logic is tested separately from the widget**: the routing-rule preselect, the agent-filter predicate, the RBAC gate, and the 409 handler are unit-tested as pure functions so coverage doesn't hinge on rendering a Radix popover.
+- **Logic is tested separately from the widget**: the agent-filter predicate, the RBAC gate, and the 409 handler are unit-tested as pure functions so coverage doesn't hinge on rendering a Radix popover.
 
 ### 1.2 RSC caveat
 Per the feature plan, data-fetching lives in **Client Components**, so Vitest+RTL+MSW covers the bulk. Async Server Components (layouts/shells) and full navigations are covered by Playwright only.
 
-### 1.3 Implementation status (2026-05-29)
-Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui migration**; **207 Vitest specs green** + **9 Playwright e2e**; coverage **83% stmts / 81% branch** (≥ 80% gate); `tsc`/lint/build clean. Notes from building:
+### 1.3 Implementation status (2026-06-25)
+Phases 0–19 are implemented (the six core surfaces + hardening + full shadcn/ui migration, demo + Google SSO login/logout, the Admin user-management console, and the close/redirect request workflows); **256 Vitest tests across 43 files green** + **Playwright e2e**; coverage ≥ 80% gate; `tsc`/lint/build clean. (Routing-rule management was removed — too rigid for cross-domain tickets — so its tests were dropped.) Notes from building (Phases 0–7 detail retained for history):
 - **shadcn-everything (2026-05-29):** all native form controls were replaced — dropdowns → `Select`, multi-toggle filters → `ToggleGroup`, searchable agent/dept pickers → `Combobox` (Popover+cmdk), notification bell → `DropdownMenu`, role-switcher → `Select`. Per §1.1, Radix dropdowns don't open in jsdom, so their open→pick *interactions* moved to Playwright (`helpdesk-actions` S3-I1 assign, `admin-routing` S8-E2, `notifications` bell, `queue-filter` assignee); Vitest keeps logic + visibility (the dialogs still open via Radix `Dialog`, so gating/validation stay in jsdom). `ToggleGroup` chips remain jsdom-tested (status/severity filters).
 - **localStorage stub:** Node 25's experimental WebStorage is unreliable under jsdom, so `tests/setup.ts` stubs a fresh in-memory `localStorage` per test (this also isolates the persisted mock role between tests).
 - The **S2 role-scoping cases (H1/E1/E2/E3/E4)** are realized against the **`Sidebar`** (`Sidebar.test.tsx`), not a top nav — it asserts the matrix-correct nav per role (incl. *absence* of create/view-own for Agent/Lead/Admin).
@@ -46,7 +46,7 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **Phase 3 (Helpdesk):** the 5 action dialogs use shadcn **`Dialog`** (opens in jsdom with the §1.1 polyfills), so dialog **gating + field validation** stay unit-tested (e.g. ForwardDialog preselect shows in the closed `Combobox` trigger; RedirectDialog reason validation). The agent/dept pickers were a native-`<select>` `SearchableSelect` driven by `selectOptions` — **superseded 2026-05-29** by the shadcn `Combobox`, so the pick→confirm→success/409 *flows* moved to Playwright (`helpdesk-actions.spec.ts`).
 - Implemented suites: `status`, `severity`, `transitions`, `validation`, `rbac` (100-case grid), `api-client`, `errors`, `Sidebar`, `badges`, `Button`, `TicketForm` (S1), `TicketList`, `TicketDetail` (S10-H1 + S2-X2), `FileUpload`, `RelatedTickets`, **`AssignDialog` (S3), `ForwardDialog` (S4), `RedirectDialog` (S5), `CloseDialog` (S7), `HelpdeskTicketDetail` (S2/S3-X1/S7-X3 gating), `HelpdeskQueue`**, **`StaffQueue` (S6-E1 + access), `StaffTicketDetail` (S6-H1/S6-X1 gating), `ProgressButton` (S6-H1/S6-X2/409)**, and **`ticket-scoping`** (server-derived list scoping: Agent→assigned, DeptStaff→dept, Lead→all). Pending suites (S8, S9, S10-dashboard) land with Phases 5–6.
 - **Phase 4 (Dept Staff):** `StaffTicketDetail` exposes only **Mark-In-Progress** (matrix: no Close/forward/redirect for DeptStaff) + comment; the `StaffQueue` is dept-scoped server-side and ships a **mobile-card + desktop-table** dual layout (tests scope assertions to the table to avoid the duplicated text). `POST /progress` has a DeptStaff dept-scope **403** backstop (S6-X2). **S6-E2** (comment-with-attachment in the timeline) is **deferred** — `CommentBox` is body-only and comments surface as `Commented` timeline events (§8 Q2 open).
-- **Phase 5 (Admin):** `CategoryManager` (S8) — add (1-level nesting; parent picker = root categories) + delete; **delete is disabled when the category has children** (S8-E1), with a server `409` backstop; dup/short name → `422`/client field error (S8-X2). `RoutingManager` (S8) — add category→dept rules with a default flag; the **Forward preselect cross-check (S8-E2/I1)** is realized by `ForwardDialog` (S4). Both consoles `AccessDenied` for non-Admin (S8-X1). The category tree `<ul>` carries `aria-label="Cây danh mục"` so tests scope to it (a root name also appears as a parent-select `<option>`). Inline rename/edit is deferred (mock `PATCH` exists for later).
+- **Phase 5 (Admin):** `CategoryManager` (S8) — a **flat** category list (no parent/child): add + delete (confirm dialog warns the category is unset from any tickets gathering it); dup/short name → `422`/client field error (S8-X2). The console `AccessDenied`s for non-Admin (S8-X1). The category list `<ul>` carries `aria-label="Danh sách danh mục"` so tests scope to it. Inline rename/edit is deferred (mock `PATCH` exists for later). *(The former `RoutingManager` + its routing-rule tests were removed with the routing feature.)*
 - **Phase 6 (Notifications + Dashboard):** `NotificationBell` (S9) — unread badge + a **plain-state toggle panel** (not a Radix `DropdownMenu`, so the open/list flow is jsdom-testable); S9-H1 (badge + newest-first), S9-E1 (empty → no badge). `NotificationList`/`NotificationItem` — S9-E2 (`DailyReminder` lists backlog tickets with severity + age), S9-X1 (failed mark-read keeps the item unread + retry). `Dashboard` (S10) — `canViewDashboard`-gated (S10-X2 SV, **S10-X3 Agent** both denied), counts/breakdowns (S10-E1), error+retry (S10-X1). Notification links route by role via `ticketDetailHref`.
 - **Phase 7 (hardening):** `tests/unit/a11y.test.tsx` runs **`vitest-axe`** over 6 surfaces (TicketForm, TicketList, HelpdeskQueue, Dashboard, NotificationList, CategoryManager) → **0 violations** with `region`/`color-contrast` out of scope (need page landmarks/layout jsdom can't provide — a `@axe-core/playwright` page sweep would cover those). **e2e** (`tests/e2e/`): smoke + **S2-I1** (role-switch nav grid) + **S1-I1** (create → *Đã tiếp nhận*). Coverage **83% stmts / 81% branch** (≥ 80%). *Note:* `vitest-axe@0.1.0`'s matcher is broken (empty `extend-expect` + mistyped export) so the sweep asserts on `axe(...).violations` directly. **Still deferred (optional):** S9-X2, S9-I1, S10-I1, the S3–S8 dialog/admin `(e2e)` flows, a `@axe-core/playwright` per-page pass, and a 320px responsive audit.
 
@@ -80,7 +80,7 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **H1** — role `SV` → only requester nav (Tạo yêu cầu · Yêu cầu của tôi · Bell); no Helpdesk/Admin entries.
 - **E1** — role `HelpdeskAgent` → Hàng đợi visible; **Báo cáo/Dashboard absent** (matrix: Agent has no dashboard); Admin absent.
 - **E2** — role `HelpdeskLead` → Hàng đợi **and** Báo cáo visible; Admin absent.
-- **E3** — role `Admin` → Tất cả yêu cầu · Báo cáo · Danh mục · Định tuyến; create-ticket nav absent.
+- **E3** — role `Admin` → Tất cả yêu cầu · Báo cáo · Danh mục · Người dùng; create-ticket nav absent.
 - **E4** — role `DeptStaff` → Hàng đợi phòng ban + Bell (create reachable by URL/CTA, not a primary sidebar item).
 - **X1** — `DeptStaff` deep-links `/admin/categories` → `AccessDenied` view (not a blank screen).
 - **X2** — a requester opens another user's ticket URL → API `403` → "Bạn không có quyền xem yêu cầu này." and **no** ticket data rendered.
@@ -95,9 +95,9 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **X2** — assign submit returns `409` (no longer Pending) → "Hành động không còn hợp lệ. Đang làm mới…" toast, detail invalidated, dialog closes, controls regate.
 - **I1** *(e2e)* — Lead assigns → filtering the queue by that assignee shows the ticket.
 
-### S4 — Forward to department + routing rules
-- **H1** — GIVEN a `Pending` ticket whose category has a default routing rule, WHEN Forward opens, THEN the default department is **pre-selected**; confirming sends `POST /forward`, internal → `Assigned`, external stays **Đã tiếp nhận**.
-- **E1** — category "Khác" (no rule) → **no** preselect; the user must choose.
+### S4 — Forward to department
+- **H1** — GIVEN a `Pending` ticket, WHEN Forward opens, THEN **no department is pre-selected** (routing rules were removed); the Agent/Lead picks a phòng ban and confirms → `POST /forward`, internal → `Assigned`, external stays **Đã tiếp nhận**.
+- **E1** — opening Forward on any category → no preselect; the user must choose before confirm is enabled.
 - **E2** *(e2e / jsdom+polyfill)* — long department list → the picker is searchable.
 - **X1** — no department chosen → confirm disabled / validation shown; no API call.
 - **X2** — forward returns `409` (already forwarded) → stale-state toast + refresh.
@@ -128,13 +128,12 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **X3** — GIVEN a `HelpdeskAgent` who is **not** the assignee, THEN the Close control is **not shown** (ownership backstop, Brief §0.7 / feature-plan §11).
 - **I1** *(e2e)* — Helpdesk closes → requester bell shows the close notice → ticket reads **Hoàn tất**.
 
-### S8 — Admin category tree + routing (runtime)
-- **H1** — GIVEN an Admin, WHEN they add a category under a parent and save, THEN it appears in the tree and becomes selectable on the requester create form.
-- **E1** — a category with children → delete is warned/blocked per the delete guard.
-- **E2** — a routing rule set as default for a category → Forward pre-selects that department (cross-checks S4-H1).
+### S8 — Admin category list (runtime, flat)
+- **H1** — GIVEN an Admin, WHEN they add a category and save, THEN it appears in the flat list and becomes selectable on the requester create form.
+- **E1** — deleting a category → confirm dialog warns it will be unset from any tickets gathering it (those revert to "chưa phân loại"); on confirm the category is removed from the list.
 - **X1** — a non-Admin deep-links the Admin console → `AccessDenied` (RBAC).
-- **X2** — category create with empty/duplicate name → client validation or mapped `422`; tree unchanged.
-- **I1** *(e2e)* — Admin adds category + routing → it appears on the requester create form and Forward pre-selects the dept.
+- **X2** — category create with empty/duplicate name → client validation or mapped `422`; list unchanged.
+- **I1** *(e2e)* — Admin adds a category → it appears on the requester create form.
 
 ### S9 — In-app notifications + daily reminder rendering
 - **H1** — unread notifications → bell shows an unread count, list is newest-first, clicking one navigates to its ticket.
@@ -157,8 +156,8 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 
 - **H1** — GIVEN the credential note picked persona "u-sv-1", WHEN the user types the shown credentials and submits, THEN `POST /auth/login` is called with `credentials: 'include'`; the `authKeys.me` cache is populated; `router.push(homeRouteFor('SV'))` (= `/tickets/new`).
 - **H2** — GIVEN a logged-in user, WHEN they click `Đăng xuất` (top bar **or** sidebar footer), THEN `POST /auth/logout` runs, `queryClient.clear()` fires, the `authKeys.me` cache is invalidated, and the router pushes to `/login`.
-- **E1** — The slide-down note's role tabs each list the matching personas; clicking a persona reveals its credentials inline and auto-fills the `Email` field (password stays as displayed copy).
-- **E2** — The note is dismissible (X button) and re-renders open on the next visit to `/login` (no localStorage persistence of dismissal).
+- **E1** — The credential-helper modal's role tablist each list the matching personas; clicking a persona reveals its credentials inline and auto-fills the `Email` field (seeded personas also fill the password; admin-created ones don't).
+- **E2** — The modal is dismissible (X button or backdrop click) and re-opens via the login-page button (no localStorage persistence of dismissal).
 - **E3** — Logging in on `/login?next=%2Fanalytics` lands on `/analytics` (when the role is allowed there) or falls back to `homeRouteFor(role)` (when the role isn't, e.g. SV redirected from `/analytics`).
 - **X1** — Wrong password → BE `401` with field-agnostic error → form shows "Sai tài khoản hoặc mật khẩu"; the form values stay intact (no field-level error mapping).
 - **X2** — Logged-out user deep-links `/tickets/new` → AuthGate redirects to `/login?next=%2Ftickets%2Fnew`; after login they land on `/tickets/new`.
@@ -197,6 +196,26 @@ Phases 0–7 are implemented (all six surfaces + hardening) + a **full shadcn/ui
 - **H3** — `ReviewRedirectDialog`: refuse with a reason → POST `/refuse-redirect`. **E2** — refuse with no reason → error. **G5** — Approve dialog confirm disabled until a dept is picked. **H2** — `approveRedirect` API sends `departmentId` + `note`.
 - **G1** — DeptStaff on `Assigned` sees "Xin chuyển phòng ban"; **G2** — `RedirectRequested` shows the "chờ duyệt" banner. **G3** — Lead on `RedirectRequested` sees "Duyệt chuyển" + "Từ chối"; **G4** — a non-assignee Agent does not.
 
+### S20 — Google SSO login + login rate-limit  *(2026-06)*
+- **G1** — `GoogleLoginButton` renders "Đăng nhập bằng Google" on `/login`; clicking it does a **full-page navigation** to the BE `/auth/google` (asserted via the `window.location` href, not a `fetch`).
+- **X1** — `POST /auth/login` returns **`429`** (too many attempts) → the form surfaces the rate-limit message (distinct from the field-agnostic `401` "Sai email hoặc mật khẩu"); values preserved, no retry storm.
+
+### S21 — Helpdesk re-categorize  *(2026-06)*
+- **G1** — `CategoryAssignDialog` ("Phân loại") is rendered for Agent + Lead (`canCategorize`) and **absent** for DeptStaff/requester/Admin.
+- **H1** — pick a category → `PATCH /tickets/:id/category` sends the new `categoryId`; success toast "Đã cập nhật danh mục."
+- **H2** — pick "— Không phân loại —" → sends `categoryId: null`; toast "Đã bỏ phân loại."
+- **E1** — confirm with the unchanged category → dialog closes with **no** API call.
+- **X1** — `409` → stale-state handling (invalidate + close); `422` on `categoryId` → error toast.
+
+### S22 — Notification bulk actions  *(2026-06)*
+- **H1** — `MarkAllReadButton` → `POST /notifications/read-all` → all rows read + badge clears.
+- **H2** — `ClearAllButton` → `DELETE /notifications` → list empties to the EmptyState.
+- **E1** — bulk actions are hidden/disabled when there's nothing to act on.
+
+### S23 — Attachment lightbox + preview fallback  *(2026-06)*
+- **H1** — an **image** attachment opens in an **in-page lightbox** (`Dialog`) served via the auth'd `/attachments/:id` proxy; no navigation away from the ticket. A **PDF** opens in a **new tab** (`target="_blank"`); other types **download**.
+- **X1** — the proxied image fails to load → `onError` swaps to a graceful "Không tải được hình ảnh." state (no broken-image icon); the "Tải xuống" link still works.
+
 ---
 
 ## 4. RBAC visibility grid (S2 expansion — derived from `role-permission-matrix.md`)
@@ -209,9 +228,10 @@ Each cell is an assertion: **✅ control/route present & usable**, **🚫 contro
 | Nav: Hàng đợi (all tickets) | 🚫 | ✅ | ✅ | 🚫 | ✅ |
 | Nav: Hàng đợi phòng ban | 🚫 | 🚫 | 🚫 | ✅ | ✅ |
 | Nav: Báo cáo (dashboard) | 🚫 | **🚫** | ✅ | 🚫 | ✅ |
-| Nav: Danh mục / Định tuyến | 🚫 | 🚫 | 🚫 | 🚫 | ✅ |
+| Nav: Danh mục / Người dùng | 🚫 | 🚫 | 🚫 | 🚫 | ✅ |
 | Control: Assign agent | 🚫 | 🚫 | ✅ | 🚫 | 🚫 |
 | Control: Forward / Redirect / Override severity | 🚫 | ✅ | ✅ | 🚫 | 🚫 |
+| Control: Re-categorize (Phân loại) | 🚫 | ✅ | ✅ | 🚫 | 🚫 |
 | Control: Mark In Progress | 🚫 | ✅ | ✅ | ✅ | 🚫 |
 | Control: Close | 🚫 | ✅† | ✅ | 🚫 | 🚫 |
 | Control: Comment | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -244,9 +264,14 @@ This grid is realized as a **parametrized test** (one row per role) at the unit 
 | S17 | 5 | — | 6 | — | ✅ |
 | S18 | 2 | — | 3 | — | ✅ |
 | S19 | 4 | — | 6 | — | ✅ |
+| S20 | 1 | — | 1 | — | ✅ |
+| S21 | 2 | 1 | 1 | — | ✅ |
+| S22 | 2 | 1 | — | — | ✅ |
+| S23 | 1 | — | 1 | — | ✅ |
 
 **Totals (v1, S1…S11):** 12 Happy · 27 Edge · 26 Error · 11 Integration = **76 FE test cases**.
-**User-management + close/redirect additions (S14…S19, 2026-06):** ~60 more cases (6 S14 + 10 S15 + 10 S16 + 11 S17 + 5 S18 + 10 S19 + credential-helper/ghost-user), in the same Vitest suite. Full FE suite green at the latest sync (**252 passing**).
+**User-management + close/redirect additions (S14…S19, 2026-06):** ~60 more cases (6 S14 + 10 S15 + 10 S16 + 11 S17 + 5 S18 + 10 S19 + credential-helper/ghost-user), in the same Vitest suite.
+**Recently shipped additions (S20…S23, 2026-06):** Google SSO + rate-limit, re-categorize, notification bulk actions, attachment lightbox/preview-fallback. Full FE suite green at the latest sync (**256 Vitest tests across 43 files**, + Playwright e2e).
 
 ---
 
@@ -265,9 +290,9 @@ This grid is realized as a **parametrized test** (one row per role) at the unit 
 
 ## 7. Test data & MSW fixtures
 
-- **Roles**: one mock identity per role (SV, GV, NV, HelpdeskAgent, HelpdeskLead, DeptStaff, Admin); the role switcher / `renderWithProviders({ role })` selects.
-- **Tickets**: at least one fixture in each internal state (`Pending`, `Assigned`, `InProgress`, `Redirected`, `Closed`) so transition/RBAC cases have a valid starting point.
-- **Catalog**: departments, agents, categories incl. **"Khác" with no routing rule** (S4-E1) and categories **with** a default rule (S4-H1/S8-E2).
+- **Roles**: one mock identity per role (SV, GV, NV, HelpdeskAgent, HelpdeskLead, DeptStaff, Admin); `renderWithProviders({ role })` selects the active identity (e2e logs in via `POST /auth/login`).
+- **Tickets**: at least one fixture in each internal state (`Pending`, `Assigned`, `InProgress`, `CloseRequested`, `RedirectRequested`, `Closed`) so transition/RBAC cases have a valid starting point. *(The transient `Redirected` state was dropped — re-routing now lands back in `Assigned`.)*
+- **Catalog**: departments, agents, categories (incl. **"Khác"**). Forward no longer pre-selects a department — routing rules were removed.
 - **Notifications**: a `TicketClosed`, a `DailyReminder` with ≥2 backlog tickets, and an unread/read mix.
 - **Error fixtures**: per endpoint, an override returning 401/403/404/409/422/5xx for the X-cases (via `server.use(...)` per test, matching the existing MSW override pattern).
 - Fixtures are **deterministic** (fixed ids/timestamps) so list ordering and timeline assertions are stable.
