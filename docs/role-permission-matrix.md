@@ -14,7 +14,7 @@
 |---|:---:|:---:|:---:|:---:|:---:|
 | Tạo ticket mới | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Xem ticket của mình | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Comment trên ticket | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Comment trên ticket | ✅⁴ | ✅⁴ | ✅⁴ | ✅⁴ | ✅⁴ |
 | Truy cập hàng đợi ticket | ❌ | ✅¹ | ✅ | ❌ | ✅ |
 | Xem ticket của dept mình | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Assign ticket cho Agent | ❌ | ❌ | ✅ | ❌ | ❌ |
@@ -22,25 +22,27 @@
 | Redirect sang phòng khác (trực tiếp) | ❌ | ✅² | ✅ | ❌ | ❌ |
 | Xin chuyển phòng ban (kèm lý do) | ❌ | ❌ | ❌ | ✅³ | ❌ |
 | Duyệt / Từ chối yêu cầu chuyển | ❌ | ✅² | ✅ | ❌ | ❌ |
+| Phân loại lại ticket (re-categorize) | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Override severity | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Cập nhật In Progress | ❌ | ✅ | ✅ | ✅ | ❌ |
 | Đóng ticket (trực tiếp) | ❌ | ✅² | ✅ | ❌ | ❌ |
 | Yêu cầu đóng (kèm minh chứng) | ❌ | ❌ | ❌ | ✅³ | ❌ |
 | Duyệt / Từ chối yêu cầu đóng | ❌ | ✅² | ✅ | ❌ | ❌ |
 | Dashboard tổng quan | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Quản lý Category tree | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Quản lý Routing rules | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Quản lý danh mục (danh sách phẳng) | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Xem danh sách người dùng | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Tạo người dùng | ❌ | ❌ | ❌ | ❌ | ✅* |
 | Cập nhật người dùng (PATCH) | ❌ | ❌ | ❌ | ❌ | ✅* |
 | Xóa (vô hiệu hóa) người dùng | ❌ | ❌ | ❌ | ❌ | ✅* |
 | Daily reminder | ❌ | ✅ | ✅ | ✅ | ❌ |
 
-> \* **Scope exceptions:** user lifecycle (create/update/delete) normally lives in M1 (IAM). The helpdesk module exposes `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id` (soft — `isActive=false`) for the practice/demo flow only, per explicit product decisions (2026-06-09 for create, 2026-06-10 for update + delete). Email is intentionally immutable here. Admin cannot delete themselves (BE 409). Read-only fetch (`GET /users`, `GET /users/:id`) is the long-term contract.
+> \* **Scope exceptions:** user lifecycle (create/update/delete) normally lives in M1 (IAM). The helpdesk module exposes `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id` (soft — `isActive=false`) for the practice/demo flow only, per explicit product decisions (2026-06-09 for create, 2026-06-10 for update + delete). Email is intentionally immutable here. Admin cannot delete themselves (BE 409). (`GET /users`, `GET /users/:id` are the read endpoints; the long-term IAM-owned contract may narrow back to read-only.)
 
 > ¹ **Helpdesk Agent chỉ thấy ticket được gán cho mình** trong hàng đợi (server-derived scoping); mở ticket của agent khác → **403**. Chỉ **Lead** và **Admin** thấy tất cả ticket. Agent vẫn truy cập màn hình hàng đợi (`canViewQueue` = true), nhưng dữ liệu bị giới hạn theo `helpdeskAssigneeId = caller.id`.
 >
 > ² **Ownership backstop:** một **Agent** chỉ đóng / duyệt / từ chối ticket **được gán cho mình**; **Lead** thao tác trên mọi ticket.
+>
+> ⁴ **Comment có điều kiện** (`canComment`, `rbac.ts`): (1) **không ai** comment được trên ticket `Closed`; (2) ngoài ra giới hạn theo phạm vi: **Lead/Admin** → mọi ticket chưa đóng; **Agent** → chỉ ticket được gán cho mình; **DeptStaff** → chỉ ticket route về phòng mình; **SV/GV/NV** → chỉ ticket của chính mình. Ô ✅ trong ma trận là quyền **theo vai trò**, vẫn chịu hai ràng buộc này.
 >
 > ³ **Close request (S17, 2026-06-11):** DeptStaff của **phòng được phân công** gửi yêu cầu đóng kèm **comment bắt buộc + ảnh tuỳ chọn** khi ticket đang `InProgress`. Ticket chuyển sang `CloseRequested` (người yêu cầu vẫn thấy "Đang xử lý"). Agent/Lead phụ trách **Duyệt** (→ Closed) hoặc **Từ chối** (kèm lý do → InProgress để làm lại). Mọi bước (yêu cầu / duyệt / từ chối) gửi notification cho bên liên quan. Đóng trực tiếp (không qua yêu cầu) vẫn dành cho Agent/Lead như cũ.
 >
@@ -54,33 +56,35 @@
 | **Helpdesk Agent** | Nhân viên Helpdesk — xử lý **các ticket được gán cho mình**; forward, redirect, đóng ticket |
 | **Helpdesk Lead** | Trưởng Helpdesk — toàn quyền của Agent + assign ticket cho Agent + xem Dashboard |
 | **Dept Staff** | Nhân viên phòng ban — xem và xử lý ticket được gán cho phòng ban mình |
-| **Admin** | Admin hệ thống — xem tất cả ticket + quản lý category tree & routing rules |
+| **Admin** | Admin hệ thống — xem tất cả ticket + quản lý danh mục (danh sách phẳng) + quản lý người dùng |
 
 ## Sidebar navigation per role
 
-### SV / GV / NV
-- Tạo ticket mới
-- Ticket của tôi
+> The sidebar (`lib/auth/nav.ts` → `navSectionsFor`) is built from **section labels**, not per-role headings: **Yêu cầu của tôi · Helpdesk · Phòng ban · Cấu hình**. Each section appears only when the role has an item in it.
 
-### Helpdesk Agent
-- Hàng đợi (Queue) — tất cả ticket
+### SV / GV / NV — *Yêu cầu của tôi*
+- Tạo yêu cầu
+- Yêu cầu của tôi
+- Thông báo
+
+### Helpdesk Agent — *Helpdesk*
+- Hàng đợi
 - Thông báo (daily reminder)
 
-### Helpdesk Lead
-- Dashboard
-- Hàng đợi (Queue) — tất cả ticket
+### Helpdesk Lead — *Helpdesk*
+- Báo cáo (Dashboard)
+- Hàng đợi
 - Thông báo (daily reminder)
 
-### Dept Staff
-- Queue phòng ban — ticket được gán cho dept
+### Dept Staff — *Phòng ban*
+- Hàng đợi phòng ban — ticket được gán cho dept
 - Thông báo (daily reminder)
 
-### Admin
-- Dashboard
-- Tất cả ticket
-- Quản lý Danh mục (Category tree)
-- Quản lý Routing rules
-- Người dùng (read-only directory)
+### Admin — *Helpdesk* + *Cấu hình*
+- Báo cáo (Dashboard)
+- Tất cả yêu cầu
+- Danh mục (category list — flat)
+- Người dùng
 
 ## Implementation notes
 
@@ -91,6 +95,7 @@
 - `canAssign(role)` → `role === 'HelpdeskLead'`
 - `canForward(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
 - `canRedirect(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
+- `canCategorize(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)` *(backs the re-categorize dialog — `PATCH /tickets/:id/category`)*
 - `canOverrideSeverity(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
 - `canUpdateProgress(role)` → `['HelpdeskAgent', 'HelpdeskLead', 'DeptStaff'].includes(role)`
 - `canClose(role)` → `['HelpdeskAgent', 'HelpdeskLead'].includes(role)`
@@ -101,8 +106,7 @@
 - `canReviewRedirectRequest(role, userId, ticket)` → same ownership as `canRedirectTicket` *(S19)*
 - `canViewDashboard(role)` → `['HelpdeskLead', 'Admin'].includes(role)`
 - `canManageCategories(role)` → `role === 'Admin'`
-- `canManageRouting(role)` → `role === 'Admin'`
-- `canViewUsers(role)` → `role === 'Admin'` *(read-only fetch; departments + faculties are owned by other UMS modules)*
+- `canViewUsers(role)` → `role === 'Admin'` *(departments + faculties are still owned by other UMS modules)*
 - `canCreateUsers(role)` → `role === 'Admin'` *(scope exception — see note above the matrix)*
 - `canUpdateUsers(role)` → `role === 'Admin'` *(scope exception 2026-06-10 — email immutable; password reset supported)*
 - `canDeleteUsers(role)` → `role === 'Admin'` *(scope exception 2026-06-10 — soft delete; self-target blocked at BE 409)*

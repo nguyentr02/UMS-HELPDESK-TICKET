@@ -6,7 +6,7 @@
 | Sources | `docs/brief.md`, `docs/feature-plan.md`, `docs/test-design.md`, `docs/role-permission-matrix.md` |
 | Step | Process Step 5 — Implementation plan (`/sc:workflow --detail --persona-architect`) |
 | Output of this step | **This document only** — no code (that is Step 6 `/sc:implement`) |
-| Stack | Next.js 14 (App Router) · TS · **shadcn/ui (Radix)** · RHF + Zod · TanStack Query · MSW v2 · Vitest+RTL · Playwright |
+| Stack | Next.js 16 (App Router) · React 19 · TS · **shadcn/ui (Radix)** · RHF + Zod · TanStack Query · MSW v2 · Vitest+RTL · Playwright |
 | Strategy | Systematic, surface-by-surface; shared foundation locked first |
 | Starting point | **Greenfield code** — only `docs/` + tooling/config survive the reset; `app/`, `components/`, `lib/`, `mocks/`, `tests/` are rebuilt |
 
@@ -14,22 +14,22 @@
 
 ---
 
-## Status & deviations (2026-05-29)
+## Status & deviations (latest: 2026-06-25)
 
-**Done:** Phases 0–6 (all six feature surfaces) + **Phase 7 (hardening — a11y sweep, e2e, coverage gate)**. A responsive **sidebar shell + top bar** + **red brand accent** throughout. Gates green: `tsc --noEmit` clean · **206 Vitest specs** (incl. a 6-surface `vitest-axe` a11y sweep) · **5 Playwright e2e** (smoke + S2-I1 role nav + S1-I1 create flow) · coverage **83% stmts / 81% branch** (≥ 80% gate met) · `next lint` clean. **Implementation complete.**
+**Done:** Phases 0–19 — the six core surfaces + Phase 7 hardening, demo + Google SSO login/logout, the Admin user-management console (S14–S16), and the close/redirect request workflows (S17–S19). A responsive **sidebar shell + top bar** + **red brand accent** + mobile polish throughout. Gates green: `tsc --noEmit` clean · **256 Vitest tests across 43 files** (incl. a 6-surface `vitest-axe` a11y sweep) · **Playwright e2e** (smoke + S2-I1 role nav + S1-I1 create flow) · coverage ≥ 80% gate met · `next lint` clean. **Implementation complete.** *(Configurable routing rules were removed — too rigid for cross-domain tickets — so `RoutingManager`, `app/admin/routing`, `canManageRouting`, and the `RoutingRule` type no longer exist; Forward picks the dept per ticket.)*
 
-**Post-Phase-3 refinements:** **Helpdesk Agent scoping** — an Agent's queue/detail is server-scoped to tickets **assigned to them** (`helpdeskAssigneeId = caller.id`); others → 403 (matrix footnote). Lead/Admin still see all. The mock **role-switcher** now persists the new identity synchronously + `queryClient.clear()`s so no role's cached data leaks across a switch.
+**Post-Phase-3 refinements:** **Helpdesk Agent scoping** — an Agent's queue/detail is server-scoped to tickets **assigned to them** (`helpdeskAssigneeId = caller.id`); others → 403 (matrix footnote). Lead/Admin still see all. *(The mock role-switcher that originally backed identity was later removed in Phase 8 — see below — when real `POST /auth/login` + Google SSO took over.)*
 
 **Deviations from this plan (intentional):**
 - **shadcn set up manually**, not via `npx shadcn init/add` (CLI is interactive + network-bound). Components are **hand-authored from shadcn sources, per-phase as first used** — not bulk-added in Phase 0. Base color **`neutral`**, light v1.
 - **Inter** wired via `next/font/google` (`latin` + `vietnamese` subsets) → `--font-sans` → Tailwind `font-sans` (was deferred during earlier phases; enabled 2026-05-29 after confirming the build-time fetch succeeds). System sans is the fallback.
 - **MSW browser worker** wired (`components/providers/msw-ready.tsx` + `public/mockServiceWorker.js`) so the running app serves mock data — added in Phase 2 (not explicitly in the original plan).
-- **Sidebar console layout** adopted from [`docs/ui-design/helpdesk-console.html`](../ui-design/helpdesk-console.html): `components/layout/{app-shell,sidebar,role-switcher}`, **responsive** (fixed rail at `md:`, hamburger → `Sheet` drawer below). Replaces the originally-planned top nav.
+- **Sidebar console layout** adopted from [`docs/ui-design/helpdesk-console.html`](../ui-design/helpdesk-console.html): `components/layout/{app-shell,sidebar}` (the early `role-switcher` was dropped in Phase 8), **responsive** (fixed rail at `md:`, hamburger → `Sheet` drawer below; the mobile drawer clears the fixed footer). Sidebar is grouped by section label — **Yêu cầu của tôi / Helpdesk / Phòng ban / Cấu hình**. Replaces the originally-planned top nav.
 - **Soft-tint `SeverityBadge`** (emoji-aligned red/orange/yellow/green) instead of solid fills; kept the neutral theme (no blue from the mockup).
 - **Role identifiers** are `SV | GV | NV | HelpdeskAgent | HelpdeskLead | DeptStaff | Admin` (matching `role-permission-matrix.md`), not the original `Student/Lecturer/Staff`.
-- **Test infra:** `tests/setup.ts` stubs an in-memory `localStorage` per test (Node 25's WebStorage is unreliable under jsdom) + Radix/jsdom polyfills.
+- **Test infra:** `tests/setup.ts` stubs an in-memory `localStorage` per test (Node's experimental WebStorage is unreliable under jsdom) + Radix/jsdom polyfills. *(Project runs on Node 22 — pinned by `.nvmrc` / `.node-version`; `package.json` engines `>=22.0.0`.)*
 - **Phase 3 pickers** originally used a custom native-`<select>` `SearchableSelect` + native `<select>` filters for jsdom-testability. **Superseded 2026-05-29 by the full shadcn migration** (see below): pickers → `Combobox`, filters → `Select` + `ToggleGroup`, bell → `DropdownMenu`. The 5 action dialogs still use shadcn **`Dialog`** (opens in jsdom with the polyfills), so dialog gating/validation stays unit-tested; the Radix dropdown *interactions* moved to Playwright.
-- **Full shadcn/ui migration (2026-05-29):** per a standing user directive ("use shadcn for everything"), every native form control was replaced — `Select`/`ToggleGroup`/`Combobox`/`DropdownMenu` (+ `popover`/`command` sources; deps `@radix-ui/react-{select,toggle,toggle-group,dropdown-menu,popover}` + `cmdk`). `SearchableSelect` deleted. ~10 jsdom interaction specs were trimmed to logic+visibility and re-covered by 4 new Playwright specs (`helpdesk-actions`, `admin-routing`, `notifications`, `queue-filter`); the role-switcher e2e helper now opens the Select instead of `selectOption`. Gates after migration: **207 Vitest + 9 Playwright e2e**, `tsc`/lint/build clean.
+- **Full shadcn/ui migration (2026-05-29):** per a standing user directive ("use shadcn for everything"), every native form control was replaced — `Select`/`ToggleGroup`/`Combobox`/`DropdownMenu` (+ `popover`/`command` sources; deps `@radix-ui/react-{select,toggle,toggle-group,dropdown-menu,popover}` + `cmdk`). `SearchableSelect` deleted. ~10 jsdom interaction specs were trimmed to logic+visibility and re-covered by new Playwright specs (`helpdesk-actions`, `admin-category`, `notifications`, `queue-filter`). Gates after migration: `tsc`/lint/build clean. *(The suite has since grown to **256 Vitest tests across 43 files** + Playwright e2e as Phases 8/14–19 landed.)*
 
 **Standing rule (memory):** every layout ships **both** a mobile and a desktop variant (mobile-first) — applied in code, not just docs.
 
@@ -44,7 +44,7 @@
 1. **App Router**, client-side data via TanStack Query inside Client Components; Server Components for shells/layouts only (keeps the bulk testable in Vitest, per `test-design.md` §1.2).
 2. **shadcn/ui** as the component foundation (Radix + Tailwind + CVA), components owned in `components/ui/`. **lucide-react** for icons.
 3. **React Hook Form + Zod** (`@hookform/resolvers`) via shadcn `Form` for every form/dialog.
-4. **Mock SSO** = a role switcher writing a session role; every request assumes session-with-role. **MSW** implements App. A incl. the §2 state machine so 409/422 UX is real.
+4. **Session** = originally a mock role switcher, **replaced in Phase 8** by real `POST /auth/login` + Google SSO (identity from the JWT cookie via `GET /auth/me`); every request assumes session-with-role. **MSW** implements App. A incl. the §2 state machine so 409/422 UX is real (the browser worker only runs in the Vitest suite once deployed against the real BE).
 5. **RBAC = `role-permission-matrix.md`** is the single source of truth; `lib/auth/rbac.ts` implements its `can*` predicates verbatim. If code and matrix diverge, the matrix wins.
 6. **Surface build order:** Foundation → Requester → Helpdesk console → Dept Staff → Admin → Notifications/Dashboard → Hardening. (Requester first = highest value, simplest flow; Helpdesk second = most interaction-dense.)
 7. **Radix-in-jsdom**: Select/Combobox/DropdownMenu *interactions* are e2e (Playwright); Vitest covers logic + visibility (+ documented polyfills where unavoidable). Per `test-design.md` §1.1.
@@ -61,27 +61,28 @@ feat-helpdesk-ticket/
     layout.tsx  globals.css            # root shell, theme tokens (:root/.dark), font (Inter)
     providers.tsx                      # QueryClientProvider · <Toaster/> (Sonner) · SessionProvider
     page.tsx                           # role-aware landing → redirect
-    login/page.tsx                     # mock SSO (role switcher)
+    login/page.tsx                     # email+password + Google SSO + credential-helper modal
     (requester)/tickets/{page, new/page, [id]/page}
     (helpdesk)/helpdesk/{queue/page, tickets/[id]/page}
     (staff)/staff/{queue/page, tickets/[id]/page}
-    (admin)/admin/{categories/page, routing/page}
+    (admin)/admin/{categories/page, users/page, users/[id]/page}
     analytics/page                     # dashboard (Lead/Admin)
     notifications/page                 # full list
     forbidden/page  not-found.tsx  error.tsx   # explicit 403/404/500 (never blank)
   components/
     ui/        # shadcn-generated + custom wrappers (see Phase 1)
-    layout/    # AppShell, Nav, RoleSwitcher, NotificationBell mount point
-    tickets/   # TicketForm, TicketList, TicketDetail, Timeline, AttachmentList, CommentBox
-    helpdesk/  # HelpdeskQueue, HelpdeskTicketDetail, TicketActionBar, Assign/Forward/Redirect/SeverityOverride/Close dialogs
+    layout/    # AppShell, Sidebar, AppBootGate, NotificationBell mount point
+    auth/      # LoginForm, GoogleLoginButton, CredentialHelperNote, LogoutButton, AuthGate
+    tickets/   # TicketForm, TicketList, TicketDetail, Timeline, AttachmentList (lightbox), CommentBox/CommentList
+    helpdesk/  # HelpdeskQueue, HelpdeskTicketDetail, TicketActionBar, Assign/Forward/Redirect/SeverityOverride/Close + CategoryAssign (re-categorize) dialogs
     staff/     # StaffQueue, StaffTicketDetail, ProgressButton
-    admin/     # CategoryTree, CategoryForm, RoutingTable, RoutingForm
-    notifications/ # NotificationBell, NotificationList, NotificationItem
+    admin/     # CategoryManager, UserDirectory, UserDetail, UserCreateForm, UserEditForm
+    notifications/ # NotificationBell, NotificationList, NotificationItem, MarkAllReadButton, ClearAllButton
     analytics/ # Dashboard, StatCard, SeverityBars, DeptBars
   lib/
     utils.ts          # cn()
     types/domain.ts   # enums + DTOs (mirror App. A)
-    api/              # client.ts, errors.ts, tickets.ts, categories.ts, routing.ts, departments.ts, agents.ts, notifications.ts, analytics.ts
+    api/              # client.ts, errors.ts, tickets.ts, categories.ts, departments.ts, agents.ts, notifications.ts, analytics.ts, auth.ts, users.ts
     queries/          # tickets.ts, helpdesk.ts, catalog.ts, notifications.ts, analytics.ts
     auth/             # session.tsx, rbac.ts (matrix), nav.ts, guards
     status/           # status.ts (mappers + VN labels), severity.ts, transitions.ts
@@ -104,15 +105,15 @@ feat-helpdesk-ticket/
 - **Checkpoint:** app boots; Tailwind+theme tokens apply; a shadcn component renders in a Vitest test.
 
 ### Phase 1 — Foundation (shared)  *(blocks 2–6)*  — **the critical phase**
-- [ ] `lib/types/domain.ts` — `Severity`, `TicketStatus`, `ExternalStatus`, `Role`, `EventType`, `NotificationType`, DTOs (`Ticket`, `TicketEvent`, `Attachment`, `Category`, `RoutingRule`, `Department`, `UserRef`, `NotificationItem`, `Paginated<T>`, `ApiEnvelope`), `ListTicketsQuery` (mirror App. A).
+- [ ] `lib/types/domain.ts` — `Severity`, `TicketStatus` (Pending/Assigned/InProgress/CloseRequested/RedirectRequested/Closed), `ExternalStatus`, `Role`, `EventType`, `NotificationType`, DTOs (`Ticket`, `TicketEvent`, `Attachment`, `Category`, `Department`, `UserRef`, `NotificationItem`, `Paginated<T>`, `ApiEnvelope`), `ListTicketsQuery` (mirror App. A).
 - [ ] `lib/status/` — `status.ts` (`toExternalStatus`, `EXTERNAL_STATUS_VI`, `INTERNAL_STATUS_VI`, `EVENT_VI`, `OPEN_STATUSES`, `backlogAgeDays`), `severity.ts` (`SEVERITY_META`), `transitions.ts` (`canForwardFrom`/`canRedirectFrom`/`canProgressFrom`/`canCloseFrom`/…).
-- [ ] `lib/api/client.ts` (`apiFetch`, `ApiError`, envelope unwrap) + `errors.ts` (`handleMutationError` owning the §8 map) + typed fetchers (`tickets/categories/routing/departments/agents/notifications/analytics`).
-- [ ] `lib/auth/` — `session.tsx` (mock SSO + `useSession`/`useRole`), **`rbac.ts` implementing the matrix `can*` predicates verbatim** (incl. `canClose` role-check + a `canCloseTicket(role,user,ticket)` ownership helper), `nav.ts` (`navFor(role)`).
+- [ ] `lib/api/client.ts` (`apiFetch`, `ApiError`, envelope unwrap) + `errors.ts` (`handleMutationError` owning the §8 map) + typed fetchers (`tickets/categories/departments/agents/notifications/analytics`).
+- [ ] `lib/auth/` — `session.tsx` (session + `useSession`/`useRole`; rewired to real `GET /auth/me` in Phase 8), **`rbac.ts` implementing the matrix `can*` predicates verbatim** (incl. `canClose` role-check + a `canCloseTicket(role,user,ticket)` ownership helper), `nav.ts` (`navSectionsFor(role)` — grouped sidebar sections).
 - [ ] `lib/validation/schemas.ts` — Zod schemas + VN copy (`createTicket`, `forward`, `redirect`, `assign`, `close`, `comment`) + attachment rules.
 - [ ] `lib/queries/*` — Query keys + hooks; mutation hooks invalidate `detail+history+all`.
-- [ ] `mocks/data.ts` + `handlers.ts` — seed (roles, depts, agents, categories incl. "Khác" w/o rule, routing rules, tickets in **every** internal state, notifications) + handlers honoring the **state machine** (assign/forward/redirect/progress/severity/close return correct transitions or **409**) and 422 field errors; `browser.ts`/`server.ts`.
+- [ ] `mocks/data.ts` + `handlers.ts` — seed (roles, depts, agents, categories incl. "Khác", tickets in **every** internal state, notifications) + handlers honoring the **state machine** (assign/forward/redirect/progress/severity/close return correct transitions or **409**) and 422 field errors; `browser.ts`/`server.ts`.
 - [ ] `components/ui/*` custom wrappers — `SeverityBadge`, `StatusBadge`, `InternalStatusBadge`, `EmptyState`, `FileUpload`, `AccessDenied`, `DataState` (loading/empty/error/success), `Combobox` (Command+Popover wrapper).
-- [ ] `app/layout.tsx` + `providers.tsx` + `components/layout/{AppShell,Nav,RoleSwitcher}` (nav driven by `navFor`).
+- [ ] `app/layout.tsx` + `providers.tsx` + `components/layout/{AppShell,Sidebar}` (nav driven by `navSectionsFor`; the early `RoleSwitcher` was removed in Phase 8).
 - **Tests (S2 subset + units):** status/severity/transition mappers; `rbac.ts` table test **driven by the matrix grid** (`test-design.md` §4); `apiFetch` against MSW (401/403/404/409/422/5xx); `handleMutationError`; a11y baseline on primitives. → `M31-FE-S2-H1/E1/E2/E3/E4/X1`.
 - **Checkpoint:** types compile; RBAC predicates match the matrix grid 1:1; API client + error map green against MSW; nav renders the right items per role.
 - **Risk:** shared code — changes ripple everywhere. **Lock with tests before any surface.** The MSW state machine is the contract's executable form — get transitions/409s right here.
@@ -126,7 +127,7 @@ feat-helpdesk-ticket/
 
 ### Phase 3 — Helpdesk console  *(depends 1)* — Stories **S3, S4, S5, S7**
 - [ ] `HelpdeskQueue` (status `Select` + severity checkboxes + assignee `Combobox` + `Table` + `Pagination`) + `app/(helpdesk)/helpdesk/queue` (shared route also reachable by Admin "Tất cả yêu cầu").
-- [ ] `HelpdeskTicketDetail` + `TicketActionBar` (controls gated by **role × status**) + the 5 `Dialog`s: `AssignDialog` (Lead-only, agent `Combobox`), `ForwardDialog` (routing-rule preselect), `RedirectDialog` (dept + reason), `SeverityOverrideDialog` (radio), `CloseDialog` (note; **ownership backstop**).
+- [ ] `HelpdeskTicketDetail` + `TicketActionBar` (controls gated by **role × status**) + the action `Dialog`s: `AssignDialog` (Lead-only, agent `Combobox`), `ForwardDialog` (dept picker — no preselect; routing rules removed), `RedirectDialog` (dept + reason), `SeverityOverrideDialog` (radio), `CloseDialog` (note; **ownership backstop**), `CategoryAssignDialog` (re-categorize, `canCategorize` = Agent/Lead).
 - **Tests:** `S3-*`, `S4-*`, `S5-*`, `S7-*` (incl. 409 refresh on each; `S7-X3` agent-not-assignee hides Close); `S2` Lead-vs-Agent control gating. Radix picker open/pick → Playwright; preselect/filter logic → Vitest units.
 - **Checkpoint:** every dialog honors server guards (409 path tested); assign→forward→redirect→close e2e green.
 - **Risk:** UI transitions must mirror the §2 machine — never expose a control the current status/role can't perform; 409 is the backstop.
@@ -139,11 +140,11 @@ feat-helpdesk-ticket/
 - **Checkpoint:** mark-In-Progress reflects as **Đang xử lý** on the requester view — verified via the shared `POST /progress` state machine (`Assigned`→`InProgress`); full requester-view e2e lands in Phase 7.
 
 ### Phase 5 — Admin console  *(depends 1)* — Story **S8**  ✅ done (2026-05-29)
-- [x] `CategoryManager` (tree + add form + delete guard) + `app/admin/categories`; `RoutingManager` (table + add form) + `app/admin/routing` (flat routes, mirroring `app/helpdesk/*`).
-- [x] **Tests:** `CategoryManager` (S8-H1 add→tree · S8-X2 dup-name 422 · client short-name blocks · S8-E1 delete disabled when has children · S8-X1 non-Admin denied), `RoutingManager` (S8-E2 add→table · missing-selection blocks · S8-X1 denied). S4 ForwardDialog already cross-checks the default-routing preselect (S8-E2/I1).
-- [x] **Mock:** added category & routing-rule **CRUD** handlers — category delete `409`s on children; create/patch reject dup/short names + bad refs (`422`); setting a routing default unsets the category's others; mutations invalidate the catalog so the requester create form + Forward dialog refetch.
-- **Deviations:** components named `CategoryManager`/`RoutingManager` (each composes its form + tree/table in one client component + one access gate) rather than split `*Tree/*Form/*Table`. **Category nesting is 1 level** (parent picker lists root categories only). Inline category/routing edit (rename, change dept) is **deferred** — add+delete cover S8; rename/PATCH handlers exist in the mock for later.
-- **Checkpoint:** add category → it appears in the tree (invalidate→refetch) and, via the shared `categories` query, on the requester create form; Forward pre-selects the routed dept — covered by S4 (`ForwardDialog`). Full cross-surface flow is the Phase 7 e2e.
+- [x] `CategoryManager` (flat list + add form + delete confirm) + `app/admin/categories`. *(A `RoutingManager` + `app/admin/routing` were originally built here but **removed** — configurable routing rules were too rigid for cross-domain tickets; Forward now picks the dept per ticket.)*
+- [x] **Tests:** `CategoryManager` (S8-H1 add→list · S8-X2 dup-name 422 · client short-name blocks · S8-E1 delete confirm + unset-from-tickets · S8-X1 non-Admin denied). *(The former routing-rule tests were dropped with the feature.)*
+- [x] **Mock:** added category **CRUD** handlers — flat list; create/patch reject dup/short names + bad refs (`422`); delete removes the category (gathered tickets fall back to "chưa phân loại"); mutations invalidate the catalog so the requester create form + Forward dialog refetch.
+- **Deviations:** `CategoryManager` composes its form + list in one client component + one access gate, rather than split `*List/*Form`. The category model is **flat** (no parent/child — `Category = { id, name, isActive }`). Inline category rename is **deferred** — add+delete cover S8; rename/PATCH handlers exist in the mock for later.
+- **Checkpoint:** add category → it appears in the list (invalidate→refetch) and, via the shared `categories` query, on the requester create form. Full cross-surface flow is the Phase 7 e2e.
 
 ### Phase 6 — Notifications + Dashboard  *(depends 1)* — Stories **S9, S10**  ✅ done (2026-05-29)
 - [x] `NotificationBell` (unread badge + **plain-state toggle panel**, *not* a Radix `DropdownMenu* — keeps the open/list flow jsdom-testable) + `NotificationList`/`NotificationItem` + `app/notifications`; daily-reminder rendering (severity + age). Bell mounted in the `AppShell` top bar (all breakpoints).
@@ -186,9 +187,10 @@ Adds real session lifecycle on top of the completed shipped surfaces. The mock *
 
 **Phase 8b — Login page + credential helper note**
 
-- [ ] `app/login/page.tsx` — Client Component; redirects to `homeRouteFor(role)` if `useMeQuery` already returns a user. Hosts the form + the slide-down note.
+- [ ] `app/login/page.tsx` — Client Component; redirects to `homeRouteFor(role)` if `useMeQuery` already returns a user. Hosts the form + the Google SSO button + the credential-helper modal.
 - [ ] `components/auth/login-form.tsx` — RHF + Zod (`email: z.string().email()`, `password: z.string().min(1)`); on submit calls `useLoginMutation`; on 401 surfaces a single non-field-specific error message ("Sai email hoặc mật khẩu"); reads `?next=` from `useSearchParams` and overrides `homeRouteFor(role)` when the role is allowed at `next`.
-- [ ] `components/auth/credential-helper-note.tsx` — slide-down panel from the top of `/login`, dismissible via `X` (no localStorage persistence per S11-E2). Tabs by role (SV / GV / NV / HelpdeskAgent / HelpdeskLead / DeptStaff / Admin); each tab lists personas; clicking a persona reveals the seeded password inline and auto-fills the form's `Email` field. Copy is the short blurb from `brief.md` §1 + a practice-mode disclaimer (the same text used on the landing page).
+- [ ] `components/auth/credential-helper-note.tsx` — **as built:** a centered modal over a blurred backdrop, opened on demand from the login page (not an auto-on-mount slide-down), dismissible via `X` or backdrop click (no localStorage persistence per S11-E2). A custom button tablist by role (SV / GV / NV / HelpdeskAgent / HelpdeskLead / DeptStaff / Admin); each tab lists personas; clicking a persona reveals the seeded password inline and auto-fills the form. English "PROTOTYPE ONLY" disclaimer + a GitHub source link + "© CAIRA-DAU" footer.
+- [ ] `components/auth/google-login-button.tsx` — "Đăng nhập bằng Google"; full-page navigation to the BE `/auth/google` (OAuth Authorization Code Flow). Login is rate-limited (`429`) on the BE; the form surfaces a distinct message.
 - [ ] `mocks/personas.ts` — exports the 13-persona credentials list (`{ email, password, role, displayName, departmentId? }`) used both by the credential-helper note AND the (Vitest-only) MSW `/auth/login` handler. **Plain text on purpose — these are demo creds.** The BE's `prisma/seed.ts` exports the same shape from a `PERSONAS` constant; keep the two in lockstep.
 
 **Phase 8c — Logout entry points + nav cleanup**
@@ -202,7 +204,7 @@ Adds real session lifecycle on top of the completed shipped surfaces. The mock *
 - [ ] Replace `tests/helpers/render.tsx`'s `renderWithProviders({ role })` mock-session injection with **a `setSession(persona)`** helper that pre-populates the `authKeys.me` cache on the per-test `QueryClient`.
 - [ ] **Unit + RTL:** `LoginForm` (happy path → push to home, 401 → error toast, `next` honored, role-mismatch falls back), `CredentialHelperNote` (tab switch + persona reveal + dismiss + auto-fill), `AuthGate` (truth table: anonymous on `/login` → render, anonymous on `/tickets/new` → push `/login?next=%2Ftickets%2Fnew`, logged-in on `/login` → push home, logged-in on protected → render).
 - [ ] **e2e (`tests/e2e/auth.spec.ts`):** the FE half of `M31-FE-S11-I1` — landing → loading splash → `/login` → pick persona → submit → home; logout from top bar; logout from sidebar; `?next=` round-trip with a deep-link.
-- [ ] **Sweep:** every existing Playwright e2e that started with `role-switch` (`helpdesk-actions`, `admin-routing`, `notifications`, `queue-filter`, `S1-I1`, `S2-I1`) now starts with `loginAs(persona)` via the new helper.
+- [ ] **Sweep:** every existing Playwright e2e that started with `role-switch` (`helpdesk-actions`, `admin-category`, `notifications`, `queue-filter`, `S1-I1`, `S2-I1`) now starts with `loginAs(persona)` via the new helper.
 - [ ] **Coverage gate** still ≥ 80% after the role-switcher removal.
 
 - **Tests covered:** `M31-FE-S11-H1..I1` from FE Test Design §S11.

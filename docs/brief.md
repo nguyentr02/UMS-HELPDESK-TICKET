@@ -41,7 +41,7 @@ All users **must** authenticate before reaching the app. For the shareholder-dem
 | **Helpdesk Lead** *(refinement, see §6)* | Assign incoming tickets to Helpdesk agents; redirect; close |
 | **Helpdesk Agent** | Handle assigned tickets, forward to phòng ban, follow up, close |
 | **Phòng ban (Staff)** | View assigned tickets, update progress (→ Processing), report back to Helpdesk |
-| **Admin** | Manage category tree & routing rules at runtime (no code release) |
+| **Admin** | Manage the category list at runtime (no code release) |
 | **BGH / Admin (oversight)** | Read aggregate analytics / hotspots |
 
 ## 4. Success criteria
@@ -59,14 +59,14 @@ All users **must** authenticate before reaching the app. For the shareholder-dem
 - **Attachments: images + documents** on both ticket creation and comments.
 - **Helpdesk Lead assigns** each incoming ticket to a Helpdesk agent (ownership for the reminder).
 - Helpdesk receives → routes to the relevant phòng ban; can **redirect** a mis-routed ticket any time before close, with each redirect written to ticket history.
-- **Helpdesk is the only role that closes** a ticket (Staff and users cannot).
-- **3 external statuses** for users (Requested/Processing/Finished) over **5 internal statuses** (Pending/Assigned/In Progress/Redirected/Closed).
+- **Helpdesk is the only role that closes** a ticket (Staff and users cannot). Phòng ban staff may **request** a close (with proof) or **request** a redirect to another department; the owning Helpdesk Agent/Lead approves or refuses.
+- **3 external statuses** for users (Requested/Processing/Finished) over **6 internal statuses** (Pending/Assigned/In Progress/CloseRequested/RedirectRequested/Closed). *(The transient `Redirected` state was dropped — a redirect now lands back in `Assigned`.)*
 - **In-app notifications only**: close-notification to the requester + the daily 09:00 backlog reminder to the assigned Helpdesk agent.
-- **Admin-managed** category tree & routing rules, editable at runtime without a code release.
+- **Admin-managed** category list (flat — no parent/child), editable at runtime without a code release. *(Configurable routing rules were dropped — too rigid for cross-domain tickets; Helpdesk routes/forwards each ticket manually.)*
 - **SSO/IAM** authentication with role-appropriate UI.
 - **Embedded** in Cổng SV (M20) and Cổng GV (M21) so users never leave the portal.
 - **Analytics push** of ticket data to the M3 data lake for BI dashboards.
-- **Demo login / logout** — `/login` route with an **email + password** form. The page surfaces a dismissible "slide-down" credential note that introduces the build, lists every mock role in tabs, and reveals the credentials for whichever persona the reviewer picks. The previous "role-switcher dropdown" in the sidebar is removed; `Đăng xuất` lives in both the top bar and the sidebar footer.
+- **Demo login / logout** — `/login` route with an **email + password** form. The page offers an on-demand credential-helper modal that introduces the build, lists every mock role in tabs, and reveals the credentials for whichever persona the reviewer picks. The previous "role-switcher dropdown" in the sidebar is removed; `Đăng xuất` lives in both the top bar and the sidebar footer.
 - **Google SSO login** *(2026-06)* — "Đăng nhập bằng Google" on `/login`; BE-mediated Authorization Code Flow; `@ums.edu.vn`/`@dau.edu.vn` only; a deactivated account is blocked with a clear message.
 - **Admin user management** *(2026-06, scope exceptions)* — `/admin/users` directory (read-only list + per-user detail, filters + pagination) plus **create** (`/admin/users/new`), **edit** (`/admin/users/[id]/edit`, email immutable), and **soft delete** (deactivate). Institutional-email + letters-only-name validation; Phòng ban only for DeptStaff; soft-deleted users hidden + SSO-blocked; re-creating a deactivated email revives the row. User lifecycle is normally M1/IAM — built here for the practice/demo per explicit decision.
 
@@ -93,14 +93,14 @@ The ISO defines a single **Helpdesk** role. The confirmed **"Lead assigns"** own
 - A Helpdesk unit exists with named, trained staff — including a **Helpdesk Lead** for dispatch.
 - **M1 SSO/IAM** is the production target and will return accurate role info (SV/GV/NV/Staff/Helpdesk/Admin). For the demo, role info comes from the JWT issued by the FE-facing `POST /auth/login` against seeded mock identities.
 - **M2 ESB** is available for inter-module calls; **M3 data lake** is available for the analytics push.
-- **Admin** is trained to manage the category tree & routing rules.
+- **Admin** is trained to manage the category list.
 - **Cổng SV/GV (M20/M21)** are available to embed the ticket UI and surface in-app notifications.
 
 ### Risks → mitigations
 - Helpdesk slow to forward → backlog. → Daily 09:00 in-app reminder + management dashboard.
 - Phòng ban don't report completion → Helpdesk can't close. → Helpdesk checks proactively; a phòng-ban reminder may be added in a later phase.
 - Inaccurate user-declared severity → wrong prioritization. → Helpdesk can override severity.
-- Category tree too coarse → mis-routing. → Admin edits at runtime; redirect history feeds routing improvements.
+- Category list too coarse → mis-routing. → Admin edits at runtime; redirect history feeds routing improvements.
 - **In-app-only notifications** mean users must log in to see updates → may dampen perceived responsiveness. → Surface prominently in Cổng SV/GV; revisit email in a later iteration.
 
 ## 8. Open questions (resolve before publishing this Brief)

@@ -2,7 +2,7 @@
 
 > **Living doc.** What each file/folder does, what each technology does, and how a request flows.
 > **Keep it current:** whenever files/deps/structure change, update this doc in the same change (see [keeping this current](#keeping-this-current)).
-> **Last updated:** 2026-05-29 — Phases 0–7 complete + **full shadcn/ui migration** (all native form controls replaced by `Select`/`ToggleGroup`/`Combobox`/`DropdownMenu`; Radix dropdown *interactions* now covered by Playwright, jsdom keeps logic+visibility). Responsive sidebar shell + top bar. Helpdesk Agent scoping (assigned-only) + role-switch cache reset.
+> **Last updated:** 2026-06-25 — Phases 0–19 complete: the six core surfaces + hardening + **full shadcn/ui migration**, demo + **Google SSO** login/logout, the **Admin user-management console** (S14–S16), the **close/redirect request workflows** (S17–S19), a **realtime / Socket.IO layer**, Helpdesk **re-categorize**, and notification **mark-all-read / clear-all**. The Admin console is **category-only** (routing rules were removed for being too rigid for cross-domain tickets). Responsive sidebar shell + top bar + mobile polish. Helpdesk Agent scoping (assigned-only).
 
 Front-end only. No real backend — the app codes against a mocked REST contract served by MSW (see [`feature-plan.md` Appendix A](./feature-plan.md)).
 
@@ -12,8 +12,8 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 
 | Technology | Role in this project | Where it lives |
 |---|---|---|
-| **Next.js 14 (App Router)** | Routing, server-component shells, dev/build server | `app/`, `next.config.mjs` |
-| **React 18 + TypeScript** | UI + static types | everywhere; `tsconfig.json` |
+| **Next.js 16 (App Router)** | Routing, server-component shells, dev/build server | `app/`, `next.config.mjs` |
+| **React 19 + TypeScript** | UI + static types | everywhere; `tsconfig.json` |
 | **Tailwind CSS** | Utility styling + design tokens | `tailwind.config.ts`, `app/globals.css`, `postcss.config.mjs` |
 | **shadcn/ui** (Radix + CVA) | Accessible component primitives we **own in-repo** (focus-trap, keyboard, ARIA) | `components/ui/*`, `components.json` |
 | **Radix UI** (`@radix-ui/react-*`) | Headless behaviour behind shadcn (dialog/sheet, **select, toggle, toggle-group, dropdown-menu, popover**, label, radio-group, checkbox, slot) | transitive under `components/ui/*` |
@@ -45,7 +45,7 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 | `(requester)/tickets/page.tsx` | "My tickets" → `<TicketList/>` |
 | `(requester)/tickets/new/page.tsx` | Create — responsive 2-column: `<TicketForm/>` + `<CreateTicketGuide/>` (stacks on mobile) |
 | `(requester)/tickets/[id]/page.tsx` | Detail — 2-column: `<TicketDetail/>` + `<RelatedTickets/>` (other open tickets); stacks on mobile |
-| `login/page.tsx` | Demo-build login (`<LoginPage/>`) — email + password form + the dismissible slide-down credential helper note (see §5.0 of the Feature Plan) |
+| `login/page.tsx` | Demo-build login (`<LoginPage/>`) — email + password form + Google SSO button + the credential-helper modal (see §5.0 of the Feature Plan) |
 | `helpdesk/queue/page.tsx` | Helpdesk intake queue → `<HelpdeskQueue/>` (Agent/Lead/Admin) |
 | `helpdesk/tickets/[id]/page.tsx` | Helpdesk ticket detail → `<HelpdeskTicketDetail/>` (internal status + action dialogs) |
 | `admin/users/page.tsx` | Admin user directory → `<UserDirectory/>` *(2026-06)* |
@@ -66,22 +66,30 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 | Path | Responsibility |
 |---|---|
 | `layout/app-shell.tsx` | Responsive frame: fixed sidebar at `md:`, hamburger → `Sheet` drawer below; top bar hosts the `NotificationBell` (all breakpoints) |
-| `layout/sidebar.tsx` | `SidebarContent` (header + sectioned nav + user footer) + `Sidebar` (desktop rail) |
+| `layout/sidebar.tsx` | `SidebarContent` (header + sectioned nav + user footer) + `Sidebar` (desktop rail). Mobile nav drawer clears the fixed footer |
+| `layout/app-boot-gate.tsx` | Keeps the brand splash up until the `GET /auth/me` query resolves (+ the identity-transition window) |
+| `layout/loading-splash.tsx` | The DAU brand splash (scale-up + fade-out exit), used at boot and on the landing `Bắt đầu` transition |
+| `layout/navigation-loading.tsx` | Top-bar route-change progress indicator |
 | `providers/msw-ready.tsx` | Starts the MSW browser worker before rendering (gates a flash) |
+| `providers/socket-provider.tsx` | Realtime bridge — opens the Socket.IO connection when signed in and maps server events → TanStack Query cache invalidations (see §3 Realtime) |
 | `auth/role-guard.tsx` | Renders children only if a role predicate passes |
 | `auth/auth-gate.tsx` | Route guard — reads `usePathname()` + session `user`; redirects logged-out users hitting protected routes to `/login?next=…`, and logged-in users hitting `/login` back to `homeRouteFor(role)` |
 | `auth/login-form.tsx` | The email + password form (RHF + Zod); on submit calls `useLogin()`, on success writes the user into the `authKeys.me` cache and pushes to `next` or the role's home |
-| `auth/credential-helper-note.tsx` | The dismissible slide-down note above the form — tabs of roles → personas list → reveal credentials on click; copy sourced from `brief.md` |
+| `auth/credential-helper-note.tsx` | The credential-helper modal (centered card, blurred backdrop) — role tablist → personas list → reveal credentials on click; reopened via a button on the login page |
+| `auth/google-login-button.tsx` | "Đăng nhập bằng Google" — full-page navigates to the BE's `/auth/google` (OAuth Authorization Code Flow); never `fetch`ed |
+| `auth/logout-button.tsx` | `Đăng xuất` (top bar + sidebar footer) — `POST /auth/logout` → `queryClient.clear()` → hard-navigate to `/login` |
 | `tickets/ticket-form.tsx` | S1 create flow (RHF + Zod; order: title → category → severity → description → attachments) |
 | `tickets/create-ticket-guide.tsx` | Helper panel beside the create form (fill guide + severity explanation) |
 | `tickets/ticket-list.tsx` | Requester list — **filter engine** + external-status rows, **responsive** desktop table + mobile cards, pagination. Maps the 3 external statuses → the internal-status sets the API expects |
 | `tickets/ticket-filters.tsx` | Requester filter bar — search (`q`), external-status chips, severity chips, category + sort selects, "Xóa lọc" reset (controlled; emits the next filter object) |
 | `tickets/ticket-detail.tsx` | Requester detail (header + timeline + attachments + comment) |
 | `tickets/related-tickets.tsx` | Detail side panel — the user's other open tickets (empty → "Không còn yêu cầu nào khác.") |
-| `tickets/timeline.tsx` · `attachment-list.tsx` · `comment-box.tsx` | Detail sub-parts |
+| `tickets/timeline.tsx` · `attachment-list.tsx` · `comment-box.tsx` · `comment-list.tsx` | Detail sub-parts (`attachment-list` = the lightbox/preview; `comment-list` renders the thread) |
+| `tickets/ticket-error-state.tsx` | Shared 403/404/error surface for ticket detail screens (no data leak) |
 | `helpdesk/helpdesk-queue.tsx` | Intake queue — `QueueFilters` (search/status/severity/category/assignee/sort) + responsive table + mobile cards (internal status) |
 | `helpdesk/helpdesk-ticket-detail.tsx` | Internal detail + action bar gated by **role × status** + timeline |
-| `helpdesk/{assign,forward,redirect,severity-override,close}-dialog.tsx` | The 5 action dialogs (S3/S4/S5/S7); each = `Dialog` + mutation hook + `handleMutationError` (409→toast+invalidate+close). Assign/Forward/Redirect use the shadcn `Combobox` picker |
+| `helpdesk/{assign,forward,redirect,severity-override,close}-dialog.tsx` | The 5 action dialogs (S3/S4/S5/S7); each = `Dialog` + mutation hook + `handleMutationError` (409→toast+invalidate+close). Assign/Forward/Redirect use the shadcn `Combobox` picker. `forward-dialog` no longer pre-selects a dept (routing rules removed) |
+| `helpdesk/category-assign-dialog.tsx` | Helpdesk (Agent + Lead, `canCategorize`) **re-categorises** a ticket — `Select` of categories (+ "— Không phân loại —" to clear) → `PATCH /tickets/:id/category` (quiet update, no event/notification) |
 | `helpdesk/review-close-dialog.tsx` | S17 — owner (Lead/assigned-Agent) **Duyệt đóng** (optional note → Closed) / **Từ chối** (reason required → InProgress), shown only on `CloseRequested` |
 | `staff/request-close-dialog.tsx` | S17 — DeptStaff **Yêu cầu đóng**: comment (required) + optional images (`FileUpload`) → `request-close`; shown only on `InProgress` |
 | `helpdesk/redirect-dialog.tsx` | S18 — Agent/Lead **Chuyển phòng khác**: dept picker (excludes current) + reason → `redirect`; shown on `Assigned`/`InProgress` |
@@ -90,8 +98,7 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 | `staff/staff-queue.tsx` | Dept Staff queue (S6) — dept-scoped open queue; **responsive** desktop table + mobile cards |
 | `staff/staff-ticket-detail.tsx` | Dept Staff detail (S6) — internal status + only the Mark-In-Progress action + comment (no assign/forward/redirect/close) |
 | `staff/progress-button.tsx` | "Bắt đầu xử lý" — `POST /progress` (`Assigned`→`InProgress`); 403 (not your dept)/409 → refetch + toast |
-| `admin/category-manager.tsx` | Admin category tree (S8) — add (optionally under a parent) + delete; **delete guarded** (button disabled when the category has children; server `409` backstop); 422 dup/short name → field error. Responsive form + tree |
-| `admin/routing-manager.tsx` | Admin routing rules (S8) — category→department + default flag (drives the Forward preselect); add/delete; setting a default unsets the category's other defaults server-side |
+| `admin/category-manager.tsx` | Admin category list (S8) — **flat list** (no parent/child): add + delete (confirm dialog warns the category is unset from any tickets it's gathering, which fall back to "chưa phân loại"); 422 dup/short name → field error. Responsive form + list |
 | `admin/user-directory.tsx` · `user-filters.tsx` | Admin user list (S14) — paged table + mobile cards; filters in a right-side `FilterDrawer` (`user-filters` has a `bare` mode) + a **Tạo người dùng** trigger |
 | `admin/user-detail.tsx` | Admin per-user view (S14/16) — identity card + **Cập nhật** link + **Xóa** (confirm dialog, disabled on self) |
 | `admin/user-create-form.tsx` · `user-edit-form.tsx` | Admin create (S15) / edit (S16) — RHF + Zod; institutional email + letters-only name; Phòng ban only for DeptStaff; create allows optional password, edit keeps email read-only + sends only changed fields |
@@ -99,6 +106,7 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 | `notifications/notification-bell.tsx` | Header bell (S9) — unread badge + a shadcn **`DropdownMenu`** panel showing the latest few + "Xem tất cả" (open→list flow is e2e) |
 | `notifications/notification-list.tsx` | Newest-first notification list (S9) — loading/empty/error states; `limit` powers the bell's compact panel |
 | `notifications/notification-item.tsx` | One row — type-specific copy, unread dot, mark-as-read (with retry), and a role-aware ticket link; `DailyReminder` lists its backlog tickets (severity + age) |
+| `notifications/mark-all-read-button.tsx` · `clear-all-button.tsx` | Bulk actions on the notifications list — `POST /notifications/read-all` (mark every unread read) · `DELETE /notifications` (clear all) |
 | `analytics/dashboard.tsx` | Module dashboard (S10, Lead/Admin only) — headline `StatCard`s + CSS severity/status bars + dept/category breakdowns; zero/error(+retry)/loading states |
 | `analytics/stat-card.tsx` | A single headline metric (`Card`) |
 
@@ -124,8 +132,8 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 ### `mocks/` — the mock backend
 | File | Responsibility |
 |---|---|
-| `data.ts` | Seed (depts, categories, agents, routing rules, tickets in every state, notifications) + `appendEvent`/`setStatus` |
-| `handlers.ts` | MSW handlers: every contract endpoint (incl. **category & routing-rule CRUD** for Admin), the **state machine (409)**, **validation (422)**, role/ownership **scoping (403)** — requester→own · DeptStaff→dept · **HelpdeskAgent→assigned-to-them** · Lead/Admin→all. Category delete `409`s if it has children; setting a routing default unsets the category's others |
+| `data.ts` | Seed (depts, categories, agents, tickets in every state, notifications) + `appendEvent`/`setStatus` |
+| `handlers.ts` | MSW handlers: every contract endpoint (incl. **category CRUD** for Admin), the **state machine (409)**, **validation (422)**, role/ownership **scoping (403)** — requester→own · DeptStaff→dept · **HelpdeskAgent→assigned-to-them** · Lead/Admin→all. Category CRUD is a flat list (create/patch reject dup/short names with `422`); delete just removes the category (any tickets gathering it fall back to "chưa phân loại") |
 | `server.ts` | Node setup (Vitest) · `browser.ts` | Browser worker (dev app) |
 
 ### `tests/`
@@ -133,11 +141,19 @@ Front-end only. No real backend — the app codes against a mocked REST contract
 |---|---|
 | `setup.ts` | jsdom/Radix polyfills, MSW lifecycle, per-test in-memory `localStorage` stub |
 | `helpers/render.tsx` | `renderWithProviders(ui, { role })` |
-| `unit/*.test.ts(x)` | logic + component suites (**207 specs**) incl. `a11y.test.tsx` (`vitest-axe` sweep, 0 violations across 6 surfaces). Radix dropdown *interactions* (Select/Combobox/DropdownMenu) live in e2e; jsdom keeps logic + visibility |
-| `e2e/*.spec.ts` | Playwright (**9**): `smoke` · `rbac-nav` (S2-I1) · `create-ticket` (S1-I1) · `helpdesk-actions` (S3-I1 assign via Combobox) · `admin-routing` (S8-E2 add via Selects) · `notifications` (bell DropdownMenu) · `queue-filter` (assignee Select). `helpers.ts` = `setRole` via the shadcn Select switcher |
+| `unit/*.test.ts(x)` | logic + component suites (**256 tests across 43 files**) incl. `a11y.test.tsx` (`vitest-axe` sweep, 0 violations across 6 surfaces). Radix dropdown *interactions* (Select/Combobox/DropdownMenu) live in e2e; jsdom keeps logic + visibility |
+| `e2e/*.spec.ts` | Playwright e2e: `smoke` · `rbac-nav` (S2-I1) · `create-ticket` (S1-I1) · `helpdesk-actions` (S3-I1 assign via Combobox) · `admin-category` (S8 add via Selects) · `notifications` (bell DropdownMenu) · `queue-filter` (assignee Select). `helpers.ts` = login helper |
 
 ### Config (root)
-`components.json` (shadcn) · `tailwind.config.ts` · `postcss.config.mjs` · `next.config.mjs` · `tsconfig.json` (`@/*` alias) · `vitest.config.ts` · `playwright.config.ts` · `.eslintrc.json` · `package.json` · `public/mockServiceWorker.js`.
+`components.json` (shadcn) · `tailwind.config.ts` · `postcss.config.mjs` · `next.config.mjs` · `tsconfig.json` (`@/*` alias) · `vitest.config.ts` · `playwright.config.ts` · `.eslintrc.json` · `package.json` (Node `>=22`; pinned by `.nvmrc` / `.node-version`) · `public/mockServiceWorker.js`.
+
+### Environment (`.env.example`)
+| Var | Role |
+|---|---|
+| `NEXT_PUBLIC_API_BASE_URL` | BE base URL — `/api/v1` in mock mode, the deployed BE otherwise |
+| `NEXT_PUBLIC_USE_MOCKS` | `true` = the MSW worker intercepts; `false` = call the real BE |
+| `NEXT_PUBLIC_HELPDESK_ENABLED` | Master toggle for the whole Helpdesk UI/embed |
+| `NEXT_PUBLIC_REALTIME_URL` | Socket.IO server origin; **unset = realtime disabled** (the `SocketProvider` is a no-op) |
 
 ---
 
@@ -164,7 +180,7 @@ Component (e.g. TicketList)
 | Event | Handler |
 |---|---|
 | `notification:new` | optimistic prepend to `['notifications']` (`lib/realtime/notifications-cache.ts`, deduped) → instant badge + `sonner` toast (`lib/notifications/labels.ts`); plus `invalidate(['ticket', ticketId])` so the open ticket detail/comments/history refresh live |
-| `tickets:changed` | `invalidate(['tickets'])` (all queues/lists) + analytics summary → live queues + dashboard |
+| `tickets:changed` | `invalidate(['tickets'])` (all queues/lists) **+ `invalidate(['ticket'])`** (every open ticket detail — backs live access-revocation) + analytics summary → live queues + dashboard |
 | `categories:changed` | `invalidate(['categories'])` → live category filters/forms |
 
 Every (re)connect invalidates `['notifications']` to reconcile missed events; `connect_error` refreshes the token **only on an auth rejection** (`unauthorized`) — network errors just let socket.io back off (no token spam while offline). **Notifications are socket-driven (no background poll):** freshness = mount fetch (history) + `notification:new` push + reconnect-invalidate + optimistic mutations; if the socket is fully down (Render asleep) new items surface on the next reconnect/mount, so keep the realtime server warm. The whole provider is a no-op when `NEXT_PUBLIC_REALTIME_URL` is unset (dev/tests/mock-mode unaffected). The socket server is a separate always-on service (`feat-helpdesk-realtime`, on Render) because Vercel serverless can't hold WebSockets; the BE pushes via an internal `POST /emit` (targeted `user:<id>` rooms or `broadcast`). See BE `feature-plan §G.1` for the producer side.
@@ -174,7 +190,7 @@ Every (re)connect invalidates `['notifications']` to reconcile missed events; `c
 ## 4. Conventions
 
 - **Path alias:** `@/*` → repo root.
-- **Data fetching = TanStack Query (rule).** **Every data API call** — server reads → `useQuery`, writes → `useMutation` (hooks in `lib/queries/*`, fetchers in `lib/api/*`). Never hand-roll `fetch + useState + useEffect` for server data. **Non-data fetches may stay raw:** (1) **file/binary downloads** — e.g. the **attachment download** (`components/tickets/attachment-list.tsx`), a blob fetched on click; raw `fetch` is fine (not cached data) — *don't convert it*; (2) **socket streams** (`notification:new`, `tickets:changed`, `categories:changed`) — live push, not a fetch; (3) **socket-lifecycle calls outside React render** — `fetchRealtimeToken` runs in connect/reconnect callbacks; (4) **fire-and-forget** (BE's `waitUntil`). Rule of thumb: *data → TanStack Query (always); downloads / streams → raw is OK.*
+- **Data fetching = TanStack Query (rule).** **Every data API call** — server reads → `useQuery`, writes → `useMutation` (hooks in `lib/queries/*`, fetchers in `lib/api/*`). Never hand-roll `fetch + useState + useEffect` for server data. **Non-data fetches may stay raw:** (1) **attachment preview/download** (`components/tickets/attachment-list.tsx`) — images open in an **in-page lightbox** via the auth'd `/attachments/:id` proxy (plain `<img>` with an `onError` graceful fallback), PDFs open in a new tab, everything else downloads (BE `Content-Disposition`); the file URLs ride the session cookie, not cached query data — *don't convert it*; (2) **socket streams** (`notification:new`, `tickets:changed`, `categories:changed`) — live push, not a fetch; (3) **socket-lifecycle calls outside React render** — `fetchRealtimeToken` runs in connect/reconnect callbacks; (4) **fire-and-forget** (BE's `waitUntil`). Rule of thumb: *data → TanStack Query (always); previews / downloads / streams → raw is OK.*
 - **Component files:** kebab-case (`ticket-form.tsx`); exports PascalCase.
 - **`"use client"`** on anything with hooks/interactivity; Server Components stay shells.
 - **i18n:** Vietnamese copy co-located with components; canonical label maps in `lib/status/status.ts`.

@@ -6,7 +6,7 @@
 | Source Brief | `feat-helpdesk-ticket/docs/brief.md` |
 | Type | Front-end design — UI/UX-first (`/sc:design --frontend --persona-frontend`) |
 | Tier | Tier 3 (Feature Plan) → next: Test design + Implementation plan |
-| Stack | Next.js 14 (App Router) · TypeScript · Tailwind · **shadcn/ui (Radix + CVA)** · lucide-react · TanStack Query · React Hook Form + Zod · sonner · MSW v2 · Vitest+RTL · Playwright |
+| Stack | Next.js 16 (App Router) · React 19 · TypeScript · Tailwind · **shadcn/ui (Radix + CVA)** · lucide-react · TanStack Query · React Hook Form + Zod · sonner · MSW v2 · Vitest+RTL · Playwright |
 | Backend | **Mocked (MSW)** — no real BE in this project; the contract in Appendix A is the seam |
 | Language | English narrative; Vietnamese UI copy verbatim |
 
@@ -51,7 +51,7 @@
 
 | Concern | Choice | Why |
 |---|---|---|
-| Framework | **Next.js 14 (App Router) + TS** | Modern default; layout/segment model fits per-surface shells; embeddable in M20/M21 |
+| Framework | **Next.js 16 (App Router) + React 19 + TS** | Modern default; layout/segment model fits per-surface shells; embeddable in M20/M21 |
 | Styling | **Tailwind CSS** + shadcn CSS-variable theme | Token-first; shadcn's HSL design tokens give a coherent, themeable (light + dark-ready) system |
 | **UI components** | **shadcn/ui** (Radix UI primitives + Tailwind + CVA) | Accessible, unstyled-by-default primitives we **own in-repo** — focus-trap / keyboard / ARIA for free, no runtime lock-in, better UX than hand-rolled |
 | Icons | **lucide-react** (ships with shadcn) | Tree-shakeable per-icon SVGs |
@@ -86,9 +86,9 @@
 | Helpdesk Agent | **Helpdesk console** | Handle queue · forward · redirect · override severity · mark In Progress · close · comment · daily reminder | Hàng đợi · Bell |
 | Helpdesk Lead | **Helpdesk console** | All Agent capabilities **+ assign** Agent · dashboard · daily reminder | Báo cáo · Hàng đợi · Bell |
 | Dept Staff (phòng ban) | **Dept queue** | Dept queue · mark In Progress · comment + attach · **may create personal tickets** (matrix) · daily reminder | Hàng đợi phòng ban · Bell |
-| Admin | **Admin console** | Category tree · routing rules · view all tickets · dashboard · comment | Báo cáo · Tất cả yêu cầu · Danh mục · Định tuyến · Bell |
+| Admin | **Admin console** | Category list (flat) · user management · view all tickets · dashboard · comment | Báo cáo · Tất cả yêu cầu · Danh mục · Người dùng · Bell |
 
-**Role-driven nav** — a role never sees a control it cannot perform (not even disabled). Server RBAC is still the authority; the UI is defense-in-depth. The nav is a **role-driven sidebar** (sectioned, with a user footer) — a fixed rail at `md:+` and a hamburger → `Sheet` drawer below `md:` (UI design: [`ui-design/helpdesk-console.html`](./ui-design/helpdesk-console.html)). The "Bell" lands in Phase 6.
+**Role-driven nav** — a role never sees a control it cannot perform (not even disabled). Server RBAC is still the authority; the UI is defense-in-depth. The nav is a **role-driven sidebar** built from fixed **section labels** (not per-role headings) — **Yêu cầu của tôi · Helpdesk · Phòng ban · Cấu hình** (`lib/auth/nav.ts` → `navSectionsFor`); each section appears only when the role has an item in it (e.g. Admin's *Cấu hình* = Danh mục + Người dùng). A fixed rail at `md:+` and a hamburger → `Sheet` drawer below `md:` (UI design: [`ui-design/helpdesk-console.html`](./ui-design/helpdesk-console.html)). The "Bell" lands in Phase 6.
 
 > Notes on Dept Staff: per matrix, `canCreate` and `canViewOwn` are both ✅, but the matrix's sidebar only lists the dept queue + notifications. The create/view-own capability is reachable via direct URL (`/tickets/new`, `/tickets`) and from a "Tạo yêu cầu" CTA on their queue header — it just isn't a primary sidebar entry in v1.
 >
@@ -100,7 +100,7 @@
 
 ```
 /                              → landing splash + "Bắt đầu" → /login (if logged out) or homeRouteFor(role) (if logged in)
-/login                         → username + password form + slide-down credential helper note
+/login                         → email + password form + Google SSO button + credential-helper modal
 
 (requester segment)
 /tickets                       → My tickets (list, external statuses)
@@ -116,8 +116,8 @@
 /staff/tickets/[id]            → Ticket detail (progress + comment)
 
 (admin segment)
-/admin/categories              → Category tree CRUD
-/admin/routing                 → Routing rules CRUD
+/admin/categories              → Category list CRUD (flat)
+/admin/users                   → User directory (list + detail + create/edit/soft-delete)
 
 (shared)
 /analytics                     → Module dashboard
@@ -137,33 +137,40 @@
 
 **Landing (`/`)** — full-bleed brand splash (DAU diamond logo + "DAU Helpdesk" title + short tagline + "Bắt đầu →" CTA). Three pillar icons (Account / Technical / Knowledge) sit below the CTA on `sm:+`, hidden on mobile to keep the small viewport focused on the action. Click "Bắt đầu" → 2 s `LoadingSplash` (the last 500 ms scale-up + fade-out exit animation) → `router.push('/login')` if logged out, or `homeRouteFor(role)` if already logged in.
 
-**Login (`/login`)** — email + password form, centered card. A dismissible **slide-down credential note** docks at the top of the page on mount:
+**Login (`/login`)** — email + password form + a **Google SSO** button, centered card. A **credential-helper modal** (`credential-helper-note.tsx`) overlays the page — a centered card on a **blurred, dimmed backdrop** — opened on demand via a "Show credentials" button (not an auto-on-mount slide-down):
 
 ```
-┌── Note (slides down from top) ───────────────────────────────── X ─┐
-│ Trang thử nghiệm — Helpdesk module của UMS                          │
-│ 2–3 sentences pulled from brief.md (problem + objective + demo      │
-│ disclaimer).                                                        │
-│ ── Vai trò ──────────────────────────────────────────────────────── │
-│ [ SV ] [ GV ] [ NV ] [ Helpdesk Lead ] [ Agent ] [ Staff ] [ Admin ]│
-│                                                                     │
-│ ── Persona (clicking reveals credentials) ──────────────────────── │
-│  ○ SV Nguyễn Văn A      ○ SV Phạm Thị D                            │
-│  Email: sv01@ums.edu.vn    Password: sv01-demo!                     │
-└─────────────────────────────────────────────────────────────────────┘
+        ░░░░░░░░ blurred backdrop (click to dismiss) ░░░░░░░░
+        ┌── Modal (centered card) ──────────────────────── X ─┐
+        │ PROTOTYPE ONLY — UMS Helpdesk                       │
+        │ "This is an early model created for testing and     │
+        │  demonstration purposes…" (English disclaimer)      │
+        │ Instructions: choose a role below, pick a persona;  │
+        │ credentials auto-fill (eye icon reveals password).  │
+        │ ── Vai trò (button tablist, flex flex-wrap) ─────── │
+        │ [SV][GV][NV][Agent][Lead][Phòng ban][Admin]         │
+        │ ── Persona (click → reveal + auto-fill) ─────────── │
+        │  ▸ SV Nguyễn Văn A      ▸ SV Phạm Thị D            │
+        │    Email: sv01@ums.edu.vn   Mật khẩu: sv01-demo!    │
+        │ ─────────────────────────────────────────────────── │
+        │ Technical Source: GitHub Repository    © CAIRA-DAU  │
+        └──────────────────────────────────────────────────────┘
 ┌── Login form ────────────────────────────────────────────────────┐
 │ Đăng nhập                                                          │
 │ Email      [_______________]                                       │
 │ Mật khẩu   [_______________]                                       │
 │                                          [ Đăng nhập ]            │
+│ ──────────────  hoặc  ──────────────                              │
+│ [  Đăng nhập bằng Google  ]                                        │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
 Key UX:
-- The note is **always visible on mount**, dismissible via the X button, reopens fresh on every `/login` visit (no "don't show again" persistence — it's a help panel, not a banner).
-- Note copy is sourced from `brief.md` plus a "This is a testing build" disclaimer.
-- Role tabs are a `Tabs` component; each tab body lists the personas in that role with their credentials revealed on click. Clicking a persona auto-fills the form's `Email` field (and shows the password as copy-paste-able text — not auto-filled, so the reviewer feels the login motion).
-- Submit → `POST /auth/login { email, password }` → on 200 the cookie is set by the BE and `SessionProvider` rehydrates via `GET /auth/me` → redirect to `homeRouteFor(role)`. On 401 → field-agnostic error message "Sai email hoặc mật khẩu" so the reviewer can't enumerate.
+- The modal is a **centered card** (`role="dialog"` `aria-modal`) over a **blurred backdrop** that dims the page; dismiss via the **X** button or a backdrop click. It is **opened on demand** from a button on the login page (it does not auto-slide-down from the top on mount).
+- Header copy is the English **"PROTOTYPE ONLY"** disclaimer; the footer carries a **GitHub source link** + a **"© CAIRA-DAU"** mark.
+- Role tabs are a **custom button tablist** (`role="tablist"`, `flex flex-wrap`), not the shadcn `Tabs` component; each tab lists that role's personas, and clicking one reveals its credentials and **auto-fills the form** (email; seeded personas also fill the password, admin-created ones don't). Admin-created users (localStorage) surface alongside the seeded ones.
+- **Email + password submit** → `POST /auth/login { email, password }` → on 200 the cookie is set by the BE and `SessionProvider` rehydrates via `GET /auth/me` → redirect to `homeRouteFor(role)`. On **401** → field-agnostic "Sai email hoặc mật khẩu" (no enumeration); on **429** (too many attempts) → a distinct rate-limit message.
+- **Google SSO** → "Đăng nhập bằng Google" does a **full-page navigation** to the BE's `/auth/google` (OAuth Authorization Code Flow); the BE handles the callback and redirects back with the session cookie. Institutional domains only; deactivated accounts are blocked with a clear message.
 - Route guard (see §11.5): any non-`/`, non-`/login` route hit without a valid session redirects here and remembers the intended destination so login can route back to it.
 
 ### 5.1 Requester — New Ticket (`/tickets/new`)
@@ -297,23 +304,23 @@ All dialogs are shadcn `Dialog`s (Radix gives focus-trap + ESC + backdrop close)
 
 Same layout as Helpdesk queue but scoped server-side to the caller's department. Header is "Hàng đợi phòng ban". Row action: open detail → mark *In Progress* + comment.
 
-### 5.8 Admin — Categories & Routing
+### 5.8 Admin — Categories
 
 ```
-Categories                              Routing rules
-┌──────────────────────────┐            ┌──────────────────────────────────┐
-│ + Thêm danh mục          │            │ Danh mục → Phòng ban         Mặc │
-├──────────────────────────┤            ├──────────────────────────────────┤
-│ ▸ IT / Hệ thống số        │            │ IT/Hệ thống số → CAIRA/IT   ✓   │
-│ ▸ Cơ sở vật chất          │            │ CSVC → Phòng QT CSVC        ✓   │
-│ ▸ Học vụ / Đào tạo        │            │ Học vụ → Phòng Đào tạo      ✓   │
-│ ▸ Tài chính               │            │ + Thêm quy tắc                  │
-│ ▸ Nhân sự (HCNS)          │            └──────────────────────────────────┘
-│ ▸ Khác                    │
+Categories (flat list)
+┌──────────────────────────┐
+│ + Thêm danh mục          │
+├──────────────────────────┤
+│ • IT / Hệ thống số        │
+│ • Cơ sở vật chất          │
+│ • Học vụ / Đào tạo        │
+│ • Tài chính               │
+│ • Nhân sự (HCNS)          │
+│ • Khác                    │
 └──────────────────────────┘
 ```
 
-Tree CRUD with **delete guard** (children or live tickets block delete). Routing rules use the same tree to pick a category, then a department.
+A **flat** list (no parent/child): add + delete. Deleting a category unsets it from any tickets gathering it (they fall back to "chưa phân loại"). *(Configurable routing rules were removed — too rigid for cross-domain tickets — so Forward no longer pre-selects a department; Helpdesk picks the phòng ban per ticket.)* Admin also owns the **user-management console** (`/admin/users` — directory + create/edit/soft-delete; see §17 S14–S16).
 
 ### 5.9 Notifications bell + list
 
@@ -384,7 +391,7 @@ sequenceDiagram
   L->>H: Assign dialog → pick Agent → confirm
   H->>API: POST /tickets/:id/assign
   API-->>H: 200 (owner set, status unchanged) + AgentAssigned event
-  A->>H: Open ticket → Forward dialog (default dept preselected)
+  A->>H: Open ticket → Forward dialog (pick dept — no preselect)
   H->>API: POST /tickets/:id/forward
   API-->>H: 200 (Pending → Assigned) + Forwarded event
   D->>H: Open dept queue → ticket → Mark In Progress
@@ -460,7 +467,7 @@ Severity is always communicated through **three channels** (color **+** emoji **
 
 > **Built:** Button · Input · Textarea · Form/Label · RadioGroup · Checkbox · Table · Badge · Card · Alert · Skeleton · Sonner · Pagination · Sheet · Dialog · **Select · Toggle · ToggleGroup · DropdownMenu · Popover · Command · Combobox** (full shadcn set after the 2026-05-29 migration). Agent/dept pickers use the shadcn **`Combobox`** (the earlier native-`<select>` `SearchableSelect` was removed); their open→pick interactions are e2e (test-design §1.1).
 >
-> **Layout shell** (`components/layout/`): `AppShell` + `Sidebar` (+ `SidebarContent`, `RoleSwitcher`) — responsive (fixed rail at `md:`, `Sheet` drawer below).
+> **Layout shell** (`components/layout/`): `AppShell` + `Sidebar` (+ `SidebarContent`) + `AppBootGate` / `LoadingSplash` / `NavigationLoading` — responsive (fixed rail at `md:`, `Sheet` drawer below; the mobile drawer clears the fixed footer). *(The old `RoleSwitcher` was removed with the move to real login.)*
 
 **From shadcn (hand-authored from shadcn sources, owned in `components/ui/`)**
 | Need | shadcn component | Notes |
@@ -492,7 +499,7 @@ Severity is always communicated through **three channels** (color **+** emoji **
 | `Timeline` | plain `<ol>` | audit events with VN labels |
 | `DataState` | `Skeleton`/`Alert`/`EmptyState` | one wrapper that renders the §8 loading/empty/error/success states uniformly |
 
-**Composites** (`components/tickets/`, `components/helpdesk/`, `components/notifications/`, `components/admin/`, `components/analytics/`) — `TicketForm`, `TicketList`, `TicketDetail`, `Timeline`, `AttachmentList`, `CommentBox`; `HelpdeskQueue`, `HelpdeskTicketDetail`, `AssignDialog`, `ForwardDialog`, `RedirectDialog`, `SeverityOverrideDialog`, `CloseDialog`; notification bell/list, admin tree/routing, analytics dashboard — now **assembled from shadcn primitives** instead of hand-rolled ones.
+**Composites** (`components/tickets/`, `components/helpdesk/`, `components/notifications/`, `components/admin/`, `components/analytics/`) — `TicketForm`, `TicketList`, `TicketDetail`, `Timeline`, `AttachmentList` (lightbox preview), `CommentBox`; `HelpdeskQueue`, `HelpdeskTicketDetail`, `AssignDialog`, `ForwardDialog`, `RedirectDialog`, `SeverityOverrideDialog`, `CloseDialog`, `CategoryAssignDialog` (re-categorize); notification bell/list (+ mark-all-read / clear-all), admin category list (flat) + user-management console, analytics dashboard — now **assembled from shadcn primitives** instead of hand-rolled ones.
 
 ### 7.4 Iconography
 - **lucide-react** (ships with shadcn), imported per-icon so it tree-shakes: e.g. `Bell` (notifications), `X` (dialog close), `ChevronLeft/Right` (pagination), `Paperclip` (attachments), `Search` (pickers).
@@ -595,12 +602,13 @@ authKeys = { me: ['auth', 'me'] }   // GET /auth/me — drives SessionProvider s
 | Assign agent | `canAssign` (Lead) | `status ≠ Closed` |
 | Forward | `canForward` (Agent/Lead) | `status ∈ {Pending, Redirected}` |
 | Redirect | `canRedirect` (Agent/Lead) | `status ∈ {Assigned, InProgress}` |
+| Re-categorize (Phân loại) | `canCategorize` (Agent/Lead) | `status ≠ Closed` |
 | Override severity | `canOverrideSeverity` (Agent/Lead) | `status ≠ Closed` |
 | Mark In Progress | `canUpdateProgress` (Agent/Lead/DeptStaff) | `status = Assigned` |
 | Close | `canClose` (Agent/Lead) **+ ownership backstop**: Lead, or the assigned Agent (Brief §0.7) | `status ≠ Closed` |
 | Dashboard | `canViewDashboard` (Lead/Admin) | — |
 | Manage categories | `canManageCategories` (Admin) | — |
-| Manage routing | `canManageRouting` (Admin) | — |
+| Manage users | `canViewUsers`/`canCreateUsers`/`canUpdateUsers`/`canDeleteUsers` (Admin) | — |
 
 The UI never shows a control whose role guard is unmet AND only shows transition controls when the status guard is met. The server `409` is the race backstop. **Close has both a role guard *and* an ownership backstop**: a Helpdesk Agent who isn't the ticket's assignee sees no Close control (UI), and the server rejects with 403 if the FE check were bypassed.
 
@@ -654,7 +662,8 @@ Attachment rules (mirrored from §A for UX; server is the authority):
 ## 13. Notifications (in-app, FE rendering)
 
 - Bell shows unread count (cap label at "9+").
-- Dropdown shows the 5 most recent; "Xem tất cả" → `/notifications`.
+- Dropdown passes `limit={6}` to the list; "Xem tất cả" → `/notifications`. On mobile the dropdown goes **full-width** (`w-[calc(100vw-2rem)] sm:w-80`).
+- The full `/notifications` list also offers **mark-all-read** (`POST /notifications/read-all`) and **clear-all** (`DELETE /notifications`) bulk actions.
 - Newest-first; mark-read on click; failure to mark stays unread with retry affordance (S9-X1).
 - `DAILY_REMINDER` payload `{tickets: [{ticketId, code, severity, backlogAgeDays}]}` — the FE renders one row per ticket with severity color and `n` ngày.
 - **Recipients of the daily reminder** (`receivesDailyReminder` in the matrix): **Helpdesk Agent · Helpdesk Lead · Dept Staff**. Requesters and Admin do not receive it. Each role's backlog set is what they own: Agent → tickets they are assigned, Lead → un-assigned/un-forwarded queue items, DeptStaff → their dept's open tickets.
@@ -707,11 +716,11 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | S1 — Create ticket | Severity required; attachments validated client+server; 201 → My Tickets shows **Đã tiếp nhận** |
 | S2 — RBAC & role-scoped UI | Each role sees only its nav/routes; deep-link to a denied area → `AccessDenied` (not blank) |
 | S3 — Lead assigns | Assign control rendered only for Lead; searchable picker of HelpdeskAgents; 409 → refresh |
-| S4 — Forward + routing rules | Default dept pre-selected from rule; "Khác" has no preselect; 409 → refresh |
+| S4 — Forward to department | No preselect (routing rules removed); Agent/Lead picks the phòng ban; 409 → refresh |
 | S5 — Redirect with history | reason 3..500 enforced; timeline shows `from→to + reason`; 409 → refresh |
 | S6 — Dept progress | Mark In Progress reflects as **Đang xử lý** on requester view; no Close control for DeptStaff |
 | S7 — Helpdesk close | Lead/assigned Agent only; → **Hoàn tất**; close notice in bell; no reopen control |
-| S8 — Admin catalog | Add category appears on requester form; delete guard for children/live tickets |
+| S8 — Admin catalog | Flat category list; add category appears on requester form; delete unsets it from any tickets gathering it |
 | S9 — Notifications | Bell unread count; daily reminder renders per-ticket with severity + age; recipients = Agent / Lead / DeptStaff (matrix) |
 | S10 — Audit + dashboard | Timeline chronological + actor; dashboard counts by severity/category/status |
 | S11 — Demo login/logout | Logged-out user lands on `/login` with the credential helper note; valid creds → `homeRouteFor(role)`; bad creds → field-agnostic 401 toast; logout (from bell row or sidebar footer) → `/login`; deep-link without session → `/login?next=…` then back to the intended URL |
@@ -741,6 +750,7 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | `GET /tickets/:id` | Detail | participants/Helpdesk/Admin | — |
 | `POST /tickets/:id/comments` | Add comment + files | **all authenticated** (matrix: `canComment` = ✅ for every role) | — |
 | `PATCH /tickets/:id/severity` | Override severity | Helpdesk | — |
+| `PATCH /tickets/:id/category` | Re-categorize (`{categoryId\|null}`; quiet — no event) | Helpdesk (Agent/Lead) | — |
 | `POST /tickets/:id/assign` | `{agentId}` set owner | Helpdesk Lead | owner change only |
 | `POST /tickets/:id/forward` | `{departmentId}` | Helpdesk | Pending→Assigned (or Redirected→Assigned) |
 | `POST /tickets/:id/redirect` | `{departmentId, reason}` | Helpdesk | Assigned/InProgress→Assigned (new dept) |
@@ -755,19 +765,25 @@ Mirrors `brief.md` §3 capabilities; full Given/When/Then lives in **`test-desig
 | `POST /tickets/:id/close` | `{note?}` | Lead or assigned Agent | →Closed (+ TicketClosed notification) |
 | `GET /tickets/:id/history` | audit | participants/Helpdesk/Admin | — |
 | `GET /attachments/:id` | download (authz) | participants/Helpdesk/Admin | — |
-| `GET /categories` | tree | authenticated | — |
-| `POST/PATCH/DELETE /categories[/:id]` | manage | Admin | — |
-| `GET/POST/PATCH/DELETE /routing-rules[/:id]` | manage | Admin | — |
+| `GET /categories` | flat list | authenticated | — |
+| `POST/PATCH/DELETE /categories[/:id]` | manage (flat) | Admin | — |
 | `GET /departments` | list (**FE-driven addition** — needed by Forward/Redirect) | authenticated | — |
 | `GET /agents` | list HelpdeskAgents (**FE-driven addition** — needed by Assign) | Helpdesk | — |
 | `GET /notifications` | current user's notifications | authenticated | — |
-| `POST /notifications/:id/read` | mark read | owner | — |
+| `POST /notifications/:id/read` | mark one read | owner | — |
+| `POST /notifications/read-all` | mark all read | owner | — |
+| `DELETE /notifications` | clear all | owner | — |
 | `GET /analytics/summary` | dashboard counters | **Helpdesk Lead / Admin** (matrix: `canViewDashboard`; Agent is **not** included) | — |
 | `GET /users` | directory (paged, filterable; excludes soft-deleted) | **Admin** | — |
 | `GET /users/:id` | detail | **Admin** | — |
 | `POST /users` | create (institutional email + name rules; revives deactivated email) | **Admin** | — |
 | `PATCH /users/:id` | update displayName/role/dept/password (**email immutable**) | **Admin** | — |
 | `DELETE /users/:id` | soft delete (`isActive=false`; no self-delete) | **Admin** | — |
+| `POST /auth/login` | email + password → session cookie (rate-limited → `429`) | public | — |
+| `GET /auth/google` | start Google OAuth (Authorization Code Flow); full-page redirect | public | — |
+| `POST /auth/logout` | clear the session cookie | authenticated | — |
+| `GET /auth/me` | current session user (drives `SessionProvider`) | authenticated | — |
+| `GET /auth/realtime-token` | short-lived (60 s) JWT for the Socket.IO handshake | authenticated | — |
 | `GET /healthz` | liveness | public | — |
 
 > **User-management endpoints (2026-06, scope exceptions):** `/users` directory is read-only (Phase 14/BE-S13); create/update/soft-delete (Phase 15–16 / BE-S15–S16) deliberately step outside the helpdesk's bounded context (user lifecycle is normally M1/IAM). See `role-permission-matrix.md` + the `caira-dau-helpdesk-scope` memory.
@@ -835,4 +851,4 @@ stateDiagram-v2
 
 ---
 
-*Traceability: ISO M31 v1.1 → Brief → this FE Feature Plan → [`role-permission-matrix.md`](./role-permission-matrix.md) → [`test-design.md`](./test-design.md) → [`impl-plans/feat-M31-helpdesk-fe.md`](./impl-plans/feat-M31-helpdesk-fe.md). **Status (2026-05-29):** Phases 0–7 implemented (all six surfaces + hardening) + a full shadcn/ui migration; responsive sidebar shell + top bar + red brand accent + Inter; 207 Vitest + 9 Playwright e2e green.*
+*Traceability: ISO M31 v1.1 → Brief → this FE Feature Plan → [`role-permission-matrix.md`](./role-permission-matrix.md) → [`test-design.md`](./test-design.md) → [`impl-plans/feat-M31-helpdesk-fe.md`](./impl-plans/feat-M31-helpdesk-fe.md). **Status (2026-06-25):** full scope implemented — the six core surfaces + hardening + full shadcn/ui migration, demo + Google SSO login/logout, the Admin user-management console (S14–S16), the close/redirect request workflows (S17–S19), a realtime / Socket.IO layer, re-categorize, and notification bulk actions; routing rules removed; responsive sidebar shell + top bar + red brand accent + Inter + mobile polish; **256 Vitest tests across 43 files + Playwright e2e green**.*
