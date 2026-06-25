@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { AccessDenied } from '@/components/ui/access-denied';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
-import { canViewDashboard } from '@/lib/auth/rbac';
-import { useRole } from '@/lib/auth/session';
-import { useAnalyticsSummary } from '@/lib/queries/analytics';
-import { SEVERITIES_BY_PRIORITY, SEVERITY_META } from '@/lib/status/severity';
-import { ALL_STATUSES, INTERNAL_STATUS_VI } from '@/lib/status/status';
-import { cn } from '@/lib/utils';
+import { AccessDenied } from "@/components/ui/access-denied";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { canViewDashboard } from "@/lib/auth/rbac";
+import { useRole } from "@/lib/auth/session";
+import { useAnalyticsSummary } from "@/lib/queries/analytics";
+import { ALL_STATUSES, INTERNAL_STATUS_VI } from "@/lib/status/status";
+import { cn } from "@/lib/utils";
 
-import { StatCard } from './stat-card';
+import { SeverityDonut } from "./severity-donut";
+import { StatCard } from "./stat-card";
 
 function Bar({
   label,
   value,
   max,
-  colorClass = 'bg-red-500',
+  colorClass = "bg-red-500",
 }: {
   label: string;
   value: number;
@@ -30,9 +30,14 @@ function Bar({
     <div className="flex items-center gap-3">
       <span className="w-32 shrink-0 truncate text-sm">{label}</span>
       <div className="h-3 flex-1 overflow-hidden rounded bg-muted">
-        <div className={cn('h-full rounded', colorClass)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn("h-full rounded", colorClass)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
-      <span className="w-8 shrink-0 text-right text-sm tabular-nums">{value}</span>
+      <span className="w-8 shrink-0 text-right text-sm tabular-nums">
+        {value}
+      </span>
     </div>
   );
 }
@@ -46,7 +51,10 @@ export function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
+      <div
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        aria-busy="true"
+      >
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-28" />
         ))}
@@ -67,7 +75,6 @@ export function Dashboard() {
     );
   }
 
-  const maxSeverity = Math.max(1, ...SEVERITIES_BY_PRIORITY.map((s) => data.bySeverity[s]));
   const maxStatus = Math.max(1, ...ALL_STATUSES.map((s) => data.byStatus[s]));
 
   return (
@@ -78,28 +85,25 @@ export function Dashboard() {
         <StatCard label="Đã đóng" value={data.closed} />
         <StatCard
           label="TB xử lý (ngày)"
-          value={data.avgHandlingDays == null ? '—' : data.avgHandlingDays.toFixed(2)}
+          value={
+            data.avgHandlingDays == null ? "—" : data.avgHandlingDays.toFixed(2)
+          }
         />
       </div>
 
       {data.total === 0 ? (
-        <EmptyState title="Chưa có dữ liệu" description="Chưa có yêu cầu nào để thống kê." />
+        <EmptyState
+          title="Chưa có dữ liệu"
+          description="Chưa có yêu cầu nào để thống kê."
+        />
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Theo mức độ</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {SEVERITIES_BY_PRIORITY.map((s) => (
-                <Bar
-                  key={s}
-                  label={`${SEVERITY_META[s].emoji} ${SEVERITY_META[s].viLabel}`}
-                  value={data.bySeverity[s]}
-                  max={maxSeverity}
-                  colorClass={SEVERITY_META[s].colorClass}
-                />
-              ))}
+            <CardContent>
+              <SeverityDonut bySeverity={data.bySeverity} />
             </CardContent>
           </Card>
 
@@ -109,7 +113,12 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {ALL_STATUSES.map((s) => (
-                <Bar key={s} label={INTERNAL_STATUS_VI[s]} value={data.byStatus[s]} max={maxStatus} />
+                <Bar
+                  key={s}
+                  label={INTERNAL_STATUS_VI[s]}
+                  value={data.byStatus[s]}
+                  max={maxStatus}
+                />
               ))}
             </CardContent>
           </Card>
@@ -120,9 +129,14 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="flex flex-col gap-1.5">
               {data.byDepartment.map((d) => (
-                <div key={d.departmentId} className="flex items-center justify-between gap-2 text-sm">
+                <div
+                  key={d.departmentId}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
                   <span className="truncate">{d.name}</span>
-                  <span className="tabular-nums text-muted-foreground">{d.count}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {d.count}
+                  </span>
                 </div>
               ))}
             </CardContent>
@@ -134,9 +148,14 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="flex flex-col gap-1.5">
               {data.byCategory.map((c) => (
-                <div key={c.categoryId} className="flex items-center justify-between gap-2 text-sm">
+                <div
+                  key={c.categoryId}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
                   <span className="truncate">{c.name}</span>
-                  <span className="tabular-nums text-muted-foreground">{c.count}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {c.count}
+                  </span>
                 </div>
               ))}
             </CardContent>
