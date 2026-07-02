@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { DataState } from '@/components/ui/data-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -16,7 +16,12 @@ export function NotificationList({ limit, onNavigate }: { limit?: number; onNavi
   const { data, isLoading, isError } = useNotifications();
   const [expanded, setExpanded] = useState(false);
 
-  const items = [...(data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // Newest-first; memoized so array identity is stable across re-renders
+  // (e.g. toggling expand).
+  const items = useMemo(
+    () => [...(data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [data],
+  );
 
   // The bell passes `limit` (hard slice, its own "Xem tất cả" link). The full
   // page has no limit: cap to INITIAL_VISIBLE with a "Xem thêm" toggle.
