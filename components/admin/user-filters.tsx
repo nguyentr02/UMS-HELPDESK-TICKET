@@ -73,24 +73,34 @@ export function UserFilters({
       label="Vai trò"
       ariaLabel="Lọc theo vai trò"
       value={value.role}
-      onChange={(role) => onChange({ ...value, role: role as Role | '' })}
+      onChange={(role) => {
+        const nextRole = role as Role | '';
+        // Department filter only applies to DeptStaff — drop any stale
+        // departmentId when switching to a role that won't show it.
+        onChange({
+          ...value,
+          role: nextRole,
+          departmentId: nextRole === 'DeptStaff' ? value.departmentId : '',
+        });
+      }}
       allLabel="Tất cả"
       options={ROLE_OPTIONS.map((r) => ({ value: r, label: ROLE_VI[r] }))}
       className={bare ? 'w-full' : undefined}
     />
   );
 
-  const deptSelect = (
-    <FilterSelect
-      label="Phòng ban"
-      ariaLabel="Lọc theo phòng ban"
-      value={value.departmentId}
-      onChange={(departmentId) => onChange({ ...value, departmentId })}
-      allLabel="Tất cả"
-      options={departments.map((d) => ({ value: d.id, label: d.name }))}
-      className={bare ? 'w-full' : 'w-56'}
-    />
-  );
+  const deptSelect =
+    value.role === 'DeptStaff' ? (
+      <FilterSelect
+        label="Phòng ban"
+        ariaLabel="Lọc theo phòng ban"
+        value={value.departmentId}
+        onChange={(departmentId) => onChange({ ...value, departmentId })}
+        allLabel="Tất cả"
+        options={departments.map((d) => ({ value: d.id, label: d.name }))}
+        className={bare ? 'w-full' : 'w-56'}
+      />
+    ) : null;
 
   const clearButton = isActive(value) ? (
     <Button variant="ghost" size="sm" onClick={() => onChange(EMPTY_USER_FILTERS)}>
