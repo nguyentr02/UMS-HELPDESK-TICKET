@@ -55,6 +55,7 @@ export function RankedBars({
           </div>
           <Progress
             value={(d.value / max) * 100}
+            aria-label={`${d.label}: ${d.value}`}
             className={cn("h-2", indicatorClassName)}
           />
         </li>
