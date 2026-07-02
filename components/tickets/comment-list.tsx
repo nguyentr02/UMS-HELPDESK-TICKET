@@ -8,10 +8,10 @@ import { useTicketComments } from '@/lib/queries/tickets';
 import { AttachmentList } from './attachment-list';
 
 /** Newest-first; show this many, with a "Xem thêm" to reveal the rest. */
-const INITIAL_VISIBLE = 5;
+const INITIAL_VISIBLE = 3;
 
 /**
- * Comment thread for a ticket, newest → oldest. Shows the 5 most recent by
+ * Comment thread for a ticket, newest → oldest. Shows the 3 most recent by
  * default; if there are more, a "Xem thêm" toggle reveals the older ones (and
  * collapses back). One card per comment: author, timestamp, body, attachments.
  * Empty state and loading skeleton are handled inline.
